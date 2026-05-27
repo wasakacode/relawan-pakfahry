@@ -88,6 +88,58 @@ function input_value($name) {
 </div>
 
 
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Langkah 2 - Pemetaan Wilayah</h6>
+    </div>
+
+    <div class="card-body row">
+
+        <div class="form-group col-md-6">
+            <label>Provinsi</label>
+            <select name="provinsi" id="provinsi" class="form-control" required>
+                <option value="">Memuat data provinsi...</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-6">
+            <label>Kabupaten/Kota</label>
+            <select name="kab_kota" id="kab_kota" class="form-control" required>
+                <option value="">Pilih provinsi terlebih dahulu</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-6">
+            <label>Kecamatan</label>
+            <select name="kecamatan" id="kecamatan" class="form-control" required>
+                <option value="">Pilih kabupaten/kota terlebih dahulu</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-6">
+            <label>Desa/Kelurahan</label>
+            <select name="desa_kelurahan" id="desa_kelurahan" class="form-control" required>
+                <option value="">Pilih kecamatan terlebih dahulu</option>
+            </select>
+        </div>
+
+        <div class="form-group col-md-4">
+            <label>RT</label>
+            <input name="rt" class="form-control" value="<?= input_value('rt') ?>" placeholder="Contoh: 001">
+        </div>
+
+        <div class="form-group col-md-4">
+            <label>RW</label>
+            <input name="rw" class="form-control" value="<?= input_value('rw') ?>" placeholder="Contoh: 002">
+        </div>
+
+        <div class="form-group col-md-4">
+            <label>TPS</label>
+            <input name="tps" class="form-control" value="<?= input_value('tps') ?>" placeholder="Contoh: TPS 01">
+        </div>
+
+    </div>
+</div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const provinsiSelect = document.getElementById('provinsi');
