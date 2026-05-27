@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
 
-require_role(['superadmin', 'admin', 'relawan']);
+require_role(['superadmin']);
 
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
@@ -10,7 +10,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 // Filter & Search
 $search    = $_GET['search'] ?? '';
 $kecamatan = $_GET['kecamatan'] ?? '';
-$desa      = $_GET['desa'] ?? '';
+$status    = $_GET['status'] ?? '';
 
 // Sorting
 $sortBy = $_GET['sort_by'] ?? 'created_at';
@@ -20,9 +20,11 @@ $order  = $_GET['order'] ?? 'DESC';
 $allowedColumns = [
     'nik',
     'nama_lengkap',
+    'username',
     'kecamatan',
     'desa_kelurahan',
     'tps',
+    'status_verifikasi',
     'created_at'
 ];
 
@@ -35,80 +37,63 @@ $allowedOrder = ['ASC', 'DESC'];
 if (!in_array($order, $allowedOrder)) {
     $order = 'DESC';
 }
-
 // Query
-$where = "WHERE p.type = 'dukungan'";
-$params = [];
+$sql = "
+    SELECT p.*, u.username
+    FROM profiles p
+    LEFT JOIN users u ON p.user_id = u.id
+    WHERE p.type = 'admin'
+";
 
-// Relawan hanya lihat datanya sendiri
-if (current_user()['role'] === 'relawan') {
-    $where .= " AND p.created_by = ?";
-    $params[] = current_user()['id'];
-}
+$params = [];
 
 // Search
 if (!empty($search)) {
 
-    $where .= "
+    $sql .= "
         AND (
-            p.nama_lengkap LIKE ?
-            OR p.nik LIKE ?
+            p.nama_lengkap LIKE :search
+            OR u.username LIKE :search
+            OR p.nik LIKE :search
         )
     ";
 
-    $params[] = "%$search%";
-    $params[] = "%$search%";
+    $params['search'] = "%$search%";
 }
 
 // Filter Kecamatan
 if (!empty($kecamatan)) {
 
-    $where .= " AND p.kecamatan = ? ";
+    $sql .= " AND p.kecamatan = :kecamatan ";
 
-    $params[] = $kecamatan;
+    $params['kecamatan'] = $kecamatan;
 }
 
-// Filter Desa
-if (!empty($desa)) {
+// Filter Status
+if (!empty($status)) {
 
-    $where .= " AND p.desa_kelurahan = ? ";
+    $sql .= " AND p.status_verifikasi = :status ";
 
-    $params[] = $desa;
+    $params['status'] = $status;
 }
 
-// Query Final
-$sql = "
-    SELECT p.*, u.name pembuat
-    FROM profiles p
-    LEFT JOIN users u ON p.created_by = u.id
-    $where
-    ORDER BY $sortBy $order
-";
+// Sorting
+$sql .= " ORDER BY $sortBy $order ";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
 $rows = $stmt->fetchAll();
 
-// Ambil Kecamatan
+// Ambil daftar kecamatan unik
 $kecamatanStmt = $pdo->query("
     SELECT DISTINCT kecamatan
     FROM profiles
-    WHERE type = 'dukungan'
+    WHERE type = 'admin'
     ORDER BY kecamatan ASC
 ");
 
 $kecamatanList = $kecamatanStmt->fetchAll();
-
-// Ambil Desa
-$desaStmt = $pdo->query("
-    SELECT DISTINCT desa_kelurahan
-    FROM profiles
-    WHERE type = 'dukungan'
-    ORDER BY desa_kelurahan ASC
-");
-
-$desaList = $desaStmt->fetchAll();
 
 // Function Sort Link
 function sortLink($column, $label)
@@ -150,7 +135,9 @@ function sortLink($column, $label)
 }
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Data Dukungan</h1>
+<h1 class="h3 mb-4 text-gray-800">
+    Data Admin (Koordinator Kecamatan)
+</h1>
 
 <div class="card shadow mb-4">
     <div class="card-body">
@@ -166,7 +153,7 @@ function sortLink($column, $label)
                         type="text"
                         name="search"
                         class="form-control"
-                        placeholder="Cari nama atau NIK..."
+                        placeholder="Cari nama, username, atau NIK..."
                         value="<?= e($search) ?>">
                 </div>
 
@@ -193,25 +180,23 @@ function sortLink($column, $label)
                     </select>
                 </div>
 
-                <!-- Desa -->
+                <!-- Status -->
                 <div class="col-md-2 mb-2">
-                    <select name="desa" class="form-control">
+                    <select name="status" class="form-control">
 
                         <option value="">
-                            -- Semua Desa --
+                            -- Status --
                         </option>
 
-                        <?php foreach ($desaList as $d): ?>
+                        <option value="verified"
+                            <?= $status == 'verified' ? 'selected' : '' ?>>
+                            Verified
+                        </option>
 
-                            <option
-                                value="<?= e($d['desa_kelurahan']) ?>"
-                                <?= $desa == $d['desa_kelurahan'] ? 'selected' : '' ?>>
-
-                                <?= e($d['desa_kelurahan']) ?>
-
-                            </option>
-
-                        <?php endforeach; ?>
+                        <option value="pending"
+                            <?= $status == 'pending' ? 'selected' : '' ?>>
+                            Pending
+                        </option>
 
                     </select>
                 </div>
@@ -245,6 +230,7 @@ function sortLink($column, $label)
 
         <!-- TABLE -->
         <div class="table-responsive">
+
             <table class="table table-bordered" width="100%">
 
                 <thead>
@@ -261,6 +247,10 @@ function sortLink($column, $label)
                         </th>
 
                         <th>
+                            <?= sortLink('username', 'Username') ?>
+                        </th>
+
+                        <th>
                             <?= sortLink('kecamatan', 'Kecamatan') ?>
                         </th>
 
@@ -273,7 +263,7 @@ function sortLink($column, $label)
                         </th>
 
                         <th>
-                            Diinput Oleh
+                            <?= sortLink('status_verifikasi', 'Status') ?>
                         </th>
 
                     </tr>
@@ -293,13 +283,23 @@ function sortLink($column, $label)
 
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
+                                <td><?= e($r['username']) ?></td>
+
                                 <td><?= e($r['kecamatan']) ?></td>
 
                                 <td><?= e($r['desa_kelurahan']) ?></td>
 
                                 <td><?= e($r['tps']) ?></td>
 
-                                <td><?= e($r['pembuat']) ?></td>
+                                <td>
+
+                                    <span class="badge badge-success">
+
+                                        <?= e($r['status_verifikasi']) ?>
+
+                                    </span>
+
+                                </td>
 
                             </tr>
 
@@ -308,7 +308,7 @@ function sortLink($column, $label)
                     <?php else: ?>
 
                         <tr>
-                            <td colspan="7" class="text-center">
+                            <td colspan="8" class="text-center">
                                 Data tidak ditemukan
                             </td>
                         </tr>
@@ -318,6 +318,7 @@ function sortLink($column, $label)
                 </tbody>
 
             </table>
+
         </div>
 
     </div>
