@@ -1,30 +1,30 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
 
-require_role(['superadmin', 'admin']);
+require_role(['superadmin', 'admin', 'relawan']);
 
 $id = $_GET['id'] ?? null;
 
 if (!$id) {
-    flash('error', 'Data relawan tidak ditemukan.');
-    redirect('admin/list-relawan.php');
+    flash('error', 'Data dukungan tidak ditemukan.');
+    redirect('dukungan/list.php');
 }
 
-if (current_user()['role'] === 'admin') {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
+if (current_user()['role'] === 'relawan') {
+    $stmt = $pdo->prepare("SELECT p.*, u.name AS pembuat, u.username AS username_pembuat
                            FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
+                           LEFT JOIN users u ON p.created_by = u.id
                            WHERE p.id = ? 
-                           AND p.type = 'relawan'
+                           AND p.type = 'dukungan'
                            AND p.created_by = ?
                            LIMIT 1");
     $stmt->execute([$id, current_user()['id']]);
 } else {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
+    $stmt = $pdo->prepare("SELECT p.*, u.name AS pembuat, u.username AS username_pembuat
                            FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
+                           LEFT JOIN users u ON p.created_by = u.id
                            WHERE p.id = ? 
-                           AND p.type = 'relawan'
+                           AND p.type = 'dukungan'
                            LIMIT 1");
     $stmt->execute([$id]);
 }
@@ -32,8 +32,8 @@ if (current_user()['role'] === 'admin') {
 $data = $stmt->fetch();
 
 if (!$data) {
-    flash('error', 'Data relawan tidak ditemukan atau Anda tidak memiliki akses.');
-    redirect('admin/list-relawan.php');
+    flash('error', 'Data dukungan tidak ditemukan atau Anda tidak memiliki akses.');
+    redirect('dukungan/list.php');
 }
 
 $stmtFamily = $pdo->prepare("SELECT * FROM family_members WHERE profile_id = ?");
@@ -46,9 +46,9 @@ require_once __DIR__ . '/../partials/topbar.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 text-gray-800 mb-0">Detail Data Relawan</h1>
+    <h1 class="h3 text-gray-800 mb-0">Detail Data Dukungan</h1>
 
-    <a href="<?= url('admin/list-relawan.php') ?>" class="btn btn-secondary btn-sm">
+    <a href="<?= url('dukungan/list.php') ?>" class="btn btn-secondary btn-sm">
         <i class="fas fa-arrow-left"></i> Kembali
     </a>
 </div>
@@ -72,7 +72,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                     font-size:40px;
                     box-shadow:0 16px 30px rgba(17,141,208,.25);
                 ">
-                    <i class="fas fa-user"></i>
+                    <i class="fas fa-hand-holding-heart"></i>
                 </div>
 
                 <h4 class="font-weight-bold mb-1">
@@ -83,52 +83,46 @@ require_once __DIR__ . '/../partials/topbar.php';
                     NIK: <?= e($data['nik']) ?>
                 </p>
 
-                <span class="badge badge-success px-3 py-2">
-                    <?= e($data['status_verifikasi']) ?>
+                <span class="badge badge-info px-3 py-2">
+                    Data Dukungan
                 </span>
 
                 <hr>
 
                 <p class="mb-1">
-    <b>Username:</b> <?= e($data['username'] ?? '-') ?>
-</p>
+                    <b>Diinput Oleh:</b> <?= e($data['pembuat'] ?? '-') ?>
+                </p>
 
-<p class="mb-1">
-    <b>Password:</b> 
-    <span class="text-muted">Terenkripsi / tidak dapat ditampilkan</span>
-</p>
+                <p class="mb-1">
+                    <b>Username Penginput:</b> <?= e($data['username_pembuat'] ?? '-') ?>
+                </p>
 
-<small class="text-muted d-block mb-3">
-    Password dapat diganti melalui tombol Edit Data.
-</small>
+                <p class="mb-1">
+                    <b>Status:</b>
+                    <span class="badge badge-success">
+                        <?= e($data['status_verifikasi']) ?>
+                    </span>
+                </p>
 
-<p class="mb-1">
-    <b>Status Akun:</b>
-    <?php if ((int)($data['is_active'] ?? 0) === 1): ?>
-        <span class="badge badge-primary">Aktif</span>
-    <?php else: ?>
-        <span class="badge badge-danger">Tidak Aktif</span>
-    <?php endif; ?>
-</p>
+                <hr>
 
-<hr>
+                <a href="<?= url('dukungan/edit.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
+                    <i class="fas fa-edit"></i> Edit Data
+                </a>
 
-<a href="<?= url('admin/edit-relawan.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
-    <i class="fas fa-edit"></i> Edit Data
-</a>
+                <form action="<?= url('dukungan/delete.php') ?>" method="POST"
+                      onsubmit="return confirm('Yakin ingin menghapus data dukungan ini? Data yang dihapus tidak bisa dikembalikan.');">
+                    <input type="hidden" name="id" value="<?= e($data['id']) ?>">
 
-<form action="<?= url('admin/delete-relawan.php') ?>" method="POST" 
-      onsubmit="return confirm('Yakin ingin menghapus data relawan ini? Data yang dihapus tidak bisa dikembalikan.');">
-    <input type="hidden" name="id" value="<?= e($data['id']) ?>">
-
-    <button type="submit" class="btn btn-danger btn-sm btn-block">
-        <i class="fas fa-trash"></i> Hapus Data
-    </button>
-</form>
+                    <button type="submit" class="btn btn-danger btn-sm btn-block">
+                        <i class="fas fa-trash"></i> Hapus Data
+                    </button>
+                </form>
 
             </div>
         </div>
     </div>
+
 
     <div class="col-lg-8 mb-4">
         <div class="card content-card shadow h-100">
