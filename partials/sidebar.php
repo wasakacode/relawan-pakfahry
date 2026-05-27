@@ -1,5 +1,6 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
+    <!-- Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?= url('dashboard/index.php') ?>">
         <div class="sidebar-brand-icon">
             <i class="fas fa-users"></i>
@@ -11,6 +12,7 @@
 
     <hr class="sidebar-divider my-0">
 
+    <!-- Dashboard -->
     <li class="nav-item">
         <a class="nav-link" href="<?= url('dashboard/index.php') ?>">
             <i class="fas fa-home"></i>
@@ -20,8 +22,11 @@
 
     <hr class="sidebar-divider">
 
+    <!-- ========================= -->
+    <!-- INPUT DATA -->
+    <!-- ========================= -->
     <div class="sidebar-heading">
-        Manajemen Data
+        Input Data
     </div>
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
@@ -40,7 +45,37 @@
                 <span>Buat Relawan</span>
             </a>
         </li>
+    <?php endif; ?>
 
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
+                <i class="fas fa-hand-holding-heart"></i>
+                <span>Tambah Dukungan</span>
+            </a>
+        </li>
+    <?php endif; ?>
+
+
+    <hr class="sidebar-divider">
+
+    <!-- ========================= -->
+    <!-- MANAJEMEN DATA -->
+    <!-- ========================= -->
+    <div class="sidebar-heading">
+        Manajemen Data
+    </div>
+
+    <?php if (current_user()['role'] === 'superadmin'): ?>
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-admin.php') ?>">
+                <i class="fas fa-users-cog"></i>
+                <span>Data Admin</span>
+            </a>
+        </li>
+    <?php endif; ?>
+
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-relawan.php') ?>">
                 <i class="fas fa-clipboard-list"></i>
@@ -51,13 +86,6 @@
 
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
         <li class="nav-item">
-            <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
-                <i class="fas fa-hand-holding-heart"></i>
-                <span>Tambah Dukungan</span>
-            </a>
-        </li>
-
-        <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/list.php') ?>">
                 <i class="fas fa-address-book"></i>
                 <span>Data Dukungan</span>
@@ -65,7 +93,14 @@
         </li>
     <?php endif; ?>
 
+
     <?php if (current_user()['role'] === 'relawan'): ?>
+        <hr class="sidebar-divider">
+
+        <div class="sidebar-heading">
+            Profil
+        </div>
+
         <li class="nav-item">
             <a class="nav-link" href="<?= url('relawan/profil.php') ?>">
                 <i class="fas fa-id-card"></i>
@@ -74,8 +109,12 @@
         </li>
     <?php endif; ?>
 
+
     <hr class="sidebar-divider">
 
+    <!-- ========================= -->
+    <!-- AKUN -->
+    <!-- ========================= -->
     <div class="sidebar-heading">
         Akun
     </div>
