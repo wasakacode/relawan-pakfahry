@@ -7,38 +7,7 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-// Filter & Search
-$search    = $_GET['search'] ?? '';
-$kecamatan = $_GET['kecamatan'] ?? '';
-$desa      = $_GET['desa'] ?? '';
-
-// Sorting
-$sortBy = $_GET['sort_by'] ?? 'created_at';
-$order  = $_GET['order'] ?? 'DESC';
-
-// Validasi Sorting
-$allowedColumns = [
-    'nik',
-    'nama_lengkap',
-    'kecamatan',
-    'desa_kelurahan',
-    'tps',
-    'created_at'
-];
-
-if (!in_array($sortBy, $allowedColumns)) {
-    $sortBy = 'created_at';
-}
-
-$allowedOrder = ['ASC', 'DESC'];
-
-if (!in_array($order, $allowedOrder)) {
-    $order = 'DESC';
-}
-
-// Query
 $where = "WHERE p.type = 'dukungan'";
-$params = [];
 
 // Relawan hanya lihat datanya sendiri
 if (current_user()['role'] === 'relawan') {
@@ -46,44 +15,11 @@ if (current_user()['role'] === 'relawan') {
     $params[] = current_user()['id'];
 }
 
-// Search
-if (!empty($search)) {
-
-    $where .= "
-        AND (
-            p.nama_lengkap LIKE ?
-            OR p.nik LIKE ?
-        )
-    ";
-
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-}
-
-// Filter Kecamatan
-if (!empty($kecamatan)) {
-
-    $where .= " AND p.kecamatan = ? ";
-
-    $params[] = $kecamatan;
-}
-
-// Filter Desa
-if (!empty($desa)) {
-
-    $where .= " AND p.desa_kelurahan = ? ";
-
-    $params[] = $desa;
-}
-
-// Query Final
-$sql = "
-    SELECT p.*, u.name pembuat
-    FROM profiles p
-    LEFT JOIN users u ON p.created_by = u.id
-    $where
-    ORDER BY $sortBy $order
-";
+$stmt = $pdo->prepare("SELECT p.*, u.name pembuat 
+                       FROM profiles p 
+                       LEFT JOIN users u ON p.created_by = u.id 
+                       $where 
+                       ORDER BY p.created_at DESC");
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -152,7 +88,19 @@ function sortLink($column, $label)
 
 <h1 class="h3 mb-4 text-gray-800">Data Dukungan</h1>
 
-<div class="card shadow mb-4">
+<div class="card content-card shadow mb-4">
+
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">
+            <i class="fas fa-hand-holding-heart mr-2" style="color:#3db7ee;"></i>
+            Daftar Dukungan
+        </h6>
+
+        <a href="<?= url('dukungan/create.php') ?>" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Tambah Dukungan
+        </a>
+    </div>
+
     <div class="card-body">
 
         <!-- FILTER -->
@@ -246,81 +194,37 @@ function sortLink($column, $label)
         <!-- TABLE -->
         <div class="table-responsive">
             <table class="table table-bordered" width="100%">
-
                 <thead>
                     <tr>
-
                         <th>No</th>
-
-                        <th>
-                            <?= sortLink('nik', 'NIK') ?>
-                        </th>
-
-                        <th>
-                            <?= sortLink('nama_lengkap', 'Nama') ?>
-                        </th>
-
-                        <th>
-                            <?= sortLink('kecamatan', 'Kecamatan') ?>
-                        </th>
-
-                        <th>
-                            <?= sortLink('desa_kelurahan', 'Desa') ?>
-                        </th>
-
-                        <th>
-                            <?= sortLink('tps', 'TPS') ?>
-                        </th>
-
-                        <th>
-                            Diinput Oleh
-                        </th>
-
+                        <th>NIK</th>
+                        <th>Nama</th>
+                        <th>Kecamatan</th>
+                        <th>Desa</th>
+                        <th>TPS</th>
+                        <th>Diinput Oleh</th>
                     </tr>
                 </thead>
 
                 <tbody>
-
-                    <?php if ($rows): ?>
-
-                        <?php foreach ($rows as $i => $r): ?>
-
-                            <tr>
-
-                                <td><?= $i + 1 ?></td>
-
-                                <td><?= e($r['nik']) ?></td>
-
-                                <td><?= e($r['nama_lengkap']) ?></td>
-
-                                <td><?= e($r['kecamatan']) ?></td>
-
-                                <td><?= e($r['desa_kelurahan']) ?></td>
-
-                                <td><?= e($r['tps']) ?></td>
-
-                                <td><?= e($r['pembuat']) ?></td>
-
-                            </tr>
-
-                        <?php endforeach; ?>
-
-                    <?php else: ?>
-
+                    <?php foreach ($rows as $i => $r): ?>
                         <tr>
-                            <td colspan="7" class="text-center">
-                                Data tidak ditemukan
-                            </td>
+                            <td><?= $i + 1 ?></td>
+                            <td><?= e($r['nik']) ?></td>
+                            <td><?= e($r['nama_lengkap']) ?></td>
+                            <td><?= e($r['kecamatan']) ?></td>
+                            <td><?= e($r['desa_kelurahan']) ?></td>
+                            <td><?= e($r['tps']) ?></td>
+                            <td><?= e($r['pembuat']) ?></td>
                         </tr>
-
-                    <?php endif; ?>
-
+                    <?php endforeach; ?>
                 </tbody>
 
             </table>
         </div>
 
     </div>
+
 </div>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
