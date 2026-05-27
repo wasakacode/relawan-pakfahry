@@ -40,10 +40,136 @@ $stmtFamily = $pdo->prepare("SELECT * FROM family_members WHERE profile_id = ?")
 $stmtFamily->execute([$data['id']]);
 $families = $stmtFamily->fetchAll();
 
+function tampilkanFileDokumentasi($file, $label) {
+    if (empty($file)) {
+        echo '<div class="doc-card">';
+        echo '<div class="doc-label">' . e($label) . '</div>';
+        echo '<div class="doc-empty">Belum ada file</div>';
+        echo '</div>';
+        return;
+    }
+
+    $url = url($file);
+    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+    echo '<div class="doc-card">';
+    echo '<div class="doc-label">' . e($label) . '</div>';
+
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+        echo '<a href="' . $url . '" target="_blank">';
+        echo '<img src="' . $url . '" class="doc-image" alt="' . e($label) . '">';
+        echo '</a>';
+    } elseif ($ext === 'pdf') {
+        echo '<div class="doc-pdf">';
+        echo '<i class="fas fa-file-pdf"></i>';
+        echo '<p>File PDF</p>';
+        echo '</div>';
+    } else {
+        echo '<div class="doc-pdf">';
+        echo '<i class="fas fa-file"></i>';
+        echo '<p>File Dokumen</p>';
+        echo '</div>';
+    }
+
+    echo '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary mt-2">';
+    echo '<i class="fas fa-eye"></i> Buka File';
+    echo '</a>';
+
+    echo '</div>';
+}
+
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 ?>
+
+<style>
+    .profile-photo-box {
+        width: 110px;
+        height: 110px;
+        border-radius: 28px;
+        overflow: hidden;
+        margin: 0 auto 18px;
+        background: linear-gradient(135deg,#3db7ee,#118dd0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 42px;
+        box-shadow: 0 16px 30px rgba(17,141,208,.25);
+    }
+
+    .profile-photo-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .doc-card {
+        background: #f8fcff;
+        border: 1px solid #dff3fc;
+        border-radius: 18px;
+        padding: 14px;
+        height: 100%;
+        text-align: center;
+    }
+
+    .doc-label {
+        font-weight: 800;
+        color: #1f3b57;
+        margin-bottom: 12px;
+    }
+
+    .doc-image {
+        width: 100%;
+        height: 230px;
+        object-fit: cover;
+        border-radius: 14px;
+        border: 1px solid #dceff8;
+        transition: 0.2s;
+        background: #ffffff;
+    }
+
+    .doc-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 28px rgba(17,141,208,.18);
+    }
+
+    .doc-pdf {
+        height: 230px;
+        border-radius: 14px;
+        border: 1px dashed #b9dff0;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .doc-pdf i {
+        font-size: 52px;
+        color: #e74a3b;
+        margin-bottom: 10px;
+    }
+
+    .doc-pdf p {
+        margin: 0;
+        color: #7890a6;
+        font-weight: 700;
+    }
+
+    .doc-empty {
+        height: 230px;
+        border-radius: 14px;
+        background: #f3f8fc;
+        color: #7890a6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 text-gray-800 mb-0">Detail Data Relawan</h1>
@@ -59,20 +185,12 @@ require_once __DIR__ . '/../partials/topbar.php';
         <div class="card content-card shadow h-100">
             <div class="card-body text-center">
 
-                <div style="
-                    width:90px;
-                    height:90px;
-                    border-radius:24px;
-                    background:linear-gradient(135deg,#3db7ee,#118dd0);
-                    color:white;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    margin:0 auto 18px;
-                    font-size:40px;
-                    box-shadow:0 16px 30px rgba(17,141,208,.25);
-                ">
-                    <i class="fas fa-user"></i>
+                <div class="profile-photo-box">
+                    <?php if (!empty($data['foto_diri'])): ?>
+                        <img src="<?= url($data['foto_diri']) ?>" alt="Foto Diri">
+                    <?php else: ?>
+                        <i class="fas fa-user"></i>
+                    <?php endif; ?>
                 </div>
 
                 <h4 class="font-weight-bold mb-1">
@@ -90,41 +208,41 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <hr>
 
                 <p class="mb-1">
-    <b>Username:</b> <?= e($data['username'] ?? '-') ?>
-</p>
+                    <b>Username:</b> <?= e($data['username'] ?? '-') ?>
+                </p>
 
-<p class="mb-1">
-    <b>Password:</b> 
-    <span class="text-muted">Terenkripsi / tidak dapat ditampilkan</span>
-</p>
+                <p class="mb-1">
+                    <b>Password:</b>
+                    <span class="text-muted">Terenkripsi / tidak dapat ditampilkan</span>
+                </p>
 
-<small class="text-muted d-block mb-3">
-    Password dapat diganti melalui tombol Edit Data.
-</small>
+                <small class="text-muted d-block mb-3">
+                    Password dapat diganti melalui tombol Edit Data.
+                </small>
 
-<p class="mb-1">
-    <b>Status Akun:</b>
-    <?php if ((int)($data['is_active'] ?? 0) === 1): ?>
-        <span class="badge badge-primary">Aktif</span>
-    <?php else: ?>
-        <span class="badge badge-danger">Tidak Aktif</span>
-    <?php endif; ?>
-</p>
+                <p class="mb-1">
+                    <b>Status Akun:</b>
+                    <?php if ((int)($data['is_active'] ?? 0) === 1): ?>
+                        <span class="badge badge-primary">Aktif</span>
+                    <?php else: ?>
+                        <span class="badge badge-danger">Tidak Aktif</span>
+                    <?php endif; ?>
+                </p>
 
-<hr>
+                <hr>
 
-<a href="<?= url('admin/edit-relawan.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
-    <i class="fas fa-edit"></i> Edit Data
-</a>
+                <a href="<?= url('admin/edit-relawan.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
+                    <i class="fas fa-edit"></i> Edit Data
+                </a>
 
-<form action="<?= url('admin/delete-relawan.php') ?>" method="POST" 
-      onsubmit="return confirm('Yakin ingin menghapus data relawan ini? Data yang dihapus tidak bisa dikembalikan.');">
-    <input type="hidden" name="id" value="<?= e($data['id']) ?>">
+                <form action="<?= url('admin/delete-relawan.php') ?>" method="POST" 
+                      onsubmit="return confirm('Yakin ingin menghapus data relawan ini? Data yang dihapus tidak bisa dikembalikan.');">
+                    <input type="hidden" name="id" value="<?= e($data['id']) ?>">
 
-    <button type="submit" class="btn btn-danger btn-sm btn-block">
-        <i class="fas fa-trash"></i> Hapus Data
-    </button>
-</form>
+                    <button type="submit" class="btn btn-danger btn-sm btn-block">
+                        <i class="fas fa-trash"></i> Hapus Data
+                    </button>
+                </form>
 
             </div>
         </div>
@@ -151,10 +269,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                     </tr>
                     <tr>
                         <th>Tempat/Tanggal Lahir</th>
-                        <td>
-                            <?= e($data['tempat_lahir']) ?>,
-                            <?= e($data['tanggal_lahir']) ?>
-                        </td>
+                        <td><?= e($data['tempat_lahir']) ?>, <?= e($data['tanggal_lahir']) ?></td>
                     </tr>
                     <tr>
                         <th>Jenis Kelamin</th>
@@ -186,7 +301,6 @@ require_once __DIR__ . '/../partials/topbar.php';
     </div>
 
 </div>
-
 
 <div class="row">
 
@@ -230,7 +344,6 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
     </div>
 
-
     <div class="col-lg-6 mb-4">
         <div class="card content-card shadow h-100">
             <div class="card-header">
@@ -269,7 +382,6 @@ require_once __DIR__ . '/../partials/topbar.php';
 
 </div>
 
-
 <div class="card content-card shadow mb-4">
     <div class="card-header">
         <h6 class="m-0 font-weight-bold">
@@ -303,10 +415,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                                 <td><?= e($f['hubungan_keluarga']) ?></td>
                                 <td><?= e($f['nik']) ?></td>
                                 <td><?= e($f['nama_lengkap']) ?></td>
-                                <td>
-                                    <?= e($f['tempat_lahir']) ?>,
-                                    <?= e($f['tanggal_lahir']) ?>
-                                </td>
+                                <td><?= e($f['tempat_lahir']) ?>, <?= e($f['tanggal_lahir']) ?></td>
                                 <td><?= e($f['jenis_kelamin']) ?></td>
                                 <td><?= e($f['agama']) ?></td>
                                 <td><?= e($f['pekerjaan']) ?></td>
@@ -325,7 +434,6 @@ require_once __DIR__ . '/../partials/topbar.php';
     </div>
 </div>
 
-
 <div class="card content-card shadow mb-4">
     <div class="card-header">
         <h6 class="m-0 font-weight-bold">
@@ -337,36 +445,15 @@ require_once __DIR__ . '/../partials/topbar.php';
     <div class="card-body row">
 
         <div class="col-md-4 mb-3">
-            <b>Foto KTP</b><br>
-            <?php if (!empty($data['foto_ktp'])): ?>
-                <a href="<?= url($data['foto_ktp']) ?>" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
-                    <i class="fas fa-eye"></i> Lihat File
-                </a>
-            <?php else: ?>
-                <span class="text-muted">Belum ada file</span>
-            <?php endif; ?>
+            <?php tampilkanFileDokumentasi($data['foto_ktp'] ?? null, 'Foto KTP'); ?>
         </div>
 
         <div class="col-md-4 mb-3">
-            <b>Foto Diri</b><br>
-            <?php if (!empty($data['foto_diri'])): ?>
-                <a href="<?= url($data['foto_diri']) ?>" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
-                    <i class="fas fa-eye"></i> Lihat File
-                </a>
-            <?php else: ?>
-                <span class="text-muted">Belum ada file</span>
-            <?php endif; ?>
+            <?php tampilkanFileDokumentasi($data['foto_diri'] ?? null, 'Foto Diri'); ?>
         </div>
 
         <div class="col-md-4 mb-3">
-            <b>Foto Bukti Rekrut</b><br>
-            <?php if (!empty($data['foto_bukti_rekrut'])): ?>
-                <a href="<?= url($data['foto_bukti_rekrut']) ?>" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
-                    <i class="fas fa-eye"></i> Lihat File
-                </a>
-            <?php else: ?>
-                <span class="text-muted">Belum ada file</span>
-            <?php endif; ?>
+            <?php tampilkanFileDokumentasi($data['foto_bukti_rekrut'] ?? null, 'Foto Bukti Rekrut'); ?>
         </div>
 
     </div>
