@@ -3,6 +3,44 @@ function input_value($name) {
     return e($_POST[$name] ?? ''); 
 }
 ?>
+<div class="card shadow mb-4" style="border-radius: 18px; overflow:hidden;">
+    <div class="card-header py-3" style="background: linear-gradient(135deg, #eaf9ff, #c8efff);">
+        <h6 class="m-0 font-weight-bold text-primary">
+            Upload KTP untuk Isi Otomatis
+        </h6>
+    </div>
+
+    <div class="card-body row align-items-center">
+
+        <div class="form-group col-md-6">
+            <label>Upload Foto KTP</label>
+            <input 
+                type="file" 
+                id="upload_ktp_ocr" 
+                class="form-control-file" 
+                accept="image/*"
+            >
+
+            <small class="text-muted d-block mt-2">
+                Upload gambar KTP format JPG, JPEG, atau PNG. Sistem akan mencoba membaca data KTP dan mengisi form otomatis.
+            </small>
+        </div>
+
+        <div class="form-group col-md-6">
+            <label>Status Pembacaan</label>
+            <div id="ocr_status" class="alert alert-info mb-0" style="border-radius: 12px;">
+                Belum ada KTP yang di-upload.
+            </div>
+        </div>
+
+        <div class="col-md-12 mt-3">
+            <small class="text-danger">
+                Catatan: hasil baca otomatis bisa saja belum sempurna, jadi tetap cek kembali data sebelum disimpan.
+            </small>
+        </div>
+
+    </div>
+</div>
 
 <div class="card shadow mb-4">
     <div class="card-header py-3">
@@ -434,3 +472,249 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 ?>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const uploadKtp = document.getElementById('upload_ktp_ocr');
+    const statusBox = document.getElementById('ocr_status');
+
+    if (!uploadKtp) return;
+
+    function setValueByName(name, value) {
+        const field = document.querySelector(`[name="${name}"]`);
+        if (!field || !value) return;
+
+        if (field.tagName.toLowerCase() === 'select') {
+            const options = Array.from(field.options);
+            const found = options.find(option => {
+                return option.textContent.trim().toLowerCase() === value.trim().toLowerCase()
+                    || option.value.trim().toLowerCase() === value.trim().toLowerCase();
+            });
+
+            if (found) {
+                field.value = found.value;
+            }
+        } else {
+            field.value = value.trim();
+        }
+    }
+
+    function cleanText(text) {
+        return text
+            .replace(/\r/g, '\n')
+            .replace(/[|]/g, 'I')
+            .replace(/\s+/g, ' ')
+            .replace(/ :/g, ':')
+            .trim();
+    }
+
+    function findValue(text, labels) {
+        for (const label of labels) {
+            const regex = new RegExp(label + '\\s*[:\\-]?\\s*([^\\n]+)', 'i');
+            const match = text.match(regex);
+
+            if (match && match[1]) {
+                return match[1]
+                    .replace(/NIK|Nama|Tempat|Tanggal|Lahir|Alamat|Agama|Pekerjaan/gi, '')
+                    .trim();
+            }
+        }
+
+        return '';
+    }
+
+    function formatTanggalKtp(value) {
+        if (!value) return '';
+
+        value = value.trim();
+
+        const bulanMap = {
+            'JANUARI': '01',
+            'FEBRUARI': '02',
+            'MARET': '03',
+            'APRIL': '04',
+            'MEI': '05',
+            'JUNI': '06',
+            'JULI': '07',
+            'AGUSTUS': '08',
+            'SEPTEMBER': '09',
+            'OKTOBER': '10',
+            'NOVEMBER': '11',
+            'DESEMBER': '12'
+        };
+
+        let matchAngka = value.match(/(\d{1,2})[-\/\s](\d{1,2})[-\/\s](\d{4})/);
+        if (matchAngka) {
+            const day = matchAngka[1].padStart(2, '0');
+            const month = matchAngka[2].padStart(2, '0');
+            const year = matchAngka[3];
+            return `${year}-${month}-${day}`;
+        }
+
+        let matchHuruf = value.toUpperCase().match(/(\d{1,2})\s+([A-Z]+)\s+(\d{4})/);
+        if (matchHuruf && bulanMap[matchHuruf[2]]) {
+            const day = matchHuruf[1].padStart(2, '0');
+            const month = bulanMap[matchHuruf[2]];
+            const year = matchHuruf[3];
+            return `${year}-${month}-${day}`;
+        }
+
+        return '';
+    }
+
+    function normalizeJenisKelamin(value) {
+        value = value.toUpperCase();
+
+        if (value.includes('LAKI')) {
+            return 'laki-laki';
+        }
+
+        if (value.includes('PEREMPUAN')) {
+            return 'perempuan';
+        }
+
+        return '';
+    }
+
+    function normalizeAgama(value) {
+        value = value.toUpperCase();
+
+        if (value.includes('ISLAM')) return 'islam';
+        if (value.includes('KRISTEN')) return 'kristen_protestan';
+        if (value.includes('KATOLIK')) return 'katolik';
+        if (value.includes('HINDU')) return 'hindu';
+        if (value.includes('BUDHA') || value.includes('BUDDHA')) return 'budha';
+        if (value.includes('KONGHUCU') || value.includes('KONGHUCHU')) return 'konghuchu';
+
+        return '';
+    }
+
+    function normalizeStatusKawin(value) {
+        value = value.toUpperCase();
+
+        if (value.includes('BELUM')) return 'belum_menikah';
+        if (value.includes('KAWIN') || value.includes('MENIKAH')) return 'sudah_menikah';
+        if (value.includes('CERAI')) return 'pernah_menikah';
+
+        return '';
+    }
+
+    function parseKtpText(rawText) {
+        const lines = rawText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        const text = lines.join('\n');
+        const textClean = cleanText(text);
+
+        console.log('HASIL OCR KTP:', textClean);
+
+        let nik = '';
+        const nikMatch = textClean.match(/\b\d{16}\b/);
+        if (nikMatch) {
+            nik = nikMatch[0];
+        }
+
+        let nama = findValue(text, ['Nama', 'Narna']);
+        let tempatTanggal = findValue(text, ['Tempat\\/Tgl Lahir', 'Tempat Tgl Lahir', 'Tempat\\/Tanggal Lahir', 'Tempat Tanggal Lahir']);
+
+        let tempatLahir = '';
+        let tanggalLahir = '';
+
+        if (tempatTanggal) {
+            const parts = tempatTanggal.split(',');
+            tempatLahir = parts[0] ? parts[0].trim() : '';
+
+            if (parts[1]) {
+                tanggalLahir = formatTanggalKtp(parts[1].trim());
+            }
+        }
+
+        let jenisKelamin = findValue(text, ['Jenis Kelamin']);
+        let alamat = findValue(text, ['Alamat']);
+        let rtRw = findValue(text, ['RT\\/RW', 'RT RW']);
+        let kelDesa = findValue(text, ['Kel\\/Desa', 'Kel Desa', 'Desa', 'Kelurahan']);
+        let kecamatan = findValue(text, ['Kecamatan']);
+        let agama = findValue(text, ['Agama']);
+        let statusPernikahan = findValue(text, ['Status Perkawinan', 'Status Pernikahan']);
+        let pekerjaan = findValue(text, ['Pekerjaan']);
+
+        let rt = '';
+        let rw = '';
+
+        if (rtRw) {
+            const rtRwMatch = rtRw.match(/(\d{1,3})\s*\/\s*(\d{1,3})/);
+            if (rtRwMatch) {
+                rt = rtRwMatch[1].padStart(3, '0');
+                rw = rtRwMatch[2].padStart(3, '0');
+            }
+        }
+
+        setValueByName('nik', nik);
+        setValueByName('nama_lengkap', nama);
+        setValueByName('tempat_lahir', tempatLahir);
+        setValueByName('tanggal_lahir', tanggalLahir);
+        setValueByName('jenis_kelamin', normalizeJenisKelamin(jenisKelamin));
+        setValueByName('alamat', alamat);
+        setValueByName('rt', rt);
+        setValueByName('rw', rw);
+        setValueByName('desa_kelurahan', kelDesa);
+        setValueByName('kecamatan', kecamatan);
+        setValueByName('agama', normalizeAgama(agama));
+        setValueByName('status_pernikahan', normalizeStatusKawin(statusPernikahan));
+        setValueByName('pekerjaan', pekerjaan);
+
+        statusBox.className = 'alert alert-success mb-0';
+        statusBox.style.borderRadius = '12px';
+        statusBox.innerHTML = `
+            <b>Data KTP berhasil dibaca.</b><br>
+            Silakan cek ulang hasil yang masuk ke form, karena OCR bisa saja belum sempurna.
+        `;
+    }
+
+    uploadKtp.addEventListener('change', async function () {
+        const file = this.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            statusBox.className = 'alert alert-danger mb-0';
+            statusBox.innerHTML = 'File harus berupa gambar KTP, seperti JPG, JPEG, atau PNG.';
+            return;
+        }
+
+        statusBox.className = 'alert alert-warning mb-0';
+        statusBox.style.borderRadius = '12px';
+        statusBox.innerHTML = 'Sedang membaca data KTP, mohon tunggu...';
+
+        try {
+            const result = await Tesseract.recognize(
+                file,
+                'ind+eng',
+                {
+                    logger: function (m) {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            statusBox.innerHTML = `Sedang membaca KTP... ${progress}%`;
+                        }
+                    }
+                }
+            );
+
+            parseKtpText(result.data.text);
+
+        } catch (error) {
+            console.error(error);
+
+            statusBox.className = 'alert alert-danger mb-0';
+            statusBox.style.borderRadius = '12px';
+            statusBox.innerHTML = 'Gagal membaca KTP. Coba gunakan foto yang lebih jelas dan tidak blur.';
+        }
+    });
+
+});
+</script>
