@@ -69,50 +69,163 @@ function input_value($name) {
 </div>
 
 
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Langkah 2 - Pemetaan Wilayah</h6>
-    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const provinsiSelect = document.getElementById('provinsi');
+    const kabKotaSelect = document.getElementById('kab_kota');
+    const kecamatanSelect = document.getElementById('kecamatan');
+    const desaSelect = document.getElementById('desa_kelurahan');
 
-    <div class="card-body row">
+    const API_URL = 'https://www.emsifa.com/api-wilayah-indonesia/api';
 
-        <div class="form-group col-md-4">
-            <label>Provinsi</label>
-            <input name="provinsi" class="form-control" value="<?= input_value('provinsi') ?>">
-        </div>
+    function resetSelect(select, text) {
+        select.innerHTML = `<option value="">${text}</option>`;
+    }
 
-        <div class="form-group col-md-4">
-            <label>Kab/Kota</label>
-            <input name="kab_kota" class="form-control" value="<?= input_value('kab_kota') ?>">
-        </div>
+    function setLoading(select, text = 'Memuat data...') {
+        select.innerHTML = `<option value="">${text}</option>`;
+    }
 
-        <div class="form-group col-md-4">
-            <label>Kecamatan</label>
-            <input name="kecamatan" class="form-control" value="<?= input_value('kecamatan') ?>">
-        </div>
+    async function fetchWilayah(url) {
+        const response = await fetch(url);
 
-        <div class="form-group col-md-4">
-            <label>Desa/Kelurahan</label>
-            <input name="desa_kelurahan" class="form-control" value="<?= input_value('desa_kelurahan') ?>">
-        </div>
+        if (!response.ok) {
+            throw new Error('Gagal mengambil data wilayah');
+        }
 
-        <div class="form-group col-md-2">
-            <label>RT</label>
-            <input name="rt" class="form-control" value="<?= input_value('rt') ?>">
-        </div>
+        return await response.json();
+    }
 
-        <div class="form-group col-md-2">
-            <label>RW</label>
-            <input name="rw" class="form-control" value="<?= input_value('rw') ?>">
-        </div>
+    async function loadProvinsi() {
+        try {
+            setLoading(provinsiSelect, 'Memuat data provinsi...');
 
-        <div class="form-group col-md-4">
-            <label>TPS</label>
-            <input name="tps" class="form-control" value="<?= input_value('tps') ?>">
-        </div>
+            const data = await fetchWilayah(`${API_URL}/provinces.json`);
 
-    </div>
-</div>
+            provinsiSelect.innerHTML = '<option value="">Pilih Provinsi</option>';
+
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.id = item.id;
+                provinsiSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            resetSelect(provinsiSelect, 'Gagal memuat provinsi');
+            console.error(error);
+        }
+    }
+
+    async function loadKabKota(provinsiId) {
+        try {
+            setLoading(kabKotaSelect, 'Memuat kabupaten/kota...');
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            const data = await fetchWilayah(`${API_URL}/regencies/${provinsiId}.json`);
+
+            kabKotaSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.id = item.id;
+                kabKotaSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            resetSelect(kabKotaSelect, 'Gagal memuat kabupaten/kota');
+            console.error(error);
+        }
+    }
+
+    async function loadKecamatan(kabKotaId) {
+        try {
+            setLoading(kecamatanSelect, 'Memuat kecamatan...');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            const data = await fetchWilayah(`${API_URL}/districts/${kabKotaId}.json`);
+
+            kecamatanSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.id = item.id;
+                kecamatanSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            resetSelect(kecamatanSelect, 'Gagal memuat kecamatan');
+            console.error(error);
+        }
+    }
+
+    async function loadDesa(kecamatanId) {
+        try {
+            setLoading(desaSelect, 'Memuat desa/kelurahan...');
+
+            const data = await fetchWilayah(`${API_URL}/villages/${kecamatanId}.json`);
+
+            desaSelect.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.id = item.id;
+                desaSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            resetSelect(desaSelect, 'Gagal memuat desa/kelurahan');
+            console.error(error);
+        }
+    }
+
+    provinsiSelect.addEventListener('change', function () {
+        const selected = this.options[this.selectedIndex];
+        const provinsiId = selected.dataset.id;
+
+        resetSelect(kabKotaSelect, 'Pilih provinsi terlebih dahulu');
+        resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+        resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+        if (provinsiId) {
+            loadKabKota(provinsiId);
+        }
+    });
+
+    kabKotaSelect.addEventListener('change', function () {
+        const selected = this.options[this.selectedIndex];
+        const kabKotaId = selected.dataset.id;
+
+        resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+        resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+        if (kabKotaId) {
+            loadKecamatan(kabKotaId);
+        }
+    });
+
+    kecamatanSelect.addEventListener('change', function () {
+        const selected = this.options[this.selectedIndex];
+        const kecamatanId = selected.dataset.id;
+
+        resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+        if (kecamatanId) {
+            loadDesa(kecamatanId);
+        }
+    });
+
+    loadProvinsi();
+});
+</script>
 
 
 <div class="card shadow mb-4">
