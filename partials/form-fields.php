@@ -93,22 +93,22 @@ function input_value($name) {
             <label>Status Pernikahan</label>
             <select name="status_pernikahan" class="form-control">
                 <option value="">Pilih</option>
-                <option value="belum_menikah">Belum Menikah</option>
-                <option value="sudah_menikah">Sudah Menikah</option>
-                <option value="pernah_menikah">Pernah Menikah</option>
+                <option value="Belum Menikah">Belum Menikah</option>
+                <option value="Sudah Menikah">Sudah Menikah</option>
+                <option value="Pernah Menikah">Pernah Menikah</option>
             </select>
         </div>
 
         <div class="form-group col-md-3">
             <label>Agama</label>
             <select name="agama" class="form-control">
-                <option value="agama">Pilih</option>
-                <option value="islam">Islam</option>
-                <option value="kristen_protestan">Kristen Protestan</option>
-                <option value="katolik">katolik</option>
-                <option value="hindu">Hindu</option>
-                <option value="budha">Budha</option>
-                <option value="konghuchu">Konghuchu</option>
+                <option value="">Pilih</option>
+                <option value="Islam">Islam</option>
+                <option value="Kristen Protestan">Kristen Protestan</option>
+                <option value="Katolik">Katolik</option>
+                <option value="Hindu">Hindu</option>
+                <option value="Budha">Budha</option>
+                <option value="Konghuchu">Konghuchu</option>
             </select>
         </div>
 
