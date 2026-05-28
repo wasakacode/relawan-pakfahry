@@ -369,19 +369,68 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="card-body row">
 
         <div class="form-group col-md-4">
-            <label>Foto KTP</label>
-            <input type="file" name="foto_ktp" class="form-control-file">
+            <label>Foto KTP <span class="text-danger">*</span></label>
+            <input type="file" 
+                   name="foto_ktp" 
+                   class="form-control-file" 
+                   accept=".pdf,image/*" 
+                   required>
+            <small class="text-danger">
+                Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+            </small>
         </div>
 
         <div class="form-group col-md-4">
-            <label>Foto Diri</label>
-            <input type="file" name="foto_diri" class="form-control-file">
+            <label>Foto Diri <span class="text-danger">*</span></label>
+            <input type="file" 
+                   name="foto_diri" 
+                   class="form-control-file" 
+                   accept=".pdf,image/*" 
+                   required>
+            <small class="text-danger">
+                Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+            </small>
         </div>
 
         <div class="form-group col-md-4">
-            <label>Foto Bukti Rekrut</label>
-            <input type="file" name="foto_bukti_rekrut" class="form-control-file">
+            <label>Foto Bukti Rekrut <span class="text-danger">*</span></label>
+            <input type="file" 
+                   name="foto_bukti_rekrut" 
+                   class="form-control-file" 
+                   accept=".pdf,image/*" 
+                   required>
+            <small class="text-danger">
+                Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+            </small>
         </div>
 
     </div>
 </div>
+
+<?php
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    $files = ['foto_ktp', 'foto_diri', 'foto_bukti_rekrut'];
+    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+
+    foreach ($files as $file) {
+
+        if (isset($_FILES[$file]) && !empty($_FILES[$file]['name'])) {
+
+            $ext = strtolower(pathinfo($_FILES[$file]['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($ext, $allowed)) {
+                echo "<div class='alert alert-danger'>
+                        File $file harus berupa PDF atau gambar.
+                      </div>";
+            }
+
+        } else {
+
+            echo "<div class='alert alert-danger'>
+                    File $file wajib diupload.
+                  </div>";
+        }
+    }
+}
+?>
