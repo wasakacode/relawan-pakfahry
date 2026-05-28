@@ -35,24 +35,43 @@ function input_value($name) {
             <label>Jenis Kelamin</label>
             <select name="jenis_kelamin" class="form-control">
                 <option value="">Pilih</option>
-                <option>Laki-laki</option>
-                <option>Perempuan</option>
+                <option value="laki-laki">Laki-laki</option>
+                <option value="perempuan">Perempuan</option>
             </select>
         </div>
 
         <div class="form-group col-md-3">
             <label>Golongan Darah</label>
-            <input name="golongan_darah" class="form-control" value="<?= input_value('golongan_darah') ?>">
+            <select name="golongan_darah" class="form-control">
+                <option value="">Pilih</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="AB">AB</option>
+                <option value="O">O</option>
+            </select>
         </div>
 
         <div class="form-group col-md-3">
             <label>Status Pernikahan</label>
-            <input name="status_pernikahan" class="form-control" value="<?= input_value('status_pernikahan') ?>">
+            <select name="status_pernikahan" class="form-control">
+                <option value="">Pilih</option>
+                <option value="belum_menikah">Belum Menikah</option>
+                <option value="sudah_menikah">Sudah Menikah</option>
+                <option value="pernah_menikah">Pernah Menikah</option>
+            </select>
         </div>
 
         <div class="form-group col-md-3">
             <label>Agama</label>
-            <input name="agama" class="form-control" value="<?= input_value('agama') ?>">
+            <select name="agama" class="form-control">
+                <option value="agama">Pilih</option>
+                <option value="islam">Islam</option>
+                <option value="kristen_protestan">Kristen Protestan</option>
+                <option value="katolik">katolik</option>
+                <option value="hindu">Hindu</option>
+                <option value="budha">Budha</option>
+                <option value="konghuchu">Konghuchu</option>
+            </select>
         </div>
 
         <div class="form-group col-md-3">
