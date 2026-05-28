@@ -63,6 +63,14 @@ function sortLink($column, $label)
         </a>
     ';
 }
+
+$search = '';
+
+if(isset($_GET['search'])){
+    $search = $_GET['search'];
+}
+
+echo $search;
 ?>
 
 <h1 class="h3 mb-4 text-gray-800">Data Relawan</h1>
@@ -169,10 +177,7 @@ function sortLink($column, $label)
                         <th>No</th>
                         <th>NIK</th>
                         <th>Nama</th>
-                        <th>Username</th>
-                        <th>Kecamatan</th>
-                        <th>Desa</th>
-                        <th>TPS</th>
+                        <th>Detail</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -194,6 +199,7 @@ function sortLink($column, $label)
                                         <i class="fas fa-eye"></i> Lihat Data
                                     </a>
                                 </td>
+                                <td><?= e($r['status_verifikasi']) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
