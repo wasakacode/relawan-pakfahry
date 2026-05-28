@@ -343,6 +343,8 @@ function sortLink($column, $label)
                             <?= sortLink('tps', 'TPS') ?>
                         </th>
 
+                        <th>Detail</th>
+
                         <th>Diinput Oleh</th>
 
                     </tr>
@@ -368,6 +370,16 @@ function sortLink($column, $label)
 
                                 <td><?= e($r['tps']) ?></td>
 
+                                <td>
+                                    <a
+                                        href="<?= url('dukungan/detail.php?id=' . $r['id']) ?>"
+                                        class="btn btn-sm btn-info">
+
+                                        <i class="fas fa-eye"></i> Lihat Data
+
+                                    </a>
+                                </td>
+
                                 <td><?= e($r['pembuat']) ?></td>
 
                             </tr>
@@ -377,7 +389,7 @@ function sortLink($column, $label)
                     <?php else: ?>
 
                         <tr>
-                            <td colspan="7" class="text-center text-muted">
+                            <td colspan="8" class="text-center text-muted">
                                 Data dukungan tidak ditemukan.
                             </td>
                         </tr>
