@@ -7,26 +7,139 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-$where = "WHERE p.type = 'dukungan'";
+/*
+|--------------------------------------------------------------------------
+| Filter & Search
+|--------------------------------------------------------------------------
+*/
 
-// Relawan hanya lihat datanya sendiri
+$search    = $_GET['search'] ?? '';
+$kecamatan = $_GET['kecamatan'] ?? '';
+$desa      = $_GET['desa'] ?? '';
+
+/*
+|--------------------------------------------------------------------------
+| Sorting
+|--------------------------------------------------------------------------
+*/
+
+$sortBy = $_GET['sort_by'] ?? 'created_at';
+$order  = $_GET['order'] ?? 'DESC';
+
+/*
+|--------------------------------------------------------------------------
+| Validasi Sorting
+|--------------------------------------------------------------------------
+*/
+
+$allowedColumns = [
+    'nik',
+    'nama_lengkap',
+    'kecamatan',
+    'desa_kelurahan',
+    'tps',
+    'created_at'
+];
+
+if (!in_array($sortBy, $allowedColumns)) {
+    $sortBy = 'created_at';
+}
+
+$allowedOrder = ['ASC', 'DESC'];
+
+if (!in_array($order, $allowedOrder)) {
+    $order = 'DESC';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Query
+|--------------------------------------------------------------------------
+*/
+
+$where = "WHERE p.type = 'dukungan'";
+$params = [];
+
+/*
+|--------------------------------------------------------------------------
+| Relawan hanya lihat datanya sendiri
+|--------------------------------------------------------------------------
+*/
+
 if (current_user()['role'] === 'relawan') {
+
     $where .= " AND p.created_by = ?";
     $params[] = current_user()['id'];
 }
 
-$stmt = $pdo->prepare("SELECT p.*, u.name pembuat 
-                       FROM profiles p 
-                       LEFT JOIN users u ON p.created_by = u.id 
-                       $where 
-                       ORDER BY p.created_at DESC");
+/*
+|--------------------------------------------------------------------------
+| Search
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($search)) {
+
+    $where .= "
+        AND (
+            p.nama_lengkap LIKE ?
+            OR p.nik LIKE ?
+        )
+    ";
+
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+
+/*
+|--------------------------------------------------------------------------
+| Filter Kecamatan
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($kecamatan)) {
+
+    $where .= " AND p.kecamatan = ? ";
+    $params[] = $kecamatan;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Filter Desa
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($desa)) {
+
+    $where .= " AND p.desa_kelurahan = ? ";
+    $params[] = $desa;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Query Final
+|--------------------------------------------------------------------------
+*/
+
+$sql = "
+    SELECT p.*, u.name AS pembuat
+    FROM profiles p
+    LEFT JOIN users u ON p.created_by = u.id
+    $where
+    ORDER BY $sortBy $order
+";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
 $rows = $stmt->fetchAll();
 
-// Ambil Kecamatan
+/*
+|--------------------------------------------------------------------------
+| Ambil Kecamatan
+|--------------------------------------------------------------------------
+*/
+
 $kecamatanStmt = $pdo->query("
     SELECT DISTINCT kecamatan
     FROM profiles
@@ -36,7 +149,12 @@ $kecamatanStmt = $pdo->query("
 
 $kecamatanList = $kecamatanStmt->fetchAll();
 
-// Ambil Desa
+/*
+|--------------------------------------------------------------------------
+| Ambil Desa
+|--------------------------------------------------------------------------
+*/
+
 $desaStmt = $pdo->query("
     SELECT DISTINCT desa_kelurahan
     FROM profiles
@@ -46,7 +164,12 @@ $desaStmt = $pdo->query("
 
 $desaList = $desaStmt->fetchAll();
 
-// Function Sort Link
+/*
+|--------------------------------------------------------------------------
+| Function Sort Link
+|--------------------------------------------------------------------------
+*/
+
 function sortLink($column, $label)
 {
     $currentSortBy = $_GET['sort_by'] ?? 'created_at';
@@ -193,31 +316,74 @@ function sortLink($column, $label)
 
         <!-- TABLE -->
         <div class="table-responsive">
-            <table class="table table-bordered" width="100%">
-                <thead>
+            <table class="table table-bordered table-hover" width="100%">
+
+                <thead style="background:#f1faff;">
                     <tr>
+
                         <th>No</th>
-                        <th>NIK</th>
-                        <th>Nama</th>
-                        <th>Kecamatan</th>
-                        <th>Desa</th>
-                        <th>TPS</th>
+
+                        <th>
+                            <?= sortLink('nik', 'NIK') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('nama_lengkap', 'Nama') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('kecamatan', 'Kecamatan') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('desa_kelurahan', 'Desa') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('tps', 'TPS') ?>
+                        </th>
+
                         <th>Diinput Oleh</th>
+
                     </tr>
                 </thead>
 
                 <tbody>
-                    <?php foreach ($rows as $i => $r): ?>
+
+                    <?php if (count($rows) > 0): ?>
+
+                        <?php foreach ($rows as $i => $r): ?>
+
+                            <tr>
+
+                                <td><?= $i + 1 ?></td>
+
+                                <td><?= e($r['nik']) ?></td>
+
+                                <td><?= e($r['nama_lengkap']) ?></td>
+
+                                <td><?= e($r['kecamatan']) ?></td>
+
+                                <td><?= e($r['desa_kelurahan']) ?></td>
+
+                                <td><?= e($r['tps']) ?></td>
+
+                                <td><?= e($r['pembuat']) ?></td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                    <?php else: ?>
+
                         <tr>
-                            <td><?= $i + 1 ?></td>
-                            <td><?= e($r['nik']) ?></td>
-                            <td><?= e($r['nama_lengkap']) ?></td>
-                            <td><?= e($r['kecamatan']) ?></td>
-                            <td><?= e($r['desa_kelurahan']) ?></td>
-                            <td><?= e($r['tps']) ?></td>
-                            <td><?= e($r['pembuat']) ?></td>
+                            <td colspan="7" class="text-center text-muted">
+                                Data dukungan tidak ditemukan.
+                            </td>
                         </tr>
-                    <?php endforeach; ?>
+
+                    <?php endif; ?>
+
                 </tbody>
 
             </table>

@@ -7,15 +7,127 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-$stmt = $pdo->query("SELECT p.*, u.username 
-                    FROM profiles p 
-                    LEFT JOIN users u ON p.user_id = u.id 
-                    WHERE p.type = 'relawan' 
-                    ORDER BY p.created_at DESC");
+/*
+|--------------------------------------------------------------------------
+| Filter & Search
+|--------------------------------------------------------------------------
+*/
+
+$search    = $_GET['search'] ?? '';
+$kecamatan = $_GET['kecamatan'] ?? '';
+$status    = $_GET['status_verifikasi'] ?? '';
+
+/*
+|--------------------------------------------------------------------------
+| Sorting
+|--------------------------------------------------------------------------
+*/
+
+$sortBy = $_GET['sort_by'] ?? 'created_at';
+$order  = $_GET['order'] ?? 'DESC';
+
+/*
+|--------------------------------------------------------------------------
+| Validasi Sorting
+|--------------------------------------------------------------------------
+*/
+
+$allowedColumns = [
+    'nik',
+    'nama_lengkap',
+    'status_verifikasi',
+    'created_at'
+];
+
+if (!in_array($sortBy, $allowedColumns)) {
+    $sortBy = 'created_at';
+}
+
+$allowedOrder = ['ASC', 'DESC'];
+
+if (!in_array($order, $allowedOrder)) {
+    $order = 'DESC';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Query
+|--------------------------------------------------------------------------
+*/
+
+$sql = "
+    SELECT p.*, u.username
+    FROM profiles p
+    LEFT JOIN users u ON p.user_id = u.id
+    WHERE p.type = 'relawan'
+";
+
+$params = [];
+
+/*
+|--------------------------------------------------------------------------
+| Search
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($search)) {
+
+    $sql .= "
+        AND (
+            p.nama_lengkap LIKE :search
+            OR u.username LIKE :search
+            OR p.nik LIKE :search
+        )
+    ";
+
+    $params['search'] = "%$search%";
+}
+
+/*
+|--------------------------------------------------------------------------
+| Filter Kecamatan
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($kecamatan)) {
+
+    $sql .= " AND p.kecamatan = :kecamatan ";
+
+    $params['kecamatan'] = $kecamatan;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Filter Status
+|--------------------------------------------------------------------------
+*/
+
+if (!empty($status)) {
+
+    $sql .= " AND p.status_verifikasi = :status ";
+
+    $params['status'] = $status;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Sorting
+|--------------------------------------------------------------------------
+*/
+
+$sql .= " ORDER BY $sortBy $order ";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 
 $rows = $stmt->fetchAll();
 
-// Ambil daftar kecamatan unik
+/*
+|--------------------------------------------------------------------------
+| Ambil daftar kecamatan unik
+|--------------------------------------------------------------------------
+*/
+
 $kecamatanStmt = $pdo->query("
     SELECT DISTINCT kecamatan
     FROM profiles
@@ -25,7 +137,12 @@ $kecamatanStmt = $pdo->query("
 
 $kecamatanList = $kecamatanStmt->fetchAll();
 
-// Function Sort Link
+/*
+|--------------------------------------------------------------------------
+| Function Sort Link
+|--------------------------------------------------------------------------
+*/
+
 function sortLink($column, $label)
 {
     $currentSortBy = $_GET['sort_by'] ?? 'created_at';
@@ -63,14 +180,6 @@ function sortLink($column, $label)
         </a>
     ';
 }
-
-$search = '';
-
-if(isset($_GET['search'])){
-    $search = $_GET['search'];
-}
-
-echo $search;
 ?>
 
 <h1 class="h3 mb-4 text-gray-800">Data Relawan</h1>
@@ -90,6 +199,7 @@ echo $search;
 
     <div class="card-body">
 
+        <!-- FILTER -->
         <form method="GET" class="mb-4">
 
             <div class="row">
@@ -127,18 +237,23 @@ echo $search;
 
                 <!-- Status -->
                 <div class="col-md-2 mb-2">
-                    <select name="status" class="form-control">
+                    <select name="status_verifikasi" class="form-control">
 
                         <option value="">-- Status --</option>
 
-                        <option value="verified"
-                            <?= $status == 'verified' ? 'selected' : '' ?>>
-                            Verified
+                        <option value="terdaftar"
+                            <?= $status == 'terdaftar' ? 'selected' : '' ?>>
+                            Terdaftar
                         </option>
 
                         <option value="pending"
                             <?= $status == 'pending' ? 'selected' : '' ?>>
                             Pending
+                        </option>
+
+                        <option value="ditolak"
+                            <?= $status == 'ditolak' ? 'selected' : '' ?>>
+                            Ditolak
                         </option>
 
                     </select>
@@ -148,6 +263,7 @@ echo $search;
                 <div class="col-md-3 mb-2">
                     <div class="d-flex">
 
+                        <!-- Filter -->
                         <button type="submit"
                             class="btn btn-primary flex-fill mr-2">
 
@@ -155,6 +271,7 @@ echo $search;
 
                         </button>
 
+                        <!-- Reset -->
                         <a href="<?= strtok($_SERVER["REQUEST_URI"], '?') ?>"
                             class="btn btn-secondary flex-fill">
 
@@ -169,46 +286,88 @@ echo $search;
 
         </form>
 
+        <!-- TABLE -->
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
                 <thead style="background:#f1faff;">
                     <tr>
+
                         <th>No</th>
-                        <th>NIK</th>
-                        <th>Nama</th>
+
+                        <th>
+                            <?= sortLink('nik', 'NIK') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('nama_lengkap', 'Nama') ?>
+                        </th>
+
                         <th>Detail</th>
-                        <th>Status</th>
+
+                        <th>
+                            <?= sortLink('status_verifikasi', 'Status') ?>
+                        </th>
+
                     </tr>
                 </thead>
 
                 <tbody>
+
                     <?php if (count($rows) > 0): ?>
+
                         <?php foreach ($rows as $i => $r): ?>
+
                             <tr>
+
                                 <td><?= $i + 1 ?></td>
+
                                 <td>
                                     <b><?= e($r['nik']) ?></b>
                                 </td>
+
                                 <td><?= e($r['nama_lengkap']) ?></td>
+
                                 <td>
-                                    <a 
-                                        href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>" 
-                                        class="btn btn-sm btn-info"
-                                    >
+                                    <a
+                                        href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
+                                        class="btn btn-sm btn-info">
+
                                         <i class="fas fa-eye"></i> Lihat Data
+
                                     </a>
                                 </td>
-                                <td><?= e($r['status_verifikasi']) ?></td>
+
+                                <td>
+
+                                    <span class="badge badge-<?=
+                                                                    $r['status_verifikasi'] == 'terdaftar'
+                                                                        ? 'success'
+                                                                        : ($r['status_verifikasi'] == 'pending'
+                                                                            ? 'warning'
+                                                                            : 'danger')
+                                                                    ?>">
+
+                                        <?= e($r['status_verifikasi']) ?>
+
+                                    </span>
+
+                                </td>
+
                             </tr>
+
                         <?php endforeach; ?>
+
                     <?php else: ?>
+
                         <tr>
-                            <td colspan="4" class="text-center text-muted">
+                            <td colspan="5" class="text-center text-muted">
                                 Belum ada data relawan.
                             </td>
                         </tr>
+
                     <?php endif; ?>
+
                 </tbody>
 
             </table>
