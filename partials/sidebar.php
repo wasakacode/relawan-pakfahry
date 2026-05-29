@@ -68,6 +68,15 @@
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
         <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-users.php') ?>">
+                <i class="fas fa-users"></i>
+                <span>Data Users</span>
+            </a>
+        </li>
+    <?php endif; ?>
+
+    <?php if (current_user()['role'] === 'superadmin'): ?>
+        <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-admin.php') ?>">
                 <i class="fas fa-users-cog"></i>
                 <span>Data Admin</span>

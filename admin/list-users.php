@@ -13,9 +13,8 @@ require_once __DIR__ . '/../partials/topbar.php';
 |--------------------------------------------------------------------------
 */
 
-$search    = $_GET['search'] ?? '';
-$kecamatan = $_GET['kecamatan'] ?? '';
-$status    = $_GET['status_verifikasi'] ?? '';
+$search = $_GET['search'] ?? '';
+$role   = $_GET['role'] ?? '';
 
 /*
 |--------------------------------------------------------------------------
@@ -33,10 +32,12 @@ $order  = $_GET['order'] ?? 'DESC';
 */
 
 $allowedColumns = [
-    'nik',
-    'nama_lengkap',
-    'status_verifikasi',
-    'created_at'
+    'id',
+    'name',
+    'username',
+    'role',
+    'created_at',
+    'updated_at'
 ];
 
 if (!in_array($sortBy, $allowedColumns)) {
@@ -56,10 +57,15 @@ if (!in_array($order, $allowedOrder)) {
 */
 
 $sql = "
-    SELECT p.*, u.username
-    FROM profiles p
-    LEFT JOIN users u ON p.user_id = u.id
-    WHERE p.type = 'relawan'
+    SELECT 
+        id,
+        name,
+        username,
+        role,
+        created_at,
+        updated_at
+    FROM users
+    WHERE role IN ('superadmin', 'admin', 'relawan')
 ";
 
 $params = [];
@@ -74,9 +80,8 @@ if (!empty($search)) {
 
     $sql .= "
         AND (
-            p.nama_lengkap LIKE :search
-            OR u.username LIKE :search
-            OR p.nik LIKE :search
+            name LIKE :search
+            OR username LIKE :search
         )
     ";
 
@@ -85,28 +90,15 @@ if (!empty($search)) {
 
 /*
 |--------------------------------------------------------------------------
-| Filter Kecamatan
+| Filter Role
 |--------------------------------------------------------------------------
 */
 
-if (!empty($kecamatan)) {
+if (!empty($role)) {
 
-    $sql .= " AND p.kecamatan = :kecamatan ";
+    $sql .= " AND role = :role ";
 
-    $params['kecamatan'] = $kecamatan;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Filter Status
-|--------------------------------------------------------------------------
-*/
-
-if (!empty($status)) {
-
-    $sql .= " AND p.status_verifikasi = :status ";
-
-    $params['status'] = $status;
+    $params['role'] = $role;
 }
 
 /*
@@ -117,6 +109,12 @@ if (!empty($status)) {
 
 $sql .= " ORDER BY $sortBy $order ";
 
+/*
+|--------------------------------------------------------------------------
+| Execute Query
+|--------------------------------------------------------------------------
+*/
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
@@ -124,18 +122,18 @@ $rows = $stmt->fetchAll();
 
 /*
 |--------------------------------------------------------------------------
-| Ambil daftar kecamatan unik
+| Ambil daftar role unik
 |--------------------------------------------------------------------------
 */
 
-$kecamatanStmt = $pdo->query("
-    SELECT DISTINCT kecamatan
-    FROM profiles
-    WHERE type = 'relawan'
-    ORDER BY kecamatan ASC
+$roleStmt = $pdo->query("
+    SELECT DISTINCT role
+    FROM users
+    WHERE role IN ('admin', 'relawan')
+    ORDER BY role ASC
 ");
 
-$kecamatanList = $kecamatanStmt->fetchAll();
+$roleList = $roleStmt->fetchAll();
 
 /*
 |--------------------------------------------------------------------------
@@ -182,19 +180,15 @@ function sortLink($column, $label)
 }
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Data Relawan</h1>
+<h1 class="h3 mb-4 text-gray-800">Data Pengguna</h1>
 
 <div class="card content-card shadow mb-4">
 
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <h6 class="m-0 font-weight-bold">
             <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
-            Daftar Relawan
+            Daftar Pengguna
         </h6>
-
-        <a href="<?= url('admin/create-relawan.php') ?>" class="btn btn-sm btn-primary">
-            <i class="fas fa-user-plus"></i> Tambah Relawan
-        </a>
     </div>
 
     <div class="card-body">
@@ -210,51 +204,27 @@ function sortLink($column, $label)
                         type="text"
                         name="search"
                         class="form-control"
-                        placeholder="Cari nama, username, atau NIK..."
+                        placeholder="Cari nama atau username..."
                         value="<?= e($search) ?>">
                 </div>
 
-                <!-- Kecamatan -->
+                <!-- Role -->
                 <div class="col-md-3 mb-2">
-                    <select name="kecamatan" class="form-control">
+                    <select name="role" class="form-control">
 
-                        <option value="">-- Semua Kecamatan --</option>
+                        <option value="">-- Semua Role --</option>
 
-                        <?php foreach ($kecamatanList as $k): ?>
+                        <?php foreach ($roleList as $r): ?>
 
                             <option
-                                value="<?= e($k['kecamatan']) ?>"
-                                <?= $kecamatan == $k['kecamatan'] ? 'selected' : '' ?>>
+                                value="<?= e($r['role']) ?>"
+                                <?= $role == $r['role'] ? 'selected' : '' ?>>
 
-                                <?= e($k['kecamatan']) ?>
+                                <?= e(ucfirst($r['role'])) ?>
 
                             </option>
 
                         <?php endforeach; ?>
-
-                    </select>
-                </div>
-
-                <!-- Status -->
-                <div class="col-md-2 mb-2">
-                    <select name="status_verifikasi" class="form-control">
-
-                        <option value="">-- Status --</option>
-
-                        <option value="terdaftar"
-                            <?= $status == 'terdaftar' ? 'selected' : '' ?>>
-                            Terdaftar
-                        </option>
-
-                        <option value="pending"
-                            <?= $status == 'pending' ? 'selected' : '' ?>>
-                            Pending
-                        </option>
-
-                        <option value="ditolak"
-                            <?= $status == 'ditolak' ? 'selected' : '' ?>>
-                            Ditolak
-                        </option>
 
                     </select>
                 </div>
@@ -293,20 +263,28 @@ function sortLink($column, $label)
                 <thead style="background:#f1faff;">
                     <tr>
 
-                        <th>No</th>
-
                         <th>
-                            <?= sortLink('nik', 'NIK') ?>
+                            <?= sortLink('id', 'No') ?>
                         </th>
 
                         <th>
-                            <?= sortLink('nama_lengkap', 'Nama') ?>
+                            <?= sortLink('name', 'Nama') ?>
                         </th>
 
-                        <th>Detail</th>
+                        <th>
+                            <?= sortLink('username', 'Username') ?>
+                        </th>
 
                         <th>
-                            <?= sortLink('status_verifikasi', 'Status') ?>
+                            <?= sortLink('role', 'Role') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('created_at', 'Tanggal Dibuat') ?>
+                        </th>
+
+                        <th>
+                            <?= sortLink('updated_at', 'Tanggal Diubah') ?>
                         </th>
 
                     </tr>
@@ -322,37 +300,15 @@ function sortLink($column, $label)
 
                                 <td><?= $i + 1 ?></td>
 
-                                <td>
-                                    <b><?= e($r['nik']) ?></b>
-                                </td>
+                                <td><?= e($r['name']) ?></td>
 
-                                <td><?= e($r['nama_lengkap']) ?></td>
+                                <td><?= e($r['username']) ?></td>
+                                
+                                <td><?= e($r['role']) ?></td>
 
-                                <td>
-                                    <a
-                                        href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
-                                        class="btn btn-sm btn-info">
+                                <td><?= e($r['created_at']) ?></td>
 
-                                        <i class="fas fa-eye"></i> Lihat Data
-
-                                    </a>
-                                </td>
-
-                                <td>
-
-                                    <span class="badge badge-<?=
-                                                                    $r['status_verifikasi'] == 'terdaftar'
-                                                                        ? 'success'
-                                                                        : ($r['status_verifikasi'] == 'pending'
-                                                                            ? 'warning'
-                                                                            : 'danger')
-                                                                    ?>">
-
-                                        <?= e($r['status_verifikasi']) ?>
-
-                                    </span>
-
-                                </td>
+                                <td><?= e($r['updated_at']) ?></td>
 
                             </tr>
 
@@ -361,8 +317,8 @@ function sortLink($column, $label)
                     <?php else: ?>
 
                         <tr>
-                            <td colspan="5" class="text-center text-muted">
-                                Belum ada data relawan.
+                            <td colspan="6" class="text-center text-muted">
+                                Belum ada data.
                             </td>
                         </tr>
 
