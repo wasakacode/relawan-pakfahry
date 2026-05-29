@@ -20,6 +20,32 @@ if ($role === 'superadmin') {
     $welcomeRole = 'Relawan';
     $welcomeText = 'Anda dapat melihat profil pendaftaran diri dan menambahkan data dukungan yang berhasil dikumpulkan.';
 }
+
+$stmt = $pdo->query("
+    SELECT 
+        kab_kota,
+
+        SUM(CASE WHEN type='relawan' THEN 1 ELSE 0 END) AS total_relawan,
+
+        SUM(CASE WHEN type='dukungan' THEN 1 ELSE 0 END) AS total_dukungan
+
+    FROM profiles
+    GROUP BY kab_kota
+    ORDER BY kab_kota ASC
+");
+
+$chartData = $stmt->fetchAll();
+
+$labels = [];
+$relawanData = [];
+$dukunganData = [];
+
+foreach ($chartData as $row) {
+    $labels[] = $row['kab_kota'];
+    $relawanData[] = (int)$row['total_relawan'];
+    $dukunganData[] = (int)$row['total_dukungan'];
+}
+
 ?>
 
 <div class="dashboard-hero">
@@ -36,6 +62,24 @@ if ($role === 'superadmin') {
             Anda masuk sebagai <b><?= e($welcomeRole) ?></b>. 
             <?= e($welcomeText) ?>
         </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Bar Chart Relawan & Dukungan per Kabupaten/Kota
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <canvas id="kabupatenChart" height="100"></canvas>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -251,4 +295,52 @@ if ($role === 'superadmin') {
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('kabupatenChart');
+
+new Chart(ctx, {
+    type: 'bar',
+
+    data: {
+        labels: <?= json_encode($labels) ?>,
+
+        datasets: [
+            {
+                label: 'Relawan',
+                data: <?= json_encode($relawanData) ?>,
+                backgroundColor: '#1cc88a',
+                borderRadius: 6
+            },
+
+            {
+                label: 'Dukungan',
+                data: <?= json_encode($dukunganData) ?>,
+                backgroundColor: '#36b9cc',
+                borderRadius: 6
+            }
+        ]
+    },
+
+    options: {
+        responsive: true,
+
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
+        }
+    }
+});
+</script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
