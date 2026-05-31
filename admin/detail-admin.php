@@ -29,7 +29,8 @@ $stmtFamily = $pdo->prepare("SELECT * FROM family_members WHERE profile_id = ?")
 $stmtFamily->execute([$data['id']]);
 $families = $stmtFamily->fetchAll();
 
-function tampilkanFileDokumentasi($file, $label) {
+function tampilkanFileDokumentasi($file, $label)
+{
     if (empty($file)) {
         echo '<div class="doc-card">';
         echo '<div class="doc-label">' . e($label) . '</div>';
@@ -79,13 +80,13 @@ require_once __DIR__ . '/../partials/topbar.php';
         border-radius: 28px;
         overflow: hidden;
         margin: 0 auto 18px;
-        background: linear-gradient(135deg,#3db7ee,#118dd0);
+        background: linear-gradient(135deg, #3db7ee, #118dd0);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         font-size: 42px;
-        box-shadow: 0 16px 30px rgba(17,141,208,.25);
+        box-shadow: 0 16px 30px rgba(17, 141, 208, .25);
     }
 
     .profile-photo-box img {
@@ -122,7 +123,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     .doc-image:hover {
         transform: scale(1.02);
-        box-shadow: 0 12px 28px rgba(17,141,208,.18);
+        box-shadow: 0 12px 28px rgba(17, 141, 208, .18);
     }
 
     .doc-pdf {
@@ -225,7 +226,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                 </a>
 
                 <form action="<?= url('admin/delete-admin.php') ?>" method="POST"
-                      onsubmit="return confirm('Yakin ingin menghapus admin ini? Akun admin juga akan terhapus.');">
+                    onsubmit="return confirm('Yakin ingin menghapus admin ini? Akun admin juga akan terhapus.');">
                     <input type="hidden" name="id" value="<?= e($data['id']) ?>">
 
                     <button type="submit" class="btn btn-danger btn-sm btn-block">

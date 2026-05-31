@@ -41,7 +41,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Buat Admin / Koordinator Kecamatan</h1>
+<h1 class="h3 mb-4 text-gray-800">Buat Admin (Koordinator Kecamatan)</h1>
 
 <form method="POST" enctype="multipart/form-data">
 
