@@ -21,29 +21,54 @@ if ($role === 'superadmin') {
     $welcomeText = 'Anda dapat melihat profil pendaftaran diri dan menambahkan data dukungan yang berhasil dikumpulkan.';
 }
 
+
 $stmt = $pdo->query("
-    SELECT 
+    SELECT
         kab_kota,
-
         SUM(CASE WHEN type='relawan' THEN 1 ELSE 0 END) AS total_relawan,
-
         SUM(CASE WHEN type='dukungan' THEN 1 ELSE 0 END) AS total_dukungan
-
     FROM profiles
     GROUP BY kab_kota
-    ORDER BY kab_kota ASC
 ");
 
-$chartData = $stmt->fetchAll();
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$dataMap = [];
+
+
+$allKabKota = [
+    'KOTA BANJARMASIN',
+    'KOTA BANJARBARU',
+    'KABUPATEN BANJAR',
+    'KABUPATEN BARITO KUALA',
+    'KABUPATEN TAPIN',
+    'KABUPATEN HULU SUNGAI SELATAN',
+    'KABUPATEN HULU SUNGAI TENGAH',
+    'KABUPATEN HULU SUNGAI UTARA',
+    'KABUPATEN TABALONG',
+    'KABUPATEN BALANGAN',
+    'KABUPATEN TANAH LAUT',
+    'KABUPATEN TANAH BUMBU',
+    'KABUPATEN KOTA BARU'
+];
+
+
+foreach ($rows as $row) {
+    $dataMap[$row['kab_kota']] = [
+        'relawan' => (int)$row['total_relawan'],
+        'dukungan' => (int)$row['total_dukungan']
+    ];
+}
 
 $labels = [];
 $relawanData = [];
 $dukunganData = [];
 
-foreach ($chartData as $row) {
-    $labels[] = $row['kab_kota'];
-    $relawanData[] = (int)$row['total_relawan'];
-    $dukunganData[] = (int)$row['total_dukungan'];
+foreach ($allKabKota as $kabKota) {
+    $labels[] = $kabKota;
+
+    $relawanData[] = $dataMap[$kabKota]['relawan'] ?? 0;
+    $dukunganData[] = $dataMap[$kabKota]['dukungan'] ?? 0;
 }
 
 ?>

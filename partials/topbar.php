@@ -40,6 +40,11 @@
                         Dashboard
                     </a>
 
+                    <a class="dropdown-item" href="<?= url('auth/reset_password.php') ?>">
+                        <i class="fas fa-key fa-sm fa-fw mr-2 text-gray-400"></i>
+                        Reset Password
+                    </a>
+
                     <div class="dropdown-divider"></div>
 
                     <a class="dropdown-item" href="<?= url('logout.php') ?>">

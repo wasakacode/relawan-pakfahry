@@ -359,6 +359,23 @@ require_login();
                 font-size: 24px;
             }
         }
+
+        #wrapper {
+    display: flex !important;
+}
+
+#content-wrapper {
+    flex: 1 !important;
+}
+
+.topbar {
+    position: relative;
+    z-index: 1050;
+}
+
+.dropdown-menu {
+    z-index: 99999 !important;
+}
     </style>
 </head>
 
