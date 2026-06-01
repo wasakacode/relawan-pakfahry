@@ -1,5 +1,6 @@
 <?php
-function upload_file($field, $folder) {
+function upload_file($field, $folder)
+{
     if (!isset($_FILES[$field]) || $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
         return null;
     }
@@ -25,7 +26,8 @@ function upload_file($field, $folder) {
     return 'uploads/' . $folder . '/' . $name;
 }
 
-function create_profile($pdo, $type, $userId = null) {
+function create_profile($pdo, $type, $userId = null)
+{
     $stmt = $pdo->prepare("INSERT INTO profiles (
         type, user_id, created_by, nik, nama_lengkap, tempat_lahir, tanggal_lahir,
         jenis_kelamin, golongan_darah, status_pernikahan, agama, pekerjaan, alamat,
@@ -70,21 +72,44 @@ function create_profile($pdo, $type, $userId = null) {
 
     $profileId = $pdo->lastInsertId();
 
-    if (!empty($_POST['keluarga_nama']) || !empty($_POST['keluarga_nik'])) {
-        $fam = $pdo->prepare("INSERT INTO family_members 
-            (profile_id, hubungan_keluarga, nik, nama_lengkap, tempat_lahir, tanggal_lahir) 
-            VALUES (?,?,?,?,?,?)");
+    if (!empty($_POST['keluarga_nik'])) {
 
-        $fam->execute([
-            $profileId,
-            $_POST['hubungan_keluarga'] ?: null,
-            $_POST['keluarga_nik'] ?: null,
-            $_POST['keluarga_nama'] ?: null,
-            $_POST['keluarga_tempat_lahir'] ?: null,
-            $_POST['keluarga_tanggal_lahir'] ?: null
-        ]);
+        $fam = $pdo->prepare("
+        INSERT INTO family_members
+        (
+            profile_id,
+            hubungan_keluarga,
+            nik,
+            nama_lengkap,
+            tempat_lahir,
+            tanggal_lahir
+            jenis_kelamin,
+            agama,
+            pekerjaan
+        )
+        VALUES (?,?,?,?,?,?,?,?,?)
+    ");
+
+        foreach ($_POST['keluarga_nik'] as $i => $nik) {
+
+            // Skip jika kosong
+            if (empty($nik)) {
+                continue;
+            }
+
+            $fam->execute([
+                $profileId,
+                $_POST['hubungan_keluarga'][$i] ?? null,
+                $_POST['keluarga_nik'][$i] ?? null,
+                $_POST['keluarga_nama'][$i] ?? null,
+                $_POST['keluarga_tempat_lahir'][$i] ?? null,
+                $_POST['keluarga_tanggal_lahir'][$i] ?? null,
+                $_POST['keluarga_jenis_kelamin'][$i] ?? null,
+                $_POST['keluarga_agama'][$i] ?? null,
+                $_POST['keluarga_pekerjaan'][$i] ?? null
+            ]);
+        }
     }
 
     return $profileId;
 }
-?>

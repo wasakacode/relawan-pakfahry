@@ -127,7 +127,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 text-gray-800 mb-0">Edit Data Admin</h1>
+    <h1 class="h3 text-gray-800 mb-0">Edit Data Admin (Koordinator Kecamatan)</h1>
 
     <a href="<?= url('admin/detail-admin.php?id=' . $data['id']) ?>" class="btn btn-secondary btn-sm">
         <i class="fas fa-arrow-left"></i> Kembali
