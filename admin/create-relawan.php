@@ -61,8 +61,26 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-6">
                 <label>Password</label>
-                <input type="password" name="password" class="form-control" required>
+
+                <div class="input-group">
+                    <input
+                        type="password"
+                        name="password"
+                        id="password"
+                        class="form-control"
+                        required>
+
+                    <div class="input-group-append">
+                        <button
+                            class="btn btn-outline-secondary"
+                            type="button"
+                            id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
+
 
         </div>
     </div>
@@ -73,4 +91,22 @@ require_once __DIR__ . '/../partials/topbar.php';
 
 </form>
 
+<script>
+document.getElementById('togglePassword').addEventListener('click', function () {
+
+    const password = document.getElementById('password');
+    const icon = this.querySelector('i');
+
+    if (password.type === 'password') {
+        password.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        password.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+
+});
+</script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
