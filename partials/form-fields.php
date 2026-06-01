@@ -407,7 +407,7 @@ function input_value($name)
                 <div class="form-group col-md-4">
                     <label>Hubungan Keluarga</label>
                     <select
-                        name="keluarga_hubungan[]"
+                        name="keluarga_hubungan_keluarga[]"
                         class="form-control">
                         <option value="">Pilih Hubungan</option>
                         <option value="Suami">Suami</option>
@@ -456,17 +456,6 @@ function input_value($name)
                         type="date"
                         name="keluarga_tanggal_lahir[]"
                         class="form-control">
-                </div>
-
-                <div class="form-group col-md-4">
-                    <label>Jenis Kelamin</label>
-                    <select
-                        name="keluarga_jenis_kelamin[]"
-                        class="form-control">
-                        <option value="">Pilih Jenis Kelamin</option>
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                    </select>
                 </div>
 
                 <div class="form-group col-md-4">

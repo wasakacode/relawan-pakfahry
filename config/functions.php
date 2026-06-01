@@ -82,7 +82,7 @@ function create_profile($pdo, $type, $userId = null)
             nik,
             nama_lengkap,
             tempat_lahir,
-            tanggal_lahir
+            tanggal_lahir,
             jenis_kelamin,
             agama,
             pekerjaan
@@ -99,7 +99,7 @@ function create_profile($pdo, $type, $userId = null)
 
             $fam->execute([
                 $profileId,
-                $_POST['hubungan_keluarga'][$i] ?? null,
+                $_POST['keluarga_hubungan_keluarga'][$i] ?? null,
                 $_POST['keluarga_nik'][$i] ?? null,
                 $_POST['keluarga_nama'][$i] ?? null,
                 $_POST['keluarga_tempat_lahir'][$i] ?? null,
