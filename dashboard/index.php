@@ -91,8 +91,7 @@ foreach ($allKabKota as $kabKota) {
 </div>
 
 <div class="row">
-    <div class="col-lg-12 mb-4">
-
+    <div class="col-lg-8 mb-4">
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">
@@ -104,7 +103,19 @@ foreach ($allKabKota as $kabKota) {
                 <canvas id="kabupatenChart" height="100"></canvas>
             </div>
         </div>
+    </div>
+      <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Persentase Data
+                </h6>
+            </div>
 
+            <div class="card-body">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -363,6 +374,40 @@ new Chart(ctx, {
                 ticks: {
                     precision: 0
                 }
+            }
+        }
+    }
+});
+
+const pieCtx = document.getElementById('pieChart');
+
+new Chart(pieCtx, {
+    type: 'doughnut',
+
+    data: {
+        labels: ['Relawan', 'Dukungan'],
+
+        datasets: [{
+            data: [
+                <?= $totalRelawan ?>,
+                <?= $totalDukungan ?>
+            ],
+
+            backgroundColor: [
+                '#1cc88a',
+                '#36b9cc'
+            ],
+
+            borderWidth: 1
+        }]
+    },
+
+    options: {
+        responsive: true,
+
+        plugins: {
+            legend: {
+                position: 'bottom'
             }
         }
     }
