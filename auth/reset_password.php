@@ -71,6 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        name="password_lama"
                        class="form-control"
                        required>
+
+                       
+                        <button type="button"
+                                class="btn btn-outline-secondary toggle-password"
+                                data-target="password_lama">
+                            <i class="fas fa-eye"></i>
+                        </button>
             </div>
 
             <div class="form-group">
@@ -79,6 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        name="password_baru"
                        class="form-control"
                        required>
+
+                       <div class="input-group-append">
+                            <button type="button"
+                                    class="btn btn-outline-secondary toggle-password"
+                                    data-target="password_baru">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>      
             </div>
 
             <div class="form-group">
@@ -87,6 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        name="konfirmasi"
                        class="form-control"
                        required>
+
+                       <div class="input-group-append">
+                            <button type="button"
+                                    class="btn btn-outline-secondary toggle-password"
+                                    data-target="konfrmasi">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
             </div>
 
             <button type="submit" class="btn btn-primary">
@@ -97,5 +120,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div>
 </div>
+<script>
+document.querySelectorAll('.toggle-password').forEach(function(btn){
+
+    btn.addEventListener('click', function(){
+
+        const target = document.getElementById(
+            this.dataset.target
+        );
+
+        const icon = this.querySelector('i');
+
+        if(target.type === 'password'){
+            target.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            target.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+
+    });
+
+});
+</script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

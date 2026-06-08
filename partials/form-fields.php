@@ -164,12 +164,30 @@ function input_value($name)
 
         <div class="form-group col-md-4">
             <label>RT</label>
-            <input name="rt" class="form-control" value="<?= input_value('rt') ?>" placeholder="Contoh: 001">
+            <select name="rt" class="form-control">
+                <option value="">Pilih RT</option>
+                <?php for($i = 1; $i <= 100; $i++): 
+                    $rt = str_pad($i, 3, '0', STR_PAD_LEFT);
+                ?>
+                    <option value="<?= $rt ?>" <?= input_value('rt') == $rt ? 'selected' : '' ?>>
+                        <?= $rt ?>
+                    </option>
+                <?php endfor; ?>
+            </select>
         </div>
 
         <div class="form-group col-md-4">
             <label>RW</label>
-            <input name="rw" class="form-control" value="<?= input_value('rw') ?>" placeholder="Contoh: 002">
+            <select name="rw" class="form-control">
+                <option value="">Pilih RW</option>
+                <?php for($i = 1; $i <= 100; $i++): 
+                    $rw = str_pad($i, 3, '0', STR_PAD_LEFT);
+                ?>
+                    <option value="<?= $rw ?>" <?= input_value('rw') == $rw ? 'selected' : '' ?>>
+                        <?= $rw ?>
+                    </option>
+                <?php endfor; ?>
+            </select>
         </div>
 
         <div class="form-group col-md-4">
