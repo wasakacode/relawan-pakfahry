@@ -169,6 +169,7 @@
         
 
 <?php if(!isset($_GET['kab'])): ?>
+    <div class="row">
 
     <?php foreach($dataWilayah as $row): ?>
 
@@ -204,12 +205,11 @@
     </div>
 
     <?php endforeach; ?>
-
+</div>
 <?php endif; ?>
 
-            <?php if(isset($_GET['kab']) && !isset($_GET['kec'])): ?>
-
-
+    <?php if(isset($_GET['kab']) && !isset($_GET['kec'])): ?>
+    <div class="row">
 
 <?php foreach($data as $row): ?>
 
@@ -240,13 +240,13 @@
 </div>
 
 <?php endforeach; ?>
-
+</div>
 <?php endif; ?>
 
     <?php if(isset($_GET['kab']) && isset($_GET['kec']) && !isset($_GET['desa'])): ?>
 
 
-
+        <div class="row">
 <?php foreach($data as $row): ?>
 
 <div class="col-md-4 mb-3">
@@ -277,11 +277,12 @@
 </div>
 
 <?php endforeach; ?>
+</div>
 <?php endif; ?>
 
        <?php if(isset($_GET['desa'])): ?>
 
-
+<div class="row">
 
 <?php foreach($data as $row): ?>
 
@@ -310,7 +311,7 @@
 </div>
 
 <?php endforeach; ?>
-
+</div>
 <?php endif; ?>
 
 
