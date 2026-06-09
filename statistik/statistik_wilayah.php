@@ -138,7 +138,7 @@
         <div class="mb-3">
 
         <?php if(isset($_GET['kab'])): ?>
-            <a href="statistik-wilayah.php" class="badge badge-primary">
+            <a href="statistik_wilayah.php" class="badge badge-primary">
                 Semua Kota
             </a>
         <?php endif; ?>
