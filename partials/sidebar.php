@@ -120,15 +120,22 @@
     <?php endif; ?>
 
     <hr class="sidebar-divider">
+    
     <div class="sidebar-heading">
         Statistik
     </div>
 
-     <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('statistik/statistik_wilayah.php') ?>">
                 <i class="fas fa-address-book"></i>
                 <span>Statistik Wilayah</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('statistik/keterisian_tps.php') ?>">
+                <i class="fas fa-address-book"></i>
+                <span>Statistik Keterisian TPS</span>
             </a>
         </li>
     <?php endif; ?>

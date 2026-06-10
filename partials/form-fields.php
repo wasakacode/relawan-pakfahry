@@ -4,6 +4,12 @@ function input_value($name)
     return e($_POST[$name] ?? '');
 }
 
+$tps = $_POST['tps'] ?? '';
+
+if ($tps != '' && !preg_match('/^TPS [0-9]{3}$/', $tps)) {
+    die("Format TPS harus seperti: TPS 001");
+}
+
 ?>
 <div class="card shadow mb-4" style="border-radius: 18px; overflow:hidden;">
     <div class="card-header py-3" style="background: linear-gradient(135deg, #eaf9ff, #c8efff);">
@@ -166,7 +172,7 @@ function input_value($name)
             <label>RT</label>
             <select name="rt" class="form-control">
                 <option value="">Pilih RT</option>
-                <?php for($i = 1; $i <= 100; $i++): 
+                <?php for ($i = 1; $i <= 100; $i++):
                     $rt = str_pad($i, 3, '0', STR_PAD_LEFT);
                 ?>
                     <option value="<?= $rt ?>" <?= input_value('rt') == $rt ? 'selected' : '' ?>>
@@ -180,7 +186,7 @@ function input_value($name)
             <label>RW</label>
             <select name="rw" class="form-control">
                 <option value="">Pilih RW</option>
-                <?php for($i = 1; $i <= 100; $i++): 
+                <?php for ($i = 1; $i <= 100; $i++):
                     $rw = str_pad($i, 3, '0', STR_PAD_LEFT);
                 ?>
                     <option value="<?= $rw ?>" <?= input_value('rw') == $rw ? 'selected' : '' ?>>
@@ -192,8 +198,39 @@ function input_value($name)
 
         <div class="form-group col-md-4">
             <label>TPS</label>
-            <input name="tps" class="form-control" value="<?= input_value('tps') ?>" placeholder="Contoh: TPS 01">
+            <input
+                type="text"
+                id="tps"
+                name="tps"
+                class="form-control"
+                value="<?= input_value('tps') ?>"
+                placeholder="Contoh: TPS 001"
+                maxlength="7"
+                oninput="validasiTPS()">
+
+            <small id="pesanTPS" style="color:red;"></small>
         </div>
+
+        <script>
+            function validasiTPS() {
+                let input = document.getElementById("tps");
+                let pesan = document.getElementById("pesanTPS");
+
+                // Otomatis huruf besar
+                input.value = input.value.toUpperCase();
+
+                // Format yang diperbolehkan
+                let regex = /^TPS [0-9]{3}$/;
+
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
+                }
+            }
+        </script>
 
     </div>
 </div>

@@ -114,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash('success', 'Data admin berhasil diperbarui.');
         redirect('admin/detail-admin.php?id=' . $data['id']);
-
     } catch (Exception $e) {
         $pdo->rollBack();
         flash('error', 'Gagal memperbarui data admin: ' . $e->getMessage());
@@ -160,8 +159,8 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-6">
                 <label>Status Akun</label><br>
                 <div class="custom-control custom-switch">
-                    <input type="checkbox" name="is_active" class="custom-control-input" id="is_active" 
-                           <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="is_active" class="custom-control-input" id="is_active"
+                        <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
                     <label class="custom-control-label" for="is_active">Akun Aktif</label>
                 </div>
             </div>
@@ -297,8 +296,42 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>TPS</label>
-                <input name="tps" class="form-control" value="<?= e($data['tps']) ?>">
+                <input
+                    type="text"
+                    id="tps"
+                    name="tps"
+                    class="form-control"
+                    value="<?= e($data['tps'] ?? '') ?>"
+                    placeholder="Contoh: TPS 001"
+                    maxlength="7"
+                    oninput="validasiTPS()">
+                <small id="errorTPS" class="text-danger"></small>
             </div>
+
+            <script>
+                function validasiTPS() {
+                    let input = document.getElementById("tps");
+                    let error = document.getElementById("errorTPS");
+
+                    input.value = input.value.toUpperCase();
+
+                    let regex = /^TPS [0-9]{3}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
 
         </div>
     </div>

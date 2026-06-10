@@ -136,9 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     DELETE FROM family_members
     WHERE profile_id = ?
 ");
-$deleteFamily->execute([$data['id']]);
+        $deleteFamily->execute([$data['id']]);
 
-$insertFamily = $pdo->prepare("
+        $insertFamily = $pdo->prepare("
     INSERT INTO family_members (
         profile_id,
         hubungan_keluarga,
@@ -153,38 +153,36 @@ $insertFamily = $pdo->prepare("
     VALUES (?,?,?,?,?,?,?,?,?)
 ");
 
-if (!empty($_POST['keluarga_nik'])) {
+        if (!empty($_POST['keluarga_nik'])) {
 
-    foreach ($_POST['keluarga_nik'] as $i => $nik) {
+            foreach ($_POST['keluarga_nik'] as $i => $nik) {
 
-        if (empty($nik)) {
-            continue;
+                if (empty($nik)) {
+                    continue;
+                }
+
+                $insertFamily->execute([
+                    $data['id'],
+                    $_POST['keluarga_hubungan_keluarga'][$i] ?? null,
+                    $_POST['keluarga_nik'][$i] ?? null,
+                    $_POST['keluarga_nama'][$i] ?? null,
+                    $_POST['keluarga_tempat_lahir'][$i] ?? null,
+                    $_POST['keluarga_tanggal_lahir'][$i] ?? null,
+                    $_POST['keluarga_jenis_kelamin'][$i] ?? null,
+                    $_POST['keluarga_agama'][$i] ?? null,
+                    $_POST['keluarga_pekerjaan'][$i] ?? null
+                ]);
+            }
         }
-
-        $insertFamily->execute([
-            $data['id'],
-            $_POST['keluarga_hubungan_keluarga'][$i] ?? null,
-            $_POST['keluarga_nik'][$i] ?? null,
-            $_POST['keluarga_nama'][$i] ?? null,
-            $_POST['keluarga_tempat_lahir'][$i] ?? null,
-            $_POST['keluarga_tanggal_lahir'][$i] ?? null,
-            $_POST['keluarga_jenis_kelamin'][$i] ?? null,
-            $_POST['keluarga_agama'][$i] ?? null,
-            $_POST['keluarga_pekerjaan'][$i] ?? null
-        ]);
-    }
-}
 
         $pdo->commit();
 
         flash('success', 'Data relawan berhasil diperbarui.');
         redirect('admin/detail-relawan.php?id=' . $data['id']);
-
     } catch (Exception $e) {
         $pdo->rollBack();
         flash('error', 'Gagal memperbarui data: ' . $e->getMessage());
     }
-
 }
 
 require_once __DIR__ . '/../partials/header.php';
@@ -226,8 +224,8 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-6">
                 <label>Status Akun</label><br>
                 <div class="custom-control custom-switch">
-                    <input type="checkbox" name="is_active" class="custom-control-input" id="is_active" 
-                           <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="is_active" class="custom-control-input" id="is_active"
+                        <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
                     <label class="custom-control-label" for="is_active">Akun Aktif</label>
                 </div>
             </div>
@@ -361,8 +359,42 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>TPS</label>
-                <input name="tps" class="form-control" value="<?= e($data['tps']) ?>">
+                <input
+                    type="text"
+                    id="tps"
+                    name="tps"
+                    class="form-control"
+                    value="<?= e($data['tps'] ?? '') ?>"
+                    placeholder="Contoh: TPS 001"
+                    maxlength="7"
+                    oninput="validasiTPS()">
+                <small id="errorTPS" class="text-danger"></small>
             </div>
+
+            <script>
+                function validasiTPS() {
+                    let input = document.getElementById("tps");
+                    let error = document.getElementById("errorTPS");
+
+                    input.value = input.value.toUpperCase();
+
+                    let regex = /^TPS [0-9]{3}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
 
         </div>
     </div>
@@ -397,136 +429,136 @@ require_once __DIR__ . '/../partials/topbar.php';
     </div>
 
     <div class="card content-card shadow mb-4">
-    <div class="card-header">
-        <h6 class="m-0 font-weight-bold">
-            <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
-            Data Anggota Keluarga
-        </h6>
-    </div>
-
-    <div class="card-body">
-
-        <div id="anggotaKeluargaContainer">
-
-            <?php foreach ($familyMembers as $index => $fam): ?>
-
-                <div class="border rounded p-3 mb-3 anggota-item">
-
-                    <div class="d-flex justify-content-between mb-3">
-                        <h6>Anggota Keluarga <?= $index + 1 ?></h6>
-
-                        <button type="button"
-                                class="btn btn-danger btn-sm btnHapus">
-                            Hapus
-                        </button>
-                    </div>
-
-                    <div class="row">
-
-                        <div class="form-group col-md-4">
-                    <label>Hubungan Keluarga</label>
-                        <select name="keluarga_hubungan_keluarga[]" class="form-control">
-                            <option value="">Pilih Hubungan</option>
-                            <option value="Suami" <?= $fam['hubungan_keluarga'] == 'Suami' ? 'selected' : '' ?>>Suami</option>
-                            <option value="Istri" <?= $fam['hubungan_keluarga'] == 'Istri' ? 'selected' : '' ?>>Istri</option>
-                            <option value="Anak" <?= $fam['hubungan_keluarga'] == 'Anak' ? 'selected' : '' ?>>Anak</option>
-                            <option value="Orang Tua" <?= $fam['hubungan_keluarga'] == 'Orang Tua' ? 'selected' : '' ?>>Orang Tua</option>
-                            <option value="Lainnya" <?= $fam['hubungan_keluarga'] == 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
-                        </select>
-                    </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Jenis Kelamin</label>
-                            <select
-                                name="keluarga_jenis_kelamin[]"
-                                class="form-control">
-
-                                <option value="">Pilih</option>
-
-                                <option value="Laki-laki"
-                                    <?= $fam['jenis_kelamin']=='Laki-laki' ? 'selected' : '' ?>>
-                                    Laki-laki
-                                </option>
-
-                                <option value="Perempuan"
-                                    <?= $fam['jenis_kelamin']=='Perempuan' ? 'selected' : '' ?>>
-                                    Perempuan
-                                </option>
-
-                            </select>
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>NIK</label>
-                            <input
-                                name="keluarga_nik[]"
-                                class="form-control"
-                                value="<?= e($fam['nik']) ?>">
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Nama</label>
-                            <input
-                                name="keluarga_nama[]"
-                                class="form-control"
-                                value="<?= e($fam['nama_lengkap']) ?>">
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Tempat Lahir</label>
-                            <input
-                                name="keluarga_tempat_lahir[]"
-                                class="form-control"
-                                value="<?= e($fam['tempat_lahir']) ?>">
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Tanggal Lahir</label>
-                            <input
-                                type="date"
-                                name="keluarga_tanggal_lahir[]"
-                                class="form-control"
-                                value="<?= $fam['tanggal_lahir'] ?>">
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Agama</label>
-                            <select name="keluarga_agama[]" class="form-control">
-                                <option value="">Pilih Agama</option>
-                                <option value="Islam" <?= $fam['agama'] == 'Islam' ? 'selected' : '' ?>>Islam</option>
-                                <option value="Kristen" <?= $fam['agama'] == 'Kristen' ? 'selected' : '' ?>>Kristen</option>
-                                <option value="Katolik" <?= $fam['agama'] == 'Katolik' ? 'selected' : '' ?>>Katolik</option>
-                                <option value="Hindu" <?= $fam['agama'] == 'Hindu' ? 'selected' : '' ?>>Hindu</option>
-                                <option value="Buddha" <?= $fam['agama'] == 'Buddha' ? 'selected' : '' ?>>Buddha</option>
-                                <option value="Konghucu" <?= $fam['agama'] == 'Konghucu' ? 'selected' : '' ?>>Konghucu</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group col-md-4">
-                            <label>Pekerjaan</label>
-                            <input
-                                name="keluarga_pekerjaan[]"
-                                class="form-control"
-                                value="<?= e($fam['pekerjaan']) ?>">
-                        </div>
-
-                    </div>
-
-                </div>
-
-            <?php endforeach; ?>
-
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
+                Data Anggota Keluarga
+            </h6>
         </div>
 
-        <button type="button"
+        <div class="card-body">
+
+            <div id="anggotaKeluargaContainer">
+
+                <?php foreach ($familyMembers as $index => $fam): ?>
+
+                    <div class="border rounded p-3 mb-3 anggota-item">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <h6>Anggota Keluarga <?= $index + 1 ?></h6>
+
+                            <button type="button"
+                                class="btn btn-danger btn-sm btnHapus">
+                                Hapus
+                            </button>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="form-group col-md-4">
+                                <label>Hubungan Keluarga</label>
+                                <select name="keluarga_hubungan_keluarga[]" class="form-control">
+                                    <option value="">Pilih Hubungan</option>
+                                    <option value="Suami" <?= $fam['hubungan_keluarga'] == 'Suami' ? 'selected' : '' ?>>Suami</option>
+                                    <option value="Istri" <?= $fam['hubungan_keluarga'] == 'Istri' ? 'selected' : '' ?>>Istri</option>
+                                    <option value="Anak" <?= $fam['hubungan_keluarga'] == 'Anak' ? 'selected' : '' ?>>Anak</option>
+                                    <option value="Orang Tua" <?= $fam['hubungan_keluarga'] == 'Orang Tua' ? 'selected' : '' ?>>Orang Tua</option>
+                                    <option value="Lainnya" <?= $fam['hubungan_keluarga'] == 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Jenis Kelamin</label>
+                                <select
+                                    name="keluarga_jenis_kelamin[]"
+                                    class="form-control">
+
+                                    <option value="">Pilih</option>
+
+                                    <option value="Laki-laki"
+                                        <?= $fam['jenis_kelamin'] == 'Laki-laki' ? 'selected' : '' ?>>
+                                        Laki-laki
+                                    </option>
+
+                                    <option value="Perempuan"
+                                        <?= $fam['jenis_kelamin'] == 'Perempuan' ? 'selected' : '' ?>>
+                                        Perempuan
+                                    </option>
+
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>NIK</label>
+                                <input
+                                    name="keluarga_nik[]"
+                                    class="form-control"
+                                    value="<?= e($fam['nik']) ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Nama</label>
+                                <input
+                                    name="keluarga_nama[]"
+                                    class="form-control"
+                                    value="<?= e($fam['nama_lengkap']) ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Tempat Lahir</label>
+                                <input
+                                    name="keluarga_tempat_lahir[]"
+                                    class="form-control"
+                                    value="<?= e($fam['tempat_lahir']) ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Tanggal Lahir</label>
+                                <input
+                                    type="date"
+                                    name="keluarga_tanggal_lahir[]"
+                                    class="form-control"
+                                    value="<?= $fam['tanggal_lahir'] ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Agama</label>
+                                <select name="keluarga_agama[]" class="form-control">
+                                    <option value="">Pilih Agama</option>
+                                    <option value="Islam" <?= $fam['agama'] == 'Islam' ? 'selected' : '' ?>>Islam</option>
+                                    <option value="Kristen" <?= $fam['agama'] == 'Kristen' ? 'selected' : '' ?>>Kristen</option>
+                                    <option value="Katolik" <?= $fam['agama'] == 'Katolik' ? 'selected' : '' ?>>Katolik</option>
+                                    <option value="Hindu" <?= $fam['agama'] == 'Hindu' ? 'selected' : '' ?>>Hindu</option>
+                                    <option value="Buddha" <?= $fam['agama'] == 'Buddha' ? 'selected' : '' ?>>Buddha</option>
+                                    <option value="Konghucu" <?= $fam['agama'] == 'Konghucu' ? 'selected' : '' ?>>Konghucu</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Pekerjaan</label>
+                                <input
+                                    name="keluarga_pekerjaan[]"
+                                    class="form-control"
+                                    value="<?= e($fam['pekerjaan']) ?>">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            </div>
+
+            <button type="button"
                 id="btnTambahAnggota"
                 class="btn btn-success">
-            <i class="fas fa-plus"></i>
-            Tambah Anggota Keluarga
-        </button>
+                <i class="fas fa-plus"></i>
+                Tambah Anggota Keluarga
+            </button>
 
+        </div>
     </div>
-</div>
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan
     </button>
@@ -534,13 +566,13 @@ require_once __DIR__ . '/../partials/topbar.php';
 </form>
 
 <script>
-let anggotaIndex = <?= count($familyMembers) ?>;
+    let anggotaIndex = <?= count($familyMembers) ?>;
 
-document.getElementById('btnTambahAnggota').addEventListener('click', function() {
+    document.getElementById('btnTambahAnggota').addEventListener('click', function() {
 
-    anggotaIndex++;
+        anggotaIndex++;
 
-    const html = `
+        const html = `
     <div class="border rounded p-3 mb-3 anggota-item">
 
         <div class="d-flex justify-content-between mb-3">
@@ -616,15 +648,15 @@ document.getElementById('btnTambahAnggota').addEventListener('click', function()
 
     </div>`;
 
-    document.getElementById('anggotaKeluargaContainer')
-        .insertAdjacentHTML('beforeend', html);
-});
+        document.getElementById('anggotaKeluargaContainer')
+            .insertAdjacentHTML('beforeend', html);
+    });
 
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btnHapus')) {
-        e.target.closest('.anggota-item').remove();
-    }
-});
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btnHapus')) {
+            e.target.closest('.anggota-item').remove();
+        }
+    });
 </script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
