@@ -185,8 +185,8 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
                 name="rt"
                 class="form-control"
                 value="<?= input_value('rt') ?>"
-                placeholder="Contoh: RT 001"
-                maxlength="7"
+                placeholder="Contoh: 001"
+                maxlength="3"
                 oninput="validasiRT()">
 
             <small id="pesanRT" style="color:red;"></small>
@@ -200,8 +200,8 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
                 name="rw"
                 class="form-control"
                 value="<?= input_value('rw') ?>"
-                placeholder="Contoh: RW 001"
-                maxlength="7"
+                placeholder="Contoh: 001"
+                maxlength="3"
                 oninput="validasiRW()">
 
             <small id="pesanRW" style="color:red;"></small>
@@ -215,8 +215,8 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
                 name="tps"
                 class="form-control"
                 value="<?= input_value('tps') ?>"
-                placeholder="Contoh: TPS 001"
-                maxlength="7"
+                placeholder="Contoh: 001"
+                maxlength="3"
                 oninput="validasiTPS()">
 
             <small id="pesanTPS" style="color:red;"></small>
@@ -224,61 +224,58 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
 
         <script>
             function validasiTPS() {
-                let input = document.getElementById("tps");
-                let pesan = document.getElementById("pesanTPS");
+            let input = document.getElementById("tps");
+            let pesan = document.getElementById("pesanTPS");
 
-                // Otomatis huruf besar
-                input.value = input.value.toUpperCase();
+            // Hanya angka
+            input.value = input.value.replace(/[^0-9]/g, '');
 
-                // Format yang diperbolehkan
-                let regex = /^TPS [0-9]{3}$/;
+            let regex = /^[0-9]{3}$/;
 
-                if (input.value === "") {
-                    pesan.innerHTML = "";
-                } else if (regex.test(input.value)) {
-                    pesan.innerHTML = "";
-                } else {
-                    pesan.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
-                }
+            if (input.value === "") {
+                pesan.innerHTML = "";
+            } else if (regex.test(input.value)) {
+                pesan.innerHTML = "";
+            } else {
+                pesan.innerHTML = "TPS harus terdiri dari 3 digit angka, contoh: 001";
             }
+        }
 
             function validasiRT() {
-                let input = document.getElementById("rt");
-                let pesan = document.getElementById("pesanRT");
+            let input = document.getElementById("rt");
+            let pesan = document.getElementById("pesanRT");
 
-                // Otomatis huruf besar
-                input.value = input.value.toUpperCase();
+            // Hanya angka
+            input.value = input.value.replace(/[^0-9]/g, '');
 
-                // Format yang diperbolehkan
-                let regex = /^RT [0-9]{3}$/;
+            let regex = /^[0-9]{3}$/;
 
-                if (input.value === "") {
-                    pesan.innerHTML = "";
-                } else if (regex.test(input.value)) {
-                    pesan.innerHTML = "";
-                } else {
-                    pesan.innerHTML = "Format harus RT diikuti 3 digit angka, contoh: RT 001";
-                }
+            if (input.value === "") {
+                pesan.innerHTML = "";
+            } else if (regex.test(input.value)) {
+                pesan.innerHTML = "";
+            } else {
+                pesan.innerHTML = "RT harus terdiri dari 3 digit angka, contoh: 001";
             }
+        }
 
             function validasiRW() {
-                let input = document.getElementById("rt");
-                let pesan = document.getElementById("pesanRW");
+            let input = document.getElementById("rw");
+            let pesan = document.getElementById("pesanRW");
 
-                // Otomatis huruf besar
-                input.value = input.value.toUpperCase();
+            // Hanya angka
+            input.value = input.value.replace(/[^0-9]/g, '');
 
-                // Format yang diperbolehkan
-                let regex = /^RW [0-9]{3}$/;
+            let regex = /^[0-9]{3}$/;
 
-                if (input.value === "") {
-                    pesan.innerHTML = "";
-                } else if (regex.test(input.value)) {
-                    pesan.innerHTML = "";
-                } else {
-                    pesan.innerHTML = "Format harus RW diikuti 3 digit angka, contoh: RW 001";
-                }
+            if (input.value === "") {
+                pesan.innerHTML = "";
+            } else if (regex.test(input.value)) {
+                pesan.innerHTML = "";
+            } else {
+                pesan.innerHTML = "RW harus terdiri dari 3 digit angka, contoh: 001";
             }
+        }
         </script>
 
     </div>
