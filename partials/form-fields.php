@@ -5,11 +5,20 @@ function input_value($name)
 }
 
 $tps = $_POST['tps'] ?? '';
+$rt = $_POST['rt'] ?? '';
+$rw = $_POST['rw'] ?? '';
 
 if ($tps != '' && !preg_match('/^TPS [0-9]{3}$/', $tps)) {
     die("Format TPS harus seperti: TPS 001");
 }
 
+if ($rt != '' && !preg_match('/^RT [0-9]{3}$/', $rt)) {
+    die("Format RT harus seperti: RT 001");
+}
+
+if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
+    die("Format Rw harus seperti: RW 001");
+}
 ?>
 <div class="card shadow mb-4" style="border-radius: 18px; overflow:hidden;">
     <div class="card-header py-3" style="background: linear-gradient(135deg, #eaf9ff, #c8efff);">
@@ -170,30 +179,32 @@ if ($tps != '' && !preg_match('/^TPS [0-9]{3}$/', $tps)) {
 
         <div class="form-group col-md-4">
             <label>RT</label>
-            <select name="rt" class="form-control">
-                <option value="">Pilih RT</option>
-                <?php for ($i = 1; $i <= 100; $i++):
-                    $rt = str_pad($i, 3, '0', STR_PAD_LEFT);
-                ?>
-                    <option value="<?= $rt ?>" <?= input_value('rt') == $rt ? 'selected' : '' ?>>
-                        <?= $rt ?>
-                    </option>
-                <?php endfor; ?>
-            </select>
+            <input
+                type="text"
+                id="rt"
+                name="rt"
+                class="form-control"
+                value="<?= input_value('rt') ?>"
+                placeholder="Contoh: RT 001"
+                maxlength="7"
+                oninput="validasiRT()">
+
+            <small id="pesanRT" style="color:red;"></small>
         </div>
 
         <div class="form-group col-md-4">
             <label>RW</label>
-            <select name="rw" class="form-control">
-                <option value="">Pilih RW</option>
-                <?php for ($i = 1; $i <= 100; $i++):
-                    $rw = str_pad($i, 3, '0', STR_PAD_LEFT);
-                ?>
-                    <option value="<?= $rw ?>" <?= input_value('rw') == $rw ? 'selected' : '' ?>>
-                        <?= $rw ?>
-                    </option>
-                <?php endfor; ?>
-            </select>
+            <input
+                type="text"
+                id="rw"
+                name="rw"
+                class="form-control"
+                value="<?= input_value('rw') ?>"
+                placeholder="Contoh: RW 001"
+                maxlength="7"
+                oninput="validasiRW()">
+
+            <small id="pesanRW" style="color:red;"></small>
         </div>
 
         <div class="form-group col-md-4">
@@ -228,6 +239,44 @@ if ($tps != '' && !preg_match('/^TPS [0-9]{3}$/', $tps)) {
                     pesan.innerHTML = "";
                 } else {
                     pesan.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
+                }
+            }
+
+            function validasiRT() {
+                let input = document.getElementById("rt");
+                let pesan = document.getElementById("pesanRT");
+
+                // Otomatis huruf besar
+                input.value = input.value.toUpperCase();
+
+                // Format yang diperbolehkan
+                let regex = /^RT [0-9]{3}$/;
+
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "Format harus RT diikuti 3 digit angka, contoh: RT 001";
+                }
+            }
+
+            function validasiRW() {
+                let input = document.getElementById("rt");
+                let pesan = document.getElementById("pesanRW");
+
+                // Otomatis huruf besar
+                input.value = input.value.toUpperCase();
+
+                // Format yang diperbolehkan
+                let regex = /^RW [0-9]{3}$/;
+
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "Format harus RW diikuti 3 digit angka, contoh: RW 001";
                 }
             }
         </script>
