@@ -34,17 +34,17 @@ function create_profile($pdo, $type, $userId = null)
 
     if (!preg_match('/^[0-9]{3}$/', $rt)) {
         flash('error', 'RT harus terdiri dari 3 digit angka. Contoh: 001');
-        redirect($_SERVER['REQUEST_URI']);
+        redirect('dukungan/create.php');
     }
 
     if (!preg_match('/^[0-9]{3}$/', $rw)) {
         flash('error', 'RW harus terdiri dari 3 digit angka. Contoh: 001');
-        redirect($_SERVER['REQUEST_URI']);
+        redirect('dukungan/create.php');
     }
 
     if (!preg_match('/^[0-9]{3}$/', $tps)) {
         flash('error', 'TPS harus terdiri dari 3 digit angka. Contoh: 001');
-        redirect($_SERVER['REQUEST_URI']);
+        redirect('dukungan/create.php');
     }
     $stmt = $pdo->prepare("INSERT INTO profiles (
         type, user_id, created_by, nik, nama_lengkap, tempat_lahir, tanggal_lahir,
