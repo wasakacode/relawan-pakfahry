@@ -18,6 +18,17 @@ $stmt = $pdo->prepare("SELECT p.*, u.username, u.is_active, u.id AS akun_id
                        LIMIT 1");
 
 $stmt->execute([$id]);
+
+$familyStmt = $pdo->prepare("
+    SELECT *
+    FROM family_members
+    WHERE profile_id = ?
+    ORDER BY id ASC
+");
+$familyStmt->execute([$id]);
+
+$familyMembers = $familyStmt->fetchAll(PDO::FETCH_ASSOC);
+
 $data = $stmt->fetch();
 
 if (!$data) {
@@ -29,9 +40,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
+        $errors = [];
+
+        // NIK Admin
+        if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
+            $errors[] = 'NIK harus terdiri dari 16 digit angka';
+        }
+
+        // Nomor KK
+        if (!empty($_POST['nomor_kk']) && !preg_match('/^[0-9]{16}$/', $_POST['nomor_kk'])) {
+            $errors[] = 'Nomor KK harus terdiri dari 16 digit angka';
+        }
+
+        // RT
+        if (!empty($_POST['rt']) && !preg_match('/^[0-9]{3}$/', $_POST['rt'])) {
+            $errors[] = 'RT harus terdiri dari 3 digit angka';
+        }
+
+        // RW
+        if (!empty($_POST['rw']) && !preg_match('/^[0-9]{3}$/', $_POST['rw'])) {
+            $errors[] = 'RW harus terdiri dari 3 digit angka';
+        }
+
+        // TPS format: TPS 001
+        if (!empty($_POST['tps']) && !preg_match('/^[0-9]{3}$/', $_POST['tps'])) {
+            $errors[] = 'TPS harus terdiri dari 3 digit angka';
+        }
+
+        // NIK Anggota Keluarga
+        if (!empty($_POST['keluarga_nik'])) {
+            foreach ($_POST['keluarga_nik'] as $i => $nik) {
+                if (!empty($nik) && !preg_match('/^[0-9]{16}$/', $nik)) {
+                    $errors[] = 'NIK Anggota Keluarga #' . ($i + 1) . ' harus terdiri dari 16 digit angka';
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+
+            $pdo->rollBack();
+
+            flash(
+                'error',
+                'Kolom berikut tidak sesuai format: ' . implode(', ', $errors)
+            );
+
+            redirect('admin/edit-admin.php?id=' . $data['id']);
+            exit;
+        }
+
         $username = trim($_POST['username'] ?? '');
         $passwordBaru = trim($_POST['password'] ?? '');
         $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        // cek username sudah digunakan oleh akun lain
+        $stmtCekUsername = $pdo->prepare("
+            SELECT id
+            FROM users
+            WHERE username = ?
+            AND id != ?
+            LIMIT 1
+        ");
+
+        $stmtCekUsername->execute([
+            $username,
+            $data['akun_id']
+        ]);
+
+        if ($stmtCekUsername->fetch()) {
+
+            $pdo->rollBack();
+
+            flash(
+                'error',
+                'Username sudah digunakan oleh akun lain.'
+            );
+
+            redirect('admin/edit-admin.php?id=' . $data['id']);
+            exit;
+        }
 
         if ($passwordBaru !== '') {
             $hash = password_hash($passwordBaru, PASSWORD_DEFAULT);
@@ -110,6 +197,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['id']
         ]);
 
+        $deleteFamily = $pdo->prepare("
+            DELETE FROM family_members
+            WHERE profile_id = ?
+        ");
+        $deleteFamily->execute([$data['id']]);
+
+        $insertFamily = $pdo->prepare("
+            INSERT INTO family_members (
+                profile_id,
+                hubungan_keluarga,
+                nik,
+                nama_lengkap,
+                tempat_lahir,
+                tanggal_lahir,
+                jenis_kelamin,
+                agama,
+                pekerjaan
+            )
+            VALUES (?,?,?,?,?,?,?,?,?)
+        ");
+
+        if (!empty($_POST['keluarga_nik'])) {
+
+            foreach ($_POST['keluarga_nik'] as $i => $nik) {
+
+                if (empty($nik)) {
+                    continue;
+                }
+
+                $insertFamily->execute([
+                    $data['id'],
+                    $_POST['keluarga_hubungan_keluarga'][$i] ?? null,
+                    $_POST['keluarga_nik'][$i] ?? null,
+                    $_POST['keluarga_nama'][$i] ?? null,
+                    $_POST['keluarga_tempat_lahir'][$i] ?? null,
+                    $_POST['keluarga_tanggal_lahir'][$i] ?? null,
+                    $_POST['keluarga_jenis_kelamin'][$i] ?? null,
+                    $_POST['keluarga_agama'][$i] ?? null,
+                    $_POST['keluarga_pekerjaan'][$i] ?? null
+                ]);
+            }
+        }
+
         $pdo->commit();
 
         flash('success', 'Data admin berhasil diperbarui.');
@@ -139,7 +269,7 @@ require_once __DIR__ . '/../partials/topbar.php';
         <div class="card-header">
             <h6 class="m-0 font-weight-bold">
                 <i class="fas fa-user-lock mr-2" style="color:#3db7ee;"></i>
-                Data Akun Admin
+                Data Akun
             </h6>
         </div>
 
@@ -190,8 +320,44 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>NIK</label>
-                <input name="nik" class="form-control" value="<?= e($data['nik']) ?>" required>
+                <input
+                    type="text"
+                    id="nik"
+                    name="nik"
+                    class="form-control"
+                    value="<?= e($data['nik']) ?>"
+                    maxlength="16"
+                    required
+                    oninput="validasiNIK()">
+
+                <small id="errorNIK" class="text-danger"></small>
             </div>
+
+            <script>
+                function validasiNIK() {
+
+                    let input = document.getElementById("nik");
+                    let error = document.getElementById("errorNIK");
+
+                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                    let regex = /^[0-9]{16}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "NIK harus terdiri dari 16 digit angka";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
 
             <div class="form-group col-md-8">
                 <label>Nama Lengkap</label>
@@ -284,38 +450,31 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <input name="desa_kelurahan" class="form-control" value="<?= e($data['desa_kelurahan']) ?>">
             </div>
 
+            <!-- RT -->
             <div class="form-group col-md-4">
                 <label>RT</label>
-                <input name="rt" class="form-control" value="<?= e($data['rt']) ?>">
-            </div>
-
-            <div class="form-group col-md-4">
-                <label>RW</label>
-                <input name="rw" class="form-control" value="<?= e($data['rw']) ?>">
-            </div>
-
-            <div class="form-group col-md-4">
-                <label>TPS</label>
                 <input
                     type="text"
-                    id="tps"
-                    name="tps"
+                    id="rt"
+                    name="rt"
                     class="form-control"
-                    value="<?= e($data['tps'] ?? '') ?>"
-                    placeholder="Contoh: TPS 001"
-                    maxlength="7"
-                    oninput="validasiTPS()">
-                <small id="errorTPS" class="text-danger"></small>
+                    value="<?= e($data['rt'] ?? '') ?>"
+                    placeholder="Contoh: 001"
+                    maxlength="3"
+                    oninput="validasiRT()">
+
+                <small id="errorRT" class="text-danger"></small>
             </div>
 
             <script>
-                function validasiTPS() {
-                    let input = document.getElementById("tps");
-                    let error = document.getElementById("errorTPS");
+                function validasiRT() {
+                    let input = document.getElementById("rt");
+                    let error = document.getElementById("errorRT");
 
-                    input.value = input.value.toUpperCase();
+                    // Hanya boleh angka
+                    input.value = input.value.replace(/[^0-9]/g, '');
 
-                    let regex = /^TPS [0-9]{3}$/;
+                    let regex = /^[0-9]{3}$/;
 
                     if (input.value == "") {
                         error.innerHTML = "";
@@ -326,7 +485,91 @@ require_once __DIR__ . '/../partials/topbar.php';
                         input.classList.remove("is-invalid");
                         input.classList.add("is-valid");
                     } else {
-                        error.innerHTML = "Format harus TPS diikuti 3 digit angka, contoh: TPS 001";
+                        error.innerHTML = "RT harus terdiri dari 3 digit angka. Contoh: 001";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
+
+            <!-- RW -->
+            <div class="form-group col-md-4">
+                <label>RW</label>
+                <input
+                    type="text"
+                    id="rw"
+                    name="rw"
+                    class="form-control"
+                    value="<?= e($data['rw'] ?? '') ?>"
+                    placeholder="Contoh: 001"
+                    maxlength="3"
+                    oninput="validasiRW()">
+
+                <small id="errorRW" class="text-danger"></small>
+            </div>
+
+            <script>
+                function validasiRW() {
+                    let input = document.getElementById("rw");
+                    let error = document.getElementById("errorRW");
+
+                    // Hanya boleh angka
+                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                    let regex = /^[0-9]{3}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "RW harus terdiri dari 3 digit angka. Contoh: 001";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
+
+            <!-- TPS -->
+            <div class="form-group col-md-4">
+                <label>TPS</label>
+                <input
+                    type="text"
+                    id="tps"
+                    name="tps"
+                    class="form-control"
+                    value="<?= e($data['tps'] ?? '') ?>"
+                    placeholder="Contoh: 001"
+                    maxlength="3"
+                    oninput="validasiTPS()">
+
+                <small id="errorTPS" class="text-danger"></small>
+            </div>
+
+            <script>
+                function validasiTPS() {
+                    let input = document.getElementById("tps");
+                    let error = document.getElementById("errorTPS");
+
+                    // Hanya boleh angka
+                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                    let regex = /^[0-9]{3}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "TPS harus terdiri dari 3 digit angka. Contoh: 001";
                         input.classList.remove("is-valid");
                         input.classList.add("is-invalid");
                     }
@@ -365,10 +608,271 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
     </div>
 
+    <div class="card content-card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
+                Data Anggota Keluarga
+            </h6>
+        </div>
+
+        <div class="card-body">
+
+            <div id="anggotaKeluargaContainer">
+
+                <?php foreach ($familyMembers as $index => $fam): ?>
+
+                    <div class="border rounded p-3 mb-3 anggota-item">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <h6>Anggota Keluarga <?= $index + 1 ?></h6>
+
+                            <button type="button"
+                                class="btn btn-danger btn-sm btnHapus">
+                                Hapus
+                            </button>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="form-group col-md-4">
+                                <label>Hubungan Keluarga</label>
+                                <select name="keluarga_hubungan_keluarga[]" class="form-control">
+                                    <option value="">Pilih Hubungan</option>
+                                    <option value="Suami" <?= $fam['hubungan_keluarga'] == 'Suami' ? 'selected' : '' ?>>Suami</option>
+                                    <option value="Istri" <?= $fam['hubungan_keluarga'] == 'Istri' ? 'selected' : '' ?>>Istri</option>
+                                    <option value="Anak" <?= $fam['hubungan_keluarga'] == 'Anak' ? 'selected' : '' ?>>Anak</option>
+                                    <option value="Orang Tua" <?= $fam['hubungan_keluarga'] == 'Orang Tua' ? 'selected' : '' ?>>Orang Tua</option>
+                                    <option value="Lainnya" <?= $fam['hubungan_keluarga'] == 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Jenis Kelamin</label>
+                                <select
+                                    name="keluarga_jenis_kelamin[]"
+                                    class="form-control">
+
+                                    <option value="">Pilih</option>
+
+                                    <option value="Laki-laki"
+                                        <?= $fam['jenis_kelamin'] == 'Laki-laki' ? 'selected' : '' ?>>
+                                        Laki-laki
+                                    </option>
+
+                                    <option value="Perempuan"
+                                        <?= $fam['jenis_kelamin'] == 'Perempuan' ? 'selected' : '' ?>>
+                                        Perempuan
+                                    </option>
+
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>NIK</label>
+                                <input
+                                    type="text"
+                                    name="keluarga_nik[]"
+                                    class="form-control keluarga-nik"
+                                    value="<?= e($fam['nik']) ?>"
+                                    maxlength="16"
+                                    oninput="validasiNIKKeluarga(this)">
+
+                                <small class="text-danger error-keluarga-nik"></small>
+                            </div>
+
+                            <script>
+                                function validasiNIKKeluarga(input) {
+
+                                    let error = input.parentElement.querySelector('.error-keluarga-nik');
+
+                                    // hanya angka
+                                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                                    if (input.value === "") {
+                                        error.innerHTML = "";
+                                        input.classList.remove("is-valid");
+                                        input.classList.remove("is-invalid");
+                                    } else if (input.value.length === 16) {
+                                        error.innerHTML = "";
+                                        input.classList.remove("is-invalid");
+                                        input.classList.add("is-valid");
+                                    } else {
+                                        error.innerHTML = "NIK harus terdiri dari 16 digit angka";
+                                        input.classList.remove("is-valid");
+                                        input.classList.add("is-invalid");
+                                    }
+                                }
+                            </script>
+
+                            <div class="form-group col-md-4">
+                                <label>Nama</label>
+                                <input
+                                    name="keluarga_nama[]"
+                                    class="form-control"
+                                    value="<?= e($fam['nama_lengkap']) ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Tempat Lahir</label>
+                                <input
+                                    name="keluarga_tempat_lahir[]"
+                                    class="form-control"
+                                    value="<?= e($fam['tempat_lahir']) ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Tanggal Lahir</label>
+                                <input
+                                    type="date"
+                                    name="keluarga_tanggal_lahir[]"
+                                    class="form-control"
+                                    value="<?= $fam['tanggal_lahir'] ?>">
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Agama</label>
+                                <select name="keluarga_agama[]" class="form-control">
+                                    <option value="">Pilih Agama</option>
+                                    <option value="Islam" <?= $fam['agama'] == 'Islam' ? 'selected' : '' ?>>Islam</option>
+                                    <option value="Kristen" <?= $fam['agama'] == 'Kristen' ? 'selected' : '' ?>>Kristen</option>
+                                    <option value="Katolik" <?= $fam['agama'] == 'Katolik' ? 'selected' : '' ?>>Katolik</option>
+                                    <option value="Hindu" <?= $fam['agama'] == 'Hindu' ? 'selected' : '' ?>>Hindu</option>
+                                    <option value="Buddha" <?= $fam['agama'] == 'Buddha' ? 'selected' : '' ?>>Buddha</option>
+                                    <option value="Konghucu" <?= $fam['agama'] == 'Konghucu' ? 'selected' : '' ?>>Konghucu</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-md-4">
+                                <label>Pekerjaan</label>
+                                <input
+                                    name="keluarga_pekerjaan[]"
+                                    class="form-control"
+                                    value="<?= e($fam['pekerjaan']) ?>">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            </div>
+
+            <button type="button"
+                id="btnTambahAnggota"
+                class="btn btn-success">
+                <i class="fas fa-plus"></i>
+                Tambah Anggota Keluarga
+            </button>
+
+        </div>
+    </div>
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan
     </button>
 
 </form>
 
+
+<script>
+    let anggotaIndex = <?= count($familyMembers) ?>;
+
+    document.getElementById('btnTambahAnggota').addEventListener('click', function() {
+
+        anggotaIndex++;
+
+        const html = `
+    <div class="border rounded p-3 mb-3 anggota-item">
+
+        <div class="d-flex justify-content-between mb-3">
+            <h6>Anggota Keluarga ${anggotaIndex}</h6>
+
+            <button type="button"
+                    class="btn btn-danger btn-sm btnHapus">
+                Hapus
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label>Hubungan Keluarga</label>
+                <select name="keluarga_hubungan_keluarga[]" class="form-control">
+                    <option value="">Pilih Hubungan</option>
+                    <option value="Suami">Suami</option>
+                    <option value="Istri">Istri</option>
+                    <option value="Anak">Anak</option>
+                    <option value="Orang Tua">Orang Tua</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Jenis Kelamin</label>
+                <select name="keluarga_jenis_kelamin[]" class="form-control">
+                    <option value="">Pilih</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>NIK</label>
+                <input
+                type="text"
+                name="keluarga_nik[]"
+                class="form-control keluarga-nik"
+                maxlength="16"
+                oninput="validasiNIKKeluarga(this)">
+
+            <small class="text-danger error-keluarga-nik"></small>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Nama</label>
+                <input name="keluarga_nama[]" class="form-control">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Tempat Lahir</label>
+                <input name="keluarga_tempat_lahir[]" class="form-control">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Tanggal Lahir</label>
+                <input type="date" name="keluarga_tanggal_lahir[]" class="form-control">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Agama</label>
+                <select name="keluarga_agama[]" class="form-control">
+                    <option value="">Pilih Agama</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Kristen">Kristen</option>
+                    <option value="Katolik">Katolik</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Buddha">Buddha</option>
+                    <option value="Konghucu">Konghucu</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Pekerjaan</label>
+                <input name="keluarga_pekerjaan[]" class="form-control">
+            </div>
+
+        </div>
+
+    </div>`;
+
+        document.getElementById('anggotaKeluargaContainer')
+            .insertAdjacentHTML('beforeend', html);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btnHapus')) {
+            e.target.closest('.anggota-item').remove();
+        }
+    });
+</script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
