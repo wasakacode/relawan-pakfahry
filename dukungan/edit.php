@@ -510,8 +510,44 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>Nomor KK</label>
-                <input name="nomor_kk" class="form-control" value="<?= e($data['nomor_kk']) ?>">
+                <input
+                    type="text"
+                    id="nomor_kk"
+                    name="nomor_kk"
+                    class="form-control"
+                    value="<?= e($data['nomor_kk']) ?>"
+                    maxlength="16"
+                    oninput="validasiKK()">
+
+                <small id="errorKK" class="text-danger"></small>
             </div>
+
+            <script>
+                function validasiKK() {
+
+                    let input = document.getElementById("nomor_kk");
+                    let error = document.getElementById("errorKK");
+
+                    // hanya angka
+                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                    let regex = /^[0-9]{16}$/;
+
+                    if (input.value == "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (regex.test(input.value)) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "Nomor KK harus terdiri dari 16 digit angka";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
 
             <div class="form-group col-md-4">
                 <label>Nomor Telepon</label>
