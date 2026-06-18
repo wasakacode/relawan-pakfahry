@@ -77,9 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($errors)) {
+
             flash(
                 'error',
-                'Kolom berikut tidak sesuai format: ' . implode(', ', $errors)
+                "Kolom berikut tidak sesuai format:\n• " .
+                    implode("\n• ", $errors)
             );
 
             redirect('dukungan/edit.php?id=' . $data['id']);

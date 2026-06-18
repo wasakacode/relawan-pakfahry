@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('dukungan/list.php');
 
     } catch (Exception $e) {
-        flash('error', 'Gagal menyimpan dukungan: ' . $e->getMessage());
+        flash('error', 'Gagal menyimpan dukungan. ' . $e->getMessage());
     }
 }
 
