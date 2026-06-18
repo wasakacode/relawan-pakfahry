@@ -15,7 +15,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
 $search    = $_GET['search'] ?? '';
 $kecamatan = $_GET['kecamatan'] ?? '';
-$status    = $_GET['status'] ?? '';
+$status = $_GET['status'] ?? '';
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +35,7 @@ $order  = $_GET['order'] ?? 'DESC';
 $allowedColumns = [
     'nik',
     'nama_lengkap',
-    'status_verifikasi',
+    'is_active',
     'created_at'
 ];
 
@@ -56,7 +56,7 @@ if (!in_array($order, $allowedOrder)) {
 */
 
 $sql = "
-    SELECT p.*, u.username
+    SELECT p.*, u.username, u.is_active
     FROM profiles p
     LEFT JOIN users u ON p.user_id = u.id
     WHERE p.type = 'admin'
@@ -101,21 +101,28 @@ if (!empty($kecamatan)) {
 | Filter Status
 |--------------------------------------------------------------------------
 */
+if (isset($_GET['status']) && $_GET['status'] !== '') {
 
-if (!empty($status)) {
+    $sql .= " AND u.is_active = :status ";
 
-    $sql .= " AND p.status_verifikasi = :status ";
-
-    $params['status'] = $status;
+    $params['status'] = $_GET['status'];
 }
-
 /*
 |--------------------------------------------------------------------------
 | Sorting
 |--------------------------------------------------------------------------
 */
 
-$sql .= " ORDER BY $sortBy $order ";
+$sortMap = [
+    'nik'            => 'p.nik',
+    'nama_lengkap'   => 'p.nama_lengkap',
+    'is_active'      => 'u.is_active',
+    'created_at'     => 'p.created_at'
+];
+
+$sortColumn = $sortMap[$sortBy] ?? 'p.created_at';
+
+$sql .= " ORDER BY $sortColumn $order ";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -241,19 +248,14 @@ function sortLink($column, $label)
 
                         <option value="">-- Status --</option>
 
-                        <option value="terdaftar"
-                            <?= $status == 'terdaftar' ? 'selected' : '' ?>>
-                            Terdaftar
+                        <option value="1"
+                            <?= $status == '1' ? 'selected' : '' ?>>
+                            Aktif
                         </option>
 
-                        <option value="pending"
-                            <?= $status == 'pending' ? 'selected' : '' ?>>
-                            Pending
-                        </option>
-
-                        <option value="ditolak"
-                            <?= $status == 'ditolak' ? 'selected' : '' ?>>
-                            Ditolak
+                        <option value="0"
+                            <?= $status == '0' ? 'selected' : '' ?>>
+                            Nonaktif
                         </option>
 
                     </select>
@@ -306,7 +308,7 @@ function sortLink($column, $label)
                         <th>Detail</th>
 
                         <th>
-                            <?= sortLink('status_verifikasi', 'Status') ?>
+                            <?= sortLink('is_active', 'Status') ?>
                         </th>
 
                     </tr>
@@ -339,19 +341,11 @@ function sortLink($column, $label)
                                 </td>
 
                                 <td>
-
-                                    <span class="badge badge-<?=
-                                                                    $r['status_verifikasi'] == 'terdaftar'
-                                                                        ? 'success'
-                                                                        : ($r['status_verifikasi'] == 'pending'
-                                                                            ? 'warning'
-                                                                            : 'danger')
-                                                                    ?>">
-
-                                        <?= e($r['status_verifikasi']) ?>
-
-                                    </span>
-
+                                    <?php if ($r['is_active'] == '1'): ?>
+                                        <span class="badge badge-success">Aktif</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Nonaktif</span>
+                                    <?php endif; ?>
                                 </td>
 
                             </tr>

@@ -167,8 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             tps = ?,
             nomor_kk = ?,
             nomor_telepon = ?,
-            nomor_whatsapp = ?,
-            status_verifikasi = ?
+            nomor_whatsapp = ?
             WHERE id = ?
         ");
 
@@ -193,7 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['nomor_kk'] ?: null,
             $_POST['nomor_telepon'] ?: null,
             $_POST['nomor_whatsapp'] ?: null,
-            $_POST['status_verifikasi'] ?: 'terdaftar',
             $data['id']
         ]);
 
@@ -295,14 +293,6 @@ require_once __DIR__ . '/../partials/topbar.php';
                 </div>
             </div>
 
-            <div class="form-group col-md-6">
-                <label>Status Verifikasi</label>
-                <select name="status_verifikasi" class="form-control">
-                    <option value="terdaftar" <?= $data['status_verifikasi'] === 'terdaftar' ? 'selected' : '' ?>>Terdaftar</option>
-                    <option value="pending" <?= $data['status_verifikasi'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-                    <option value="ditolak" <?= $data['status_verifikasi'] === 'ditolak' ? 'selected' : '' ?>>Ditolak</option>
-                </select>
-            </div>
 
         </div>
     </div>
