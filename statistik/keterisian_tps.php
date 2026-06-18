@@ -107,7 +107,7 @@ $persen = $totalTPS > 0
             </p>
         </div>
 
-        <canvas id="tpsChart" height="250"></canvas>
+        <canvas id="tpsChart" height="100"></canvas>
 
     </div>
 </div>
