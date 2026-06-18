@@ -358,8 +358,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-lock"></i>
             </div>
 
-            <a href="#" class="forgot">Lupa password?</a>
-
             <button type="submit" class="btn-login">
                 Sign in
             </button>
