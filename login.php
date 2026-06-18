@@ -372,10 +372,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Cek status relawan
         </a>
 
-        <div class="small-info">
-            Akun awal: <b>superadmin</b> / <b>superadmin123</b>
-        </div>
-
     </div>
 
 </div>
