@@ -100,7 +100,7 @@ foreach ($allKabKota as $kabKota) {
             </div>
 
             <div class="card-body">
-                <canvas id="kabupatenChart" height="100"></canvas>
+                <canvas id="kabupatenChart" height="135"></canvas>
             </div>
         </div>
     </div>
