@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <label>Password Baru</label>
-                <input type="password"
+                <div class="input-group">
+                        <input type="password"
                        name="password_baru"
                        id="password_baru"
                        class="form-control"
@@ -98,12 +99,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     data-target="password_baru">
                                 <i class="fas fa-eye"></i>
                             </button>
-                        </div>      
+                        </div>
+                </div>      
             </div>
 
             <div class="form-group">
                 <label>Konfirmasi Password Baru</label>
-                <input type="password"
+                <div class="input-group">
+                        <input type="password"
                        name="konfirmasi"
                        id="konfirmasi"
                        class="form-control"
@@ -116,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary">
