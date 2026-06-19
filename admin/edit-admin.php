@@ -82,7 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             flash(
                 'error',
-                'Kolom berikut tidak sesuai format: ' . implode(', ', $errors)
+                "Kolom berikut tidak sesuai format:\n• " .
+                    implode("\n• ", $errors)
             );
 
             redirect('admin/edit-admin.php?id=' . $data['id']);

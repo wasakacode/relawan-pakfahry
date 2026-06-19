@@ -28,27 +28,42 @@ function upload_file($field, $folder)
 
 function create_profile($pdo, $type, $userId = null)
 {
-    $rt  = trim($_POST['rt'] ?? '');
-    $rw  = trim($_POST['rw'] ?? '');
-    $tps = trim($_POST['tps'] ?? '');
+    $errors = [];
 
-    if (!preg_match('/^[0-9]{3}$/', $rt)) {
-        flash('error', 'RT harus terdiri dari 3 digit angka. Contoh: 001');
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? BASE_URL));
-        exit;
+    if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
+        $errors[] = 'NIK harus terdiri dari 16 digit angka';
     }
 
-    if (!preg_match('/^[0-9]{3}$/', $rw)) {
-        flash('error', 'RW harus terdiri dari 3 digit angka. Contoh: 001');
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? BASE_URL));
-        exit;
+    if (!empty($_POST['nomor_kk']) && !preg_match('/^[0-9]{16}$/', $_POST['nomor_kk'])) {
+        $errors[] = 'Nomor KK harus terdiri dari 16 digit angka';
     }
 
-    if (!preg_match('/^[0-9]{3}$/', $tps)) {
-        flash('error', 'TPS harus terdiri dari 3 digit angka. Contoh: 001');
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? BASE_URL));
-        exit;
+    if (!empty($_POST['rt']) && !preg_match('/^[0-9]{3}$/', $_POST['rt'])) {
+        $errors[] = 'RT harus terdiri dari 3 digit angka';
     }
+
+    if (!empty($_POST['rw']) && !preg_match('/^[0-9]{3}$/', $_POST['rw'])) {
+        $errors[] = 'RW harus terdiri dari 3 digit angka';
+    }
+
+    if (!empty($_POST['tps']) && !preg_match('/^[0-9]{3}$/', $_POST['tps'])) {
+        $errors[] = 'TPS harus terdiri dari 3 digit angka';
+    }
+
+    if (!empty($_POST['keluarga_nik'])) {
+        foreach ($_POST['keluarga_nik'] as $i => $nik) {
+
+            if (!empty($nik) && !preg_match('/^[0-9]{16}$/', $nik)) {
+                $errors[] = 'NIK Anggota Keluarga #' . ($i + 1) . ' harus terdiri dari 16 digit angka';
+            }
+        }
+    }
+
+    throw new Exception(
+        "Kolom berikut tidak sesuai format:\n• " .
+            implode("\n• ", $errors)
+    );
+
     $stmt = $pdo->prepare("INSERT INTO profiles (
         type, user_id, created_by, nik, nama_lengkap, tempat_lahir, tanggal_lahir,
         jenis_kelamin, golongan_darah, status_pernikahan, agama, pekerjaan, alamat,

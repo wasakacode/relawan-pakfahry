@@ -4,21 +4,6 @@ function input_value($name)
     return e($_POST[$name] ?? '');
 }
 
-$tps = $_POST['tps'] ?? '';
-$rt = $_POST['rt'] ?? '';
-$rw = $_POST['rw'] ?? '';
-
-if ($tps != '' && !preg_match('/^TPS [0-9]{3}$/', $tps)) {
-    die("Format TPS harus seperti: TPS 001");
-}
-
-if ($rt != '' && !preg_match('/^RT [0-9]{3}$/', $rt)) {
-    die("Format RT harus seperti: RT 001");
-}
-
-if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
-    die("Format Rw harus seperti: RW 001");
-}
 ?>
 <div class="card shadow mb-4" style="border-radius: 18px; overflow:hidden;">
     <div class="card-header py-3" style="background: linear-gradient(135deg, #eaf9ff, #c8efff);">
@@ -67,8 +52,42 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
 
         <div class="form-group col-md-4">
             <label>NIK</label>
-            <input name="nik" class="form-control" value="<?= input_value('nik') ?>" required>
+            <input
+                type="text"
+                id="nik"
+                name="nik"
+                class="form-control"
+                value="<?= input_value('nik') ?>"
+                maxlength="16"
+                required
+                oninput="validasiNIK()">
+
+            <small id="errorNIK" class="text-danger"></small>
         </div>
+        <script>
+            function validasiNIK() {
+
+                let input = document.getElementById("nik");
+                let error = document.getElementById("errorNIK");
+
+                // Hanya boleh angka
+                input.value = input.value.replace(/[^0-9]/g, '');
+
+                if (input.value === "") {
+                    error.innerHTML = "";
+                    input.classList.remove("is-valid");
+                    input.classList.remove("is-invalid");
+                } else if (input.value.length === 16) {
+                    error.innerHTML = "";
+                    input.classList.remove("is-invalid");
+                    input.classList.add("is-valid");
+                } else {
+                    error.innerHTML = "NIK harus terdiri dari 16 digit angka";
+                    input.classList.remove("is-valid");
+                    input.classList.add("is-invalid");
+                }
+            }
+        </script>
 
         <div class="form-group col-md-8">
             <label>Nama Lengkap</label>
@@ -224,58 +243,58 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
 
         <script>
             function validasiTPS() {
-            let input = document.getElementById("tps");
-            let pesan = document.getElementById("pesanTPS");
+                let input = document.getElementById("tps");
+                let pesan = document.getElementById("pesanTPS");
 
-            // Hanya angka
-            input.value = input.value.replace(/[^0-9]/g, '');
+                // Hanya angka
+                input.value = input.value.replace(/[^0-9]/g, '');
 
-            let regex = /^[0-9]{3}$/;
+                let regex = /^[0-9]{3}$/;
 
-            if (input.value === "") {
-                pesan.innerHTML = "";
-            } else if (regex.test(input.value)) {
-                pesan.innerHTML = "";
-            } else {
-                pesan.innerHTML = "TPS harus terdiri dari 3 digit angka, contoh: 001";
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "TPS harus terdiri dari 3 digit angka, contoh: 001";
+                }
             }
-        }
 
             function validasiRT() {
-            let input = document.getElementById("rt");
-            let pesan = document.getElementById("pesanRT");
+                let input = document.getElementById("rt");
+                let pesan = document.getElementById("pesanRT");
 
-            // Hanya angka
-            input.value = input.value.replace(/[^0-9]/g, '');
+                // Hanya angka
+                input.value = input.value.replace(/[^0-9]/g, '');
 
-            let regex = /^[0-9]{3}$/;
+                let regex = /^[0-9]{3}$/;
 
-            if (input.value === "") {
-                pesan.innerHTML = "";
-            } else if (regex.test(input.value)) {
-                pesan.innerHTML = "";
-            } else {
-                pesan.innerHTML = "RT harus terdiri dari 3 digit angka, contoh: 001";
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "RT harus terdiri dari 3 digit angka, contoh: 001";
+                }
             }
-        }
 
             function validasiRW() {
-            let input = document.getElementById("rw");
-            let pesan = document.getElementById("pesanRW");
+                let input = document.getElementById("rw");
+                let pesan = document.getElementById("pesanRW");
 
-            // Hanya angka
-            input.value = input.value.replace(/[^0-9]/g, '');
+                // Hanya angka
+                input.value = input.value.replace(/[^0-9]/g, '');
 
-            let regex = /^[0-9]{3}$/;
+                let regex = /^[0-9]{3}$/;
 
-            if (input.value === "") {
-                pesan.innerHTML = "";
-            } else if (regex.test(input.value)) {
-                pesan.innerHTML = "";
-            } else {
-                pesan.innerHTML = "RW harus terdiri dari 3 digit angka, contoh: 001";
+                if (input.value === "") {
+                    pesan.innerHTML = "";
+                } else if (regex.test(input.value)) {
+                    pesan.innerHTML = "";
+                } else {
+                    pesan.innerHTML = "RW harus terdiri dari 3 digit angka, contoh: 001";
+                }
             }
-        }
         </script>
 
     </div>
@@ -453,10 +472,40 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
             <div class="form-group col-md-6">
                 <label>Nomor KK</label>
                 <input
+                    type="text"
+                    id="nomor_kk"
                     name="nomor_kk"
                     class="form-control"
-                    value="<?= input_value('nomor_kk') ?>">
+                    value="<?= input_value('nomor_kk') ?>"
+                    maxlength="16"
+                    oninput="validasiKK()">
+
+                <small id="errorKK" class="text-danger"></small>
             </div>
+            <script>
+                function validasiKK() {
+
+                    let input = document.getElementById("nomor_kk");
+                    let error = document.getElementById("errorKK");
+
+                    // Hanya angka
+                    input.value = input.value.replace(/[^0-9]/g, '');
+
+                    if (input.value === "") {
+                        error.innerHTML = "";
+                        input.classList.remove("is-valid");
+                        input.classList.remove("is-invalid");
+                    } else if (input.value.length === 16) {
+                        error.innerHTML = "";
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid");
+                    } else {
+                        error.innerHTML = "Nomor KK harus terdiri dari 16 digit angka";
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid");
+                    }
+                }
+            </script>
 
             <div class="col-md-12">
                 <button
@@ -489,19 +538,19 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
             anggotaIndex++;
 
             const html = `
-        <div class="border rounded p-3 mb-3">
+            <div class="border rounded p-3 mb-3">
 
-            <div class="d-flex justify-content-between mb-3">
-                <h6>Anggota Keluarga ${anggotaIndex}</h6>
+                <div class="d-flex justify-content-between mb-3">
+                    <h6>Anggota Keluarga ${anggotaIndex}</h6>
 
-                <button
-                    type="button"
-                    class="btn btn-sm btn-danger btnHapus">
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-danger btnHapus">
 
-                    Hapus
+                        Hapus
 
-                </button>
-            </div>
+                    </button>
+                </div>
 
             <div class="row">
 
@@ -533,8 +582,13 @@ if ($rw != '' && !preg_match('/^RW [0-9]{3}$/', $rw)) {
                 <div class="form-group col-md-4">
                     <label>NIK</label>
                     <input
-                        name="keluarga_nik[]"
-                        class="form-control">
+                    type="text"
+                    name="keluarga_nik[]"
+                    class="form-control keluarga-nik"
+                    maxlength="16"
+                    oninput="validasiNIKKeluarga(this)">
+
+                <small class="text-danger error-keluarga-nik"></small>
                 </div>
 
                 <div class="form-group col-md-4">
@@ -694,6 +748,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+function validasiNIKKeluarga(input) {
+
+    let error = input.parentElement.querySelector('.error-keluarga-nik');
+
+    // Hanya boleh angka
+    input.value = input.value.replace(/[^0-9]/g, '');
+
+    if (input.value === "") {
+        error.innerHTML = "";
+        input.classList.remove("is-valid");
+        input.classList.remove("is-invalid");
+    }
+    else if (input.value.length === 16) {
+        error.innerHTML = "";
+        input.classList.remove("is-invalid");
+        input.classList.add("is-valid");
+    }
+    else {
+        error.innerHTML = "NIK harus terdiri dari 16 digit angka";
+        input.classList.remove("is-valid");
+        input.classList.add("is-invalid");
+    }
+}
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
