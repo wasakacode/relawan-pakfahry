@@ -36,6 +36,13 @@
                 <span>Buat Admin</span>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/create-dapil.php') ?>">
+                <i class="fas fa-user-shield"></i>
+                <span>Buat Daerah Pemilihan</span>
+            </a>
+        </li>
     <?php endif; ?>
 
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
