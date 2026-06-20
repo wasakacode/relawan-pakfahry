@@ -453,7 +453,7 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
 
         <div class="col-md-4 mb-3">
-            <?php tampilkanFileDokumentasi($data['foto_bukti_rekrut'] ?? null, 'Foto Bukti Rekrut'); ?>
+            <?php tampilkanFileDokumentasi($data['foto_kartu_keluarga'] ?? null, 'Foto Kartu Keluarga'); ?>
         </div>
 
     </div>

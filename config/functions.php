@@ -59,21 +59,25 @@ function create_profile($pdo, $type, $userId = null)
         }
     }
 
-    throw new Exception(
-        "Kolom berikut tidak sesuai format:\n• " .
-            implode("\n• ", $errors)
-    );
+    if (!empty($errors)) {
+
+        throw new Exception(
+            "Kolom berikut tidak sesuai format:\n• " .
+                implode("\n• ", $errors)
+        );
+    }
 
     $stmt = $pdo->prepare("INSERT INTO profiles (
         type, user_id, created_by, nik, nama_lengkap, tempat_lahir, tanggal_lahir,
         jenis_kelamin, golongan_darah, status_pernikahan, agama, pekerjaan, alamat,
         provinsi, kab_kota, kecamatan, desa_kelurahan, rt, rw, tps, nomor_kk,
-        nomor_telepon, nomor_whatsapp, foto_ktp, foto_diri, foto_bukti_rekrut
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        nomor_telepon, nomor_whatsapp, foto_ktp, foto_diri, foto_kartu_keluarga, foto_surat_persetujuan
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
     $fotoKtp = upload_file('foto_ktp', 'ktp');
     $fotoDiri = upload_file('foto_diri', 'diri');
-    $fotoBukti = upload_file('foto_bukti_rekrut', 'bukti');
+    $fotoKK = upload_file('foto_kartu_keluarga', 'kk');
+    $fotoSuratPersetujuan = upload_file('foto_surat_persetujuan', 'persetujuan');
 
     $createdBy = current_user()['id'] ?? null;
 
@@ -103,7 +107,8 @@ function create_profile($pdo, $type, $userId = null)
         $_POST['nomor_whatsapp'] ?: null,
         $fotoKtp,
         $fotoDiri,
-        $fotoBukti
+        $fotoKK,
+        $fotoSuratPersetujuan
     ]);
 
     $profileId = $pdo->lastInsertId();

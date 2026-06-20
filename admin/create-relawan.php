@@ -29,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash('success', 'Akun relawan berhasil dibuat.');
         redirect('admin/list-relawan.php');
-
     } catch (Exception $e) {
         $pdo->rollBack();
         flash('error', 'Gagal membuat relawan: ' . $e->getMessage());
@@ -46,6 +45,80 @@ require_once __DIR__ . '/../partials/topbar.php';
 <form method="POST" enctype="multipart/form-data">
 
     <?php include __DIR__ . '/../partials/form-fields.php'; ?>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Langkah 5 - Dokumentasi</h6>
+        </div>
+
+        <div class="card-body row">
+
+            <div class="form-group col-md-4">
+                <label>Foto KTP <span class="text-danger">*</span></label>
+                <input type="file"
+                    name="foto_ktp"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Foto Diri <span class="text-danger">*</span></label>
+                <input type="file"
+                    name="foto_diri"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+            <!-- Role Relawan -->
+            <div class="form-group col-md-4">
+                <label>Foto Kartu Keluarga <span class="text-danger">*</span></label>
+                <input type="file"
+                    name="foto_kartu_keluarga"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+        </div>
+    </div>
+
+    <?php
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+        $files = ['foto_ktp', 'foto_diri', 'foto_kartu_keluarga'];
+        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+
+        foreach ($files as $file) {
+
+            if (isset($_FILES[$file]) && !empty($_FILES[$file]['name'])) {
+
+                $ext = strtolower(pathinfo($_FILES[$file]['name'], PATHINFO_EXTENSION));
+
+                if (!in_array($ext, $allowed)) {
+                    echo "<div class='alert alert-danger'>
+                        File $file harus berupa PDF atau gambar.
+                      </div>";
+                }
+            } else {
+
+                echo "<div class='alert alert-danger'>
+                    File $file wajib diupload.
+                  </div>";
+            }
+        }
+    }
+    ?>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
@@ -92,21 +165,21 @@ require_once __DIR__ . '/../partials/topbar.php';
 </form>
 
 <script>
-document.getElementById('togglePassword').addEventListener('click', function () {
+    document.getElementById('togglePassword').addEventListener('click', function() {
 
-    const password = document.getElementById('password');
-    const icon = this.querySelector('i');
+        const password = document.getElementById('password');
+        const icon = this.querySelector('i');
 
-    if (password.type === 'password') {
-        password.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        password.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
+        if (password.type === 'password') {
+            password.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            password.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
 
-});
+    });
 </script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
