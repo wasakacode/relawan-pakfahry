@@ -47,9 +47,26 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     <?php include __DIR__ . '/../partials/form-fields.php'; ?>
 
+    <!-- <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Langkah 6 - Daerah Pemilihan (Dapil)</h6>
+        </div>
+        <div class="card-body row">
+            <div class="form-group col-md-6">
+                <label>Daerah Pemilihan (Dapil)</label>
+                <select name="dapil" class="form-control">
+                <option value="">Pilih</option>
+                <option value="Kalsel I">Kalsel I</option>
+                <option value="Kalsel II">Kalsel II</option>
+            </select>
+            </div>
+        </div>
+
+    </div> -->
+
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Langkah 6 - Informasi Akun</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Langkah 7 - Informasi Akun</h6>
         </div>
 
         <div class="card-body row">

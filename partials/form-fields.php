@@ -225,7 +225,8 @@ function input_value($name)
 
             <small id="pesanRW" style="color:red;"></small>
         </div>
-
+        
+       
         <div class="form-group col-md-4">
             <label>TPS</label>
             <input
@@ -240,7 +241,9 @@ function input_value($name)
 
             <small id="pesanTPS" style="color:red;"></small>
         </div>
-
+            
+ <?php if (current_user()['role'] === 'superadmin'): ?>
+            <?php endif; ?>
         <script>
             function validasiTPS() {
                 let input = document.getElementById("tps");
