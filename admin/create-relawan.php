@@ -25,6 +25,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         create_profile($pdo, 'relawan', $userId);
 
+        $dapil_json = json_encode($_POST['dapil_id'] ?? []);
+
+            $stmt = $pdo->prepare("
+                UPDATE profiles 
+                SET dapil_id = ?
+                WHERE user_id = ? AND role = 'relawan'
+            ");
+
+            $stmt->execute([
+                $dapil_json,
+                $userId
+            ]);
+
         $pdo->commit();
 
         flash('success', 'Akun relawan berhasil dibuat.');
@@ -35,6 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$stmt = $pdo->query("
+    SELECT id, daerah_pemilihan, provinsi
+    FROM dapil
+    WHERE is_active = 1
+    ORDER BY daerah_pemilihan ASC
+");
+
+$dapilList = $stmt->fetchAll();
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
@@ -45,6 +66,41 @@ require_once __DIR__ . '/../partials/topbar.php';
 <form method="POST" enctype="multipart/form-data">
 
     <?php include __DIR__ . '/../partials/form-fields.php'; ?>
+
+    <div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Pilih Dapil</h6>
+    </div>
+
+    <div class="card-body row">
+        <?php foreach ($dapilList as $d): ?>
+
+            <div class="col-md-4 mb-2">
+
+                <div class="custom-control custom-checkbox">
+
+                    <input type="checkbox"
+                        class="custom-control-input"
+                        id="dapil_<?= $d['id'] ?>"
+                        name="dapil_id[]"
+                        value="<?= $d['id'] ?>">
+
+                    <label class="custom-control-label"
+                        for="dapil_<?= $d['id'] ?>">
+
+                        <?= e($d['daerah_pemilihan']) ?> - <?= e($d['provinsi']) ?>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    </div>
+
+    </div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">

@@ -259,8 +259,10 @@ function sortLink($column, $label)
                         </option>
 
                     </select>
-                </div>
+                    
 
+                </div>
+                            
                 <!-- Button -->
                 <div class="col-md-3 mb-2">
                     <div class="d-flex">

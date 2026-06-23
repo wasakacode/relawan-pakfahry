@@ -10,7 +10,8 @@ if (!$id) {
     redirect('admin/list-admin.php');
 }
 
-$stmt = $pdo->prepare("SELECT p.*, u.username, u.is_active, u.id AS akun_id
+$stmt = $pdo->prepare("SELECT p.*, u.username, u.is_active, u.id AS akun_id, 
+                        p.profile_active AS profile_active
                        FROM profiles p
                        LEFT JOIN users u ON p.user_id = u.id
                        WHERE p.id = ? 
@@ -93,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = trim($_POST['username'] ?? '');
         $passwordBaru = trim($_POST['password'] ?? '');
         $isActive = isset($_POST['is_active']) ? 1 : 0;
+        $profile_active = isset($_POST['profile_active']) ? 1 : 0;
 
         // cek username sudah digunakan oleh akun lain
         $stmtCekUsername = $pdo->prepare("
@@ -168,7 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             tps = ?,
             nomor_kk = ?,
             nomor_telepon = ?,
-            nomor_whatsapp = ?
+            nomor_whatsapp = ?,
+            profile_active = ?
             WHERE id = ?
         ");
 
@@ -193,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['nomor_kk'] ?: null,
             $_POST['nomor_telepon'] ?: null,
             $_POST['nomor_whatsapp'] ?: null,
+            $profile_active,
             $data['id']
         ]);
 
@@ -291,6 +295,24 @@ require_once __DIR__ . '/../partials/topbar.php';
                     <input type="checkbox" name="is_active" class="custom-control-input" id="is_active"
                         <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
                     <label class="custom-control-label" for="is_active">Akun Aktif</label>
+                </div>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Tampilkan Admin</label><br>
+
+                <div class="custom-control custom-switch">
+
+                    <input type="checkbox"
+                        name="profile_active"
+                        class="custom-control-input"
+                        id="profile_active"
+                        value="1"
+                        <?= ((int)$data['profile_active'] === 1) ? 'checked' : '' ?>>
+
+                    <label class="custom-control-label" for="profile_active">
+                        Tampilkan
+                    </label>
+
                 </div>
             </div>
 

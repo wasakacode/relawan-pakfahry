@@ -1,0 +1,22 @@
+<!-- <form method="POST">
+
+                            <input type="hidden" name="toggle_id" value="<?= $row['id'] ?>">
+
+                            <div class="custom-control custom-switch">
+
+                                <input type="checkbox"
+                                    class="custom-control-input"
+                                    id="active_<?= $row['id'] ?>"
+                                    name="is_active"
+                                    value="1"
+                                    onchange="this.form.submit()"
+                                    <?= ((int)$row['is_active'] === 1) ? 'checked' : '' ?>>
+
+                                <label class="custom-control-label"
+                                    for="active_<?= $row['id'] ?>">
+                                    <?= ((int)$row['is_active'] === 1) ? 'Aktif' : 'Nonaktif' ?>
+                                </label>
+
+                            </div>
+
+                        </form> -->

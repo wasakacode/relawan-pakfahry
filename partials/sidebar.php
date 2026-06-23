@@ -89,6 +89,12 @@
                 <span>Data Admin</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-dapil.php') ?>">
+                <i class="fas fa-globe"></i>
+                <span>Data Dapil</span>
+            </a>
+        </li>
     <?php endif; ?>
 
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
