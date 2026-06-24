@@ -13,8 +13,8 @@ require_once __DIR__ . '/../partials/topbar.php';
 |--------------------------------------------------------------------------
 */
 
-$search   = $_GET['search'] ?? '';
-$provinsi = $_GET['provinsi'] ?? '';
+$search     = $_GET['search'] ?? '';
+$kab_kota   = $_GET['kab_kota'] ?? '';
 
 
 /*
@@ -75,8 +75,7 @@ $sql = "
         id,
         daerah_pemilihan,
         provinsi,
-        kab_kota,
-        is_active
+        kab_kota
     FROM dapil
     WHERE 1=1
 ";
@@ -102,9 +101,9 @@ if (!empty($search)) {
     $params['search'] = "%{$search}%";
 }
 
-if (!empty($provinsi)) {
-    $sql .= " AND provinsi = :provinsi ";
-    $params['provinsi'] = $provinsi;
+if (!empty($kab_kota)) {
+    $sql .= " AND kab_kota LIKE :kab_kota ";
+    $params['kab_kota'] = '%' . $kab_kota . '%';
 }
 
 /*
@@ -133,6 +132,27 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
 $rows = $stmt->fetchAll();
+
+$kabupatenList = [];
+
+$stmtKab = $pdo->query("
+    SELECT kab_kota
+    FROM dapil
+");
+
+while ($rowKab = $stmtKab->fetch(PDO::FETCH_ASSOC)) {
+
+    $items = json_decode($rowKab['kab_kota'], true);
+
+    if (is_array($items)) {
+        foreach ($items as $kab) {
+            $kabupatenList[] = trim($kab);
+        }
+    }
+}
+
+$kabupatenList = array_unique($kabupatenList);
+sort($kabupatenList);
 ?>
 
 <h1 class="h3 mb-4 text-gray-800">Data Daerah Pemilihan (Dapil)</h1>
@@ -154,115 +174,115 @@ $rows = $stmt->fetchAll();
 
         <!-- FILTER -->
         <form method="GET" class="mb-4">
-    <div class="row">
+            <div class="row">
 
-        <!-- Search -->
-        <div class="col-md-4 mb-2">
-            <input type="text"
-                name="search"
-                class="form-control"
-                placeholder="Cari dapil"
-                value="<?= e($search) ?>">
-        </div>
+                <!-- Search -->
+                <div class="col-md-4 mb-2">
+                    <input type="text"
+                        name="search"
+                        class="form-control"
+                        placeholder="Cari dapil atau kabupaten/kota"
+                        value="<?= e($search) ?>">
+                </div>
 
-        <!-- Provinsi -->
-        <div class="col-md-4 mb-2">
-            <select name="provinsi" class="form-control">
-                <option value="">Semua Provinsi</option>
+                <!-- Provinsi -->
+                <div class="col-md-4 mb-2">
+                    <select name="kab_kota" class="form-control">
+                        <option value="">Semua Kabupaten/Kota</option>
 
-                <?php foreach ($provinsiList as $p): ?>
-                    <option value="<?= e($p) ?>"
-                        <?= ($provinsi == $p) ? 'selected' : '' ?>>
-                        <?= e($p) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+                        <?php foreach ($kabupatenList as $kab): ?>
+                            <option value="<?= e($kab) ?>"
+                                <?= ($kab_kota == $kab) ? 'selected' : '' ?>>
+                                <?= e($kab) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-        <!-- Button -->
-        <div class="col-md-4 mb-2">
-            <div class="d-flex">
+                <!-- Button -->
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex">
 
-                <button type="submit" class="btn btn-primary flex-fill mr-2">
-                    <i class="fas fa-filter"></i> Filter
-                </button>
+                        <button type="submit" class="btn btn-primary flex-fill mr-2">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
 
-                <a href="<?= strtok($_SERVER["REQUEST_URI"], '?') ?>"
-                    class="btn btn-secondary flex-fill">
-                    <i class="fas fa-sync-alt"></i> Reset
-                </a>
+                        <a href="<?= strtok($_SERVER["REQUEST_URI"], '?') ?>"
+                            class="btn btn-secondary flex-fill">
+                            <i class="fas fa-sync-alt"></i> Reset
+                        </a>
+
+                    </div>
+                </div>
 
             </div>
-        </div>
-
-    </div>
-</form>
+        </form>
 
         <!-- TABLE -->
         <div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="thead-light">
-            <tr>
-                <th width="60">No</th>
-                <th>Daerah Pemilihan</th>
-                <th>Provinsi</th>
-                <th>Kabupaten/Kota</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
+            <table class="table table-bordered table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th width="60">No</th>
+                        <th>Daerah Pemilihan</th>
+                        <th>Provinsi</th>
+                        <th>Kabupaten/Kota</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
 
-        <tbody>
+                <tbody>
 
-        <?php if ($rows): ?>
+                    <?php if ($rows): ?>
 
-            <?php foreach ($rows as $i => $row): ?>
+                        <?php foreach ($rows as $i => $row): ?>
 
-                <tr>
-                    <td><?= $i + 1 ?></td>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
 
-                    <td><?= e($row['daerah_pemilihan']) ?></td>
+                                <td><?= e($row['daerah_pemilihan']) ?></td>
 
-                    <td><?= e($row['provinsi']) ?></td>
+                                <td><?= e($row['provinsi']) ?></td>
 
-                    <td>
-                        <?php
-                        $kabupaten = json_decode($row['kab_kota'], true);
+                                <td>
+                                    <?php
+                                    $kabupaten = json_decode($row['kab_kota'], true);
 
-                        if (is_array($kabupaten) && count($kabupaten) > 0) {
-                            foreach ($kabupaten as $kab) {
-                                echo '<span class="badge badge-primary mr-1 mb-1">' . e($kab) . '</span>';
-                            }
-                        } else {
-                            echo '-';
-                        }
-                        ?>
-                    </td>
-                    <td>
-                        <a href="<?= url('admin/edit-dapil.php?id=' . $row['id']) ?>"
-                            class="btn btn-warning btn-sm p-1"
-                            title="Edit Data">
-                                <i class="fas fa-pen"></i>
-                        </a>
+                                    if (is_array($kabupaten) && count($kabupaten) > 0) {
+                                        foreach ($kabupaten as $kab) {
+                                            echo '<span class="badge badge-primary mr-1 mb-1">' . e($kab) . '</span>';
+                                        }
+                                    } else {
+                                        echo '-';
+                                    }
+                                    ?>
+                                </td>
+                                <td>
+                                    <a href="<?= url('admin/edit-dapil.php?id=' . $row['id']) ?>"
+                                        class="btn btn-warning btn-sm p-1"
+                                        title="Edit Data">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
 
-                    </td>
+                                </td>
 
-                </tr>
+                            </tr>
 
-            <?php endforeach; ?>
+                        <?php endforeach; ?>
 
-        <?php else: ?>
+                    <?php else: ?>
 
-            <tr>
-                <td colspan="4" class="text-center">
-                    Belum ada data.
-                </td>
-            </tr>
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                Belum ada data.
+                            </td>
+                        </tr>
 
-        <?php endif; ?>
+                    <?php endif; ?>
 
-        </tbody>
-    </table>
-</div>
+                </tbody>
+            </table>
+        </div>
 
     </div>
 

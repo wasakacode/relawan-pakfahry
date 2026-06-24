@@ -9,9 +9,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         // Ubah array kabupaten menjadi JSON
-        $kabKota = !empty($_POST['kab_kota'])
-            ? json_encode($_POST['kab_kota'], JSON_UNESCAPED_UNICODE)
-            : null;
+        $kabKota = json_encode(
+            array_values(array_unique($_POST['kab_kota'] ?? [])),
+            JSON_UNESCAPED_UNICODE
+        );
+
+        $daerahPemilihan = trim($_POST['daerah_pemilihan'] ?? '');
+        $provinsi = trim($_POST['provinsi'] ?? '');
+
+        if ($daerahPemilihan === '') {
+            throw new Exception('Daerah pemilihan wajib diisi.');
+        }
+
+        if ($provinsi === '') {
+            throw new Exception('Provinsi wajib dipilih.');
+        }
+
+        if (empty($_POST['kab_kota'])) {
+            throw new Exception('Minimal pilih 1 Kabupaten/Kota.');
+        }
+
+        $cek = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM dapil
+            WHERE daerah_pemilihan = ?
+        ");
+
+        $cek->execute([$daerahPemilihan]);
+
+        if ($cek->fetchColumn() > 0) {
+            throw new Exception('Nama dapil sudah ada.');
+        }
 
         $stmt = $pdo->prepare("
             INSERT INTO dapil
@@ -20,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         $stmt->execute([
-            trim($_POST['daerah_pemilihan']),
-            $_POST['provinsi'],
+            $daerahPemilihan,
+            $provinsi,
             $kabKota
         ]);
 
@@ -29,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash('success', 'Dapil berhasil dibuat.');
         redirect('admin/create-dapil.php');
-
+        exit;
     } catch (Exception $e) {
 
         if ($pdo->inTransaction()) {
@@ -37,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         flash('error', 'Gagal membuat dapil: ' . $e->getMessage());
+        redirect('admin/create-dapil.php');
+        exit;
     }
 }
 
@@ -45,10 +75,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Buat Admin (Koordinator Kecamatan)</h1>
+<h1 class="h3 mb-4 text-gray-800">Buat Daerah Pemilihan (Dapil)</h1>
 
-<form method="POST" enctype="multipart/form-data">
-
+<form method="POST">
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
@@ -63,8 +92,8 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-12">
                 <label>Provinsi</label>
                 <select name="provinsi" id="provinsi" class="form-control" required>
-                <option value="">Memuat data provinsi...</option>
-            </select>
+                    <option value="">Memuat data provinsi...</option>
+                </select>
             </div>
             <div class="form-group col-md-12">
                 <label>Kabupaten/Kota</label>
@@ -80,7 +109,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </div>
 
     <button class="btn btn-primary mb-4">
-        <i class="fas fa-save"></i> Simpan Admin
+        <i class="fas fa-save"></i> Simpan Dapil
     </button>
 
 </form>
@@ -135,13 +164,9 @@ require_once __DIR__ . '/../partials/topbar.php';
             try {
                 setLoading(kabKotaSelect, 'Memuat kabupaten/kota...');
 
-                console.log("Provinsi ID:", provinsiId);
-
                 const data = await fetchWilayah(`${API_URL}/regencies/${provinsiId}.json`);
 
-                 console.log(data);
-
-                kabKotaSelect.innerHTML ="";
+                kabKotaSelect.innerHTML = "";
 
                 data.forEach(item => {
                     const option = document.createElement('option');
@@ -160,11 +185,9 @@ require_once __DIR__ . '/../partials/topbar.php';
 
         provinsiSelect.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
-            console.log(selected);
             const provinsiId = selected.dataset.id;
 
             resetSelect(kabKotaSelect, 'Pilih provinsi terlebih dahulu');
-            console.log(provinsiId);
             if (provinsiId) {
                 loadKabKota(provinsiId);
             }
