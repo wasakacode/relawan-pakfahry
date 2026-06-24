@@ -25,18 +25,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         create_profile($pdo, 'admin', $userId);
 
-        $dapil_json = json_encode($_POST['dapil_id'] ?? []);
+        // ambil id profile admin
+                $stmt = $pdo->prepare("
+                    SELECT id
+                    FROM profiles
+                    WHERE user_id = ?
+                    LIMIT 1
+                ");
+                $stmt->execute([$userId]);
 
-            $stmt = $pdo->prepare("
-                UPDATE profiles 
-                SET dapil_id = ?
-                WHERE user_id = ? AND role = 'relawan'
-            ");
+                $profileId = $stmt->fetchColumn();
 
-            $stmt->execute([
-                $dapil_json,
-                $userId
-            ]);
+                // simpan semua dapil yang dipilih
+                if (!empty($_POST['dapil_id'])) {
+
+                    $stmt = $pdo->prepare("
+                        INSERT INTO profile_dapil
+                        (profile_id, dapil_id)
+                        VALUES (?, ?)
+                    ");
+
+                    foreach ($_POST['dapil_id'] as $dapilId) {
+
+                        $stmt->execute([
+                            $profileId,
+                            $dapilId
+                        ]);
+
+                    }
+
+                }
 
         $pdo->commit();
 

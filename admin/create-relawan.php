@@ -25,19 +25,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         create_profile($pdo, 'relawan', $userId);
 
-        $dapil_json = json_encode($_POST['dapil_id'] ?? []);
+        // ambil id profile relawan
+                $stmt = $pdo->prepare("
+                    SELECT id
+                    FROM profiles
+                    WHERE user_id = ?
+                    LIMIT 1
+                ");
+                $stmt->execute([$userId]);
 
-            $stmt = $pdo->prepare("
-                UPDATE profiles 
-                SET dapil_id = ?
-                WHERE user_id = ? AND role = 'relawan'
-            ");
+                $profileId = $stmt->fetchColumn();
 
-            $stmt->execute([
-                $dapil_json,
-                $userId
-            ]);
+                // simpan admin yang dipilih
+                if (empty($_POST['admin_id'])) {
+                        throw new Exception('Pilih minimal satu admin.');
+                    }
 
+                    $stmt = $pdo->prepare("
+                        INSERT INTO profile_admin
+                        (profile_id, admin_profile_id)
+                        VALUES (?, ?)
+                    ");
+
+                    foreach ($_POST['admin_id'] as $adminId) {
+                        $stmt->execute([
+                            $profileId,
+                            $adminId
+                        ]);
+                }
         $pdo->commit();
 
         flash('success', 'Akun relawan berhasil dibuat.');
@@ -48,12 +63,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$stmt = $pdo->query("
-    SELECT id, daerah_pemilihan, provinsi
-    FROM dapil
-    WHERE is_active = 1
-    ORDER BY daerah_pemilihan ASC
-");
+            $stmt = $pdo->query("
+                SELECT
+                    p.id,
+                    p.nama_lengkap,
+                    GROUP_CONCAT(
+                        d.daerah_pemilihan
+                        ORDER BY d.daerah_pemilihan
+                        SEPARATOR ', '
+                    ) AS dapil
+                FROM profiles p
+
+                LEFT JOIN profile_dapil pd
+                    ON pd.profile_id = p.id
+
+                LEFT JOIN dapil d
+                    ON d.id = pd.dapil_id
+
+                WHERE
+                    p.type='admin'
+                    AND p.profile_active=1
+
+                GROUP BY
+                    p.id,
+                    p.nama_lengkap
+
+                ORDER BY
+                    p.nama_lengkap
+                ");
+
+                $adminList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $dapilList = $stmt->fetchAll();
 require_once __DIR__ . '/../partials/header.php';
@@ -67,28 +106,42 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     <?php include __DIR__ . '/../partials/form-fields.php'; ?>
 
-    <div class="card shadow mb-4">
+<div class="card shadow mb-4">
+
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Pilih Dapil</h6>
+        <h6 class="m-0 font-weight-bold text-primary">
+            Pilih Admin
+        </h6>
     </div>
 
     <div class="card-body row">
-        <?php foreach ($dapilList as $d): ?>
 
-            <div class="col-md-4 mb-2">
+        <?php foreach($adminList as $admin): ?>
+
+            <div class="col-md-6 mb-3">
 
                 <div class="custom-control custom-checkbox">
 
-                    <input type="checkbox"
+                    <input
+                        type="checkbox"
                         class="custom-control-input"
-                        id="dapil_<?= $d['id'] ?>"
-                        name="dapil_id[]"
-                        value="<?= $d['id'] ?>">
+                        id="admin_<?= $admin['id'] ?>"
+                        name="admin_id[]"
+                        value="<?= $admin['id'] ?>">
 
-                    <label class="custom-control-label"
-                        for="dapil_<?= $d['id'] ?>">
+                    <label
+                        class="custom-control-label"
+                        for="admin_<?= $admin['id'] ?>">
 
-                        <?= e($d['daerah_pemilihan']) ?> - <?= e($d['provinsi']) ?>
+                        <strong><?= e($admin['nama_lengkap']) ?></strong>
+
+                        <br>
+
+                        <small class="text-muted">
+
+                            <?= e($admin['dapil']) ?>
+
+                        </small>
 
                     </label>
 
@@ -100,7 +153,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     </div>
 
-    </div>
+</div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
