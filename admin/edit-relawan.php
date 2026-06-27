@@ -37,7 +37,38 @@ $familyStmt = $pdo->prepare("
 $familyStmt->execute([$id]);
 
 $familyMembers = $familyStmt->fetchAll(PDO::FETCH_ASSOC);
+$stmtadmin = $pdo->query("
+SELECT
+    p.id,
+    p.nama_lengkap,
+    GROUP_CONCAT(
+        d.daerah_pemilihan
+        ORDER BY d.daerah_pemilihan
+        SEPARATOR ', '
+    ) AS dapil
+FROM profiles p
+LEFT JOIN profile_dapil pd
+    ON pd.profile_id = p.id
+LEFT JOIN dapil d
+    ON d.id = pd.dapil_id
+WHERE
+    p.type='admin'
+    AND p.profile_active=1
+GROUP BY p.id
+ORDER BY p.nama_lengkap
+");
 
+$adminList = $stmtadmin->fetchAll(PDO::FETCH_ASSOC);
+
+$stmtadmin = $pdo->prepare("
+SELECT admin_profile_id
+FROM profile_admin
+WHERE profile_id = ?
+");
+
+$stmtadmin->execute([$id]);
+
+$selectedAdmin = $stmtadmin->fetchAll(PDO::FETCH_COLUMN);
 $data = $stmt->fetch();
 
 if (!$data) {
@@ -249,6 +280,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
         }
+
+        $stmtadmin = $pdo->prepare("
+        DELETE FROM profile_admin
+        WHERE profile_id = ?
+        ");
+
+        $stmtadmin->execute([$id]);
+
+        if (!empty($_POST['admin_id'])) {
+
+    $stmtadmin = $pdo->prepare("
+        INSERT INTO profile_admin
+        (profile_id, admin_profile_id)
+        VALUES (?, ?)
+    ");
+
+    foreach ($_POST['admin_id'] as $adminId) {
+
+        $stmtadmin->execute([
+            $id,
+            $adminId
+        ]);
+
+    }
+
+}
 
         $pdo->commit();
 
@@ -803,6 +860,58 @@ require_once __DIR__ . '/../partials/topbar.php';
 
         </div>
     </div>
+
+    <div class="card shadow mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            Admin yang menaungi
+        </h6>
+    </div>
+
+    <div class="card-body row">
+
+        <?php foreach ($adminList as $admin): ?>
+
+            <div class="col-md-6 mb-3">
+
+                <div class="custom-control custom-checkbox">
+
+                    <input
+                        type="checkbox"
+                        class="custom-control-input"
+                        id="admin_<?= $admin['id'] ?>"
+                        name="admin_id[]"
+                        value="<?= $admin['id'] ?>"
+
+                        <?= in_array($admin['id'], $selectedAdmin) ? 'checked' : '' ?>
+
+                    >
+
+                    <label
+                        class="custom-control-label"
+                        for="admin_<?= $admin['id'] ?>">
+
+                        <strong><?= e($admin['nama_lengkap']) ?></strong>
+
+                        <br>
+
+                        <small class="text-muted">
+                            <?= e($admin['dapil']) ?>
+                        </small>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    </div>
+
+</div>
+
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan
     </button>

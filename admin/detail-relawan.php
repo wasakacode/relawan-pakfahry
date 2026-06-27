@@ -31,6 +31,40 @@ if (current_user()['role'] === 'admin') {
 
 $data = $stmt->fetch();
 
+$stmtAdmin = $pdo->prepare("
+    SELECT
+        p.id,
+        p.nama_lengkap,
+        GROUP_CONCAT(
+            d.daerah_pemilihan
+            ORDER BY d.daerah_pemilihan
+            SEPARATOR ', '
+        ) AS dapil
+    FROM profile_admin pa
+
+    INNER JOIN profiles p
+        ON p.id = pa.admin_profile_id
+
+    LEFT JOIN profile_dapil pd
+        ON pd.profile_id = p.id
+
+    LEFT JOIN dapil d
+        ON d.id = pd.dapil_id
+
+    WHERE pa.profile_id = ?
+
+    GROUP BY
+        p.id,
+        p.nama_lengkap
+
+    ORDER BY
+        p.nama_lengkap
+");
+
+$stmtAdmin->execute([$data['id']]);
+
+$adminList = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
+
 if (!$data) {
     flash('error', 'Data relawan tidak ditemukan atau Anda tidak memiliki akses.');
     redirect('admin/list-relawan.php');
@@ -300,6 +334,69 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
     </div>
 
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+            <div class="card content-card shadow h-100">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                Admin Yang Menaungi
+            </h6>
+        </div>
+         <div class="card-body">
+
+        <?php if ($adminList): ?>
+
+            <table class="table table-bordered">
+
+                <thead>
+
+                    <tr>
+
+                        <th width="5%">No</th>
+
+                        <th>Nama Admin</th>
+
+                        <th>Dapil</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <?php foreach ($adminList as $i => $admin): ?>
+
+                        <tr>
+
+                            <td><?= $i + 1 ?></td>
+
+                            <td><?= e($admin['nama_lengkap']) ?></td>
+
+                            <td><?= e($admin['dapil']) ?></td>
+
+                        </tr>
+
+                    <?php endforeach; ?>
+
+                </tbody>
+
+            </table>
+
+        <?php else: ?>
+
+            <div class="alert alert-warning mb-0">
+                Relawan ini belum memiliki admin yang menaungi.
+            </div>
+
+        <?php endif; ?>
+
+    </div>
+        
+    </div>
+    </div>
+    
 </div>
 
 <div class="row">
