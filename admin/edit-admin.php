@@ -32,6 +32,29 @@ $familyMembers = $familyStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $data = $stmt->fetch();
 
+$stmtDapil = $pdo->prepare("
+    SELECT dapil_id
+    FROM profile_dapil
+    WHERE profile_id = ?
+");
+$stmtDapil->execute([$data['id']]);
+
+$selectedDapil = $stmtDapil->fetchAll(PDO::FETCH_COLUMN);
+
+$stmtdaerahpemilih = $pdo->query("
+    SELECT
+        id,
+        daerah_pemilihan,
+        provinsi,
+        kab_kota
+    FROM dapil
+    ORDER BY daerah_pemilihan
+");
+
+$dapilList = $stmtdaerahpemilih->fetchAll(PDO::FETCH_ASSOC);
+
+
+
 if (!$data) {
     flash('error', 'Data admin tidak ditemukan.');
     redirect('admin/list-admin.php');
@@ -242,6 +265,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
         }
+
+        if (empty($_POST['dapil_id'])) {
+                throw new Exception('Pilih minimal satu dapil.');
+            }
+                    $stmtDapil = $pdo->prepare("
+                DELETE FROM profile_dapil
+                WHERE profile_id = ?
+            ");
+
+            $stmtDapil->execute([$data['id']]);
+
+            $stmtDapil = $pdo->prepare("
+                INSERT INTO profile_dapil
+                (profile_id, dapil_id)
+                VALUES (?, ?)
+            ");
+
+            foreach ($_POST['dapil_id'] as $dapilId) {
+
+                $stmtDapil->execute([
+                    $data['id'],
+                    $dapilId
+                ]);
+
+            }
 
         $pdo->commit();
 
@@ -817,6 +865,65 @@ require_once __DIR__ . '/../partials/topbar.php';
 
         </div>
     </div>
+
+<div class="card shadow mb-4">
+
+    <div class="card-header">
+        <h6 class="m-0 font-weight-bold">
+            <i class="fas fa-map mr-2" style="color:#3db7ee;"></i>
+            Dapil
+        </h6>
+    </div>
+
+    <div class="card-body row">
+
+        <?php foreach ($dapilList as $d): ?>
+
+            <div class="col-md-4 mb-2">
+
+                <div class="custom-control custom-checkbox">
+
+                    <input
+                        type="checkbox"
+                        class="custom-control-input"
+                        id="dapil_<?= $d['id'] ?>"
+                        name="dapil_id[]"
+                        value="<?= $d['id'] ?>"
+
+                        <?= in_array($d['id'], $selectedDapil) ? 'checked' : '' ?>>
+
+                    <label
+                        class="custom-control-label"
+                        for="dapil_<?= $d['id'] ?>">
+
+                        <strong><?= e($d['daerah_pemilihan']) ?></strong>
+
+                        <br>
+
+                        <small class="text-muted">
+
+                            <?= e($d['provinsi']) ?>
+
+                            <?php if (!empty($d['kab_kota'])): ?>
+
+                                - <?= e($d['kab_kota']) ?>
+
+                            <?php endif; ?>
+
+                        </small>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    </div>
+
+</div>
+
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan
     </button>

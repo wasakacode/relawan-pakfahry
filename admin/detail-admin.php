@@ -10,6 +10,20 @@ if (!$id) {
     redirect('admin/list-admin.php');
 }
 
+$stmtDapil = $pdo->prepare("
+    SELECT
+        d.daerah_pemilihan,
+        d.provinsi,
+        d.kab_kota
+    FROM profile_dapil pd
+    INNER JOIN dapil d
+        ON d.id = pd.dapil_id
+    WHERE pd.profile_id = ?
+    ORDER BY d.daerah_pemilihan
+");
+
+
+
 $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
                        FROM profiles p
                        LEFT JOIN users u ON p.user_id = u.id
@@ -28,6 +42,9 @@ if (!$data) {
 $stmtFamily = $pdo->prepare("SELECT * FROM family_members WHERE profile_id = ?");
 $stmtFamily->execute([$data['id']]);
 $families = $stmtFamily->fetchAll();
+
+$stmtDapil->execute([$data['id']]);
+$dapilList = $stmtDapil->fetchAll(PDO::FETCH_ASSOC);
 
 function tampilkanFileDokumentasi($file, $label)
 {
@@ -290,6 +307,43 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
     </div>
 
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card content-card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    Dapil
+                </h6>
+            </div>
+
+            <div class="card-body">
+                    <?php if ($dapilList): ?>
+
+        <ul class="mb-0 pl-3">
+            <?php foreach ($dapilList as $dapil): ?>
+                <li>
+                    <strong><?= e($dapil['daerah_pemilihan']) ?></strong>
+                    <br>
+                    <small class="text-muted">
+                        <?= e($dapil['provinsi']) ?>
+                        <?php if (!empty($dapil['kab_kota'])): ?>
+                            - <?= e($dapil['kab_kota']) ?>
+                        <?php endif; ?>
+                    </small>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+
+    <?php else: ?>
+
+        <span class="text-muted">Belum memiliki dapil.</span>
+
+    <?php endif; ?>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row">
