@@ -3,42 +3,20 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-$totalRelawan = $pdo->query("SELECT COUNT(*) AS total FROM profiles WHERE type='relawan'")->fetch()['total'];
-$totalDukungan = $pdo->query("SELECT COUNT(*) AS total FROM profiles WHERE type='dukungan'")->fetch()['total'];
-$totalAdmin = $pdo->query("SELECT COUNT(*) AS total FROM profiles WHERE type='admin'")->fetch()['total'];
-$totalUser = $pdo->query("SELECT COUNT(*) AS total FROM users WHERE is_active=1")->fetch()['total'];
+$currentUser = current_user();
+$role = $currentUser['role'] ?? '';
+$currentUserId = (int)($currentUser['id'] ?? ($_SESSION['user']['id'] ?? ($_SESSION['user_id'] ?? 0)));
 
-$role = current_user()['role'];
-
-if ($role === 'superadmin') {
-    $welcomeRole = 'Superadmin';
-    $welcomeText = 'Anda memiliki akses penuh untuk mengelola admin kecamatan, relawan, dukungan, serta akun pengguna dalam sistem.';
-} elseif ($role === 'admin') {
-    $welcomeRole = 'Admin Kecamatan';
-    $welcomeText = 'Anda dapat membuat akun relawan, menginput dukungan, serta mengelola data pada wilayah yang menjadi tanggung jawab Anda.';
-} else {
-    $welcomeRole = 'Relawan';
-    $welcomeText = 'Anda dapat melihat profil pendaftaran diri dan menambahkan data dukungan yang berhasil dikumpulkan.';
-}
-
-
-$stmt = $pdo->query("
-    SELECT
-        kab_kota,
-        SUM(CASE WHEN type='relawan' THEN 1 ELSE 0 END) AS total_relawan,
-        SUM(CASE WHEN type='dukungan' THEN 1 ELSE 0 END) AS total_dukungan
-    FROM profiles
-    GROUP BY kab_kota
-");
-
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$dataMap = [];
-
-
+/*
+|--------------------------------------------------------------------------
+| Daftar Kabupaten/Kota Kalimantan Selatan
+|--------------------------------------------------------------------------
+| Disesuaikan dengan data di tabel dapil.
+| Di database kamu tertulis "KOTA BANJAR BARU", bukan "KOTA BANJARBARU".
+*/
 $allKabKota = [
     'KOTA BANJARMASIN',
-    'KOTA BANJARBARU',
+    'KOTA BANJAR BARU',
     'KABUPATEN BANJAR',
     'KABUPATEN BARITO KUALA',
     'KABUPATEN TAPIN',
@@ -52,21 +30,288 @@ $allKabKota = [
     'KABUPATEN KOTA BARU'
 ];
 
+/*
+|--------------------------------------------------------------------------
+| Helper placeholder query IN (?, ?, ?)
+|--------------------------------------------------------------------------
+*/
+$makePlaceholders = function ($count) {
+    return implode(',', array_fill(0, $count, '?'));
+};
+
+/*
+|--------------------------------------------------------------------------
+| Tentukan wilayah statistik berdasarkan role
+|--------------------------------------------------------------------------
+| Superadmin : melihat seluruh data
+| Admin      : hanya melihat data sesuai dapil yang dipegang
+*/
+$isStatLimited = false;
+$allowedKabKota = $allKabKota;
+$adminProfile = null;
+
+if ($role === 'admin') {
+    $isStatLimited = true;
+    $allowedKabKota = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ambil profile admin yang sedang login
+    |--------------------------------------------------------------------------
+    */
+    $stmtAdminProfile = $pdo->prepare("
+        SELECT id, kab_kota, kecamatan
+        FROM profiles
+        WHERE user_id = ?
+          AND type = 'admin'
+        LIMIT 1
+    ");
+    $stmtAdminProfile->execute([$currentUserId]);
+    $adminProfile = $stmtAdminProfile->fetch(PDO::FETCH_ASSOC);
+
+    if ($adminProfile) {
+        $adminProfileId = (int)$adminProfile['id'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil daftar kabupaten/kota dari dapil admin
+        |--------------------------------------------------------------------------
+        */
+        $stmtDapil = $pdo->prepare("
+            SELECT d.kab_kota
+            FROM profile_dapil pd
+            INNER JOIN dapil d ON d.id = pd.dapil_id
+            WHERE pd.profile_id = ?
+        ");
+        $stmtDapil->execute([$adminProfileId]);
+        $dapilRows = $stmtDapil->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($dapilRows as $dapilRow) {
+            $kabKotaJson = $dapilRow['kab_kota'] ?? '';
+            $decodedKabKota = json_decode($kabKotaJson, true);
+
+            if (is_array($decodedKabKota)) {
+                foreach ($decodedKabKota as $kabKota) {
+                    $kabKota = trim($kabKota);
+
+                    if ($kabKota !== '') {
+                        $allowedKabKota[] = $kabKota;
+                    }
+                }
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cadangan:
+        | Kalau admin belum punya relasi di profile_dapil,
+        | dashboard tetap menampilkan data berdasarkan kab_kota profil admin.
+        |--------------------------------------------------------------------------
+        */
+        if (empty($allowedKabKota) && !empty($adminProfile['kab_kota'])) {
+            $allowedKabKota[] = trim($adminProfile['kab_kota']);
+        }
+    }
+
+    $allowedKabKota = array_values(array_unique($allowedKabKota));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Fungsi menghitung total profiles
+|--------------------------------------------------------------------------
+*/
+$countProfiles = function ($type) use ($pdo, $isStatLimited, $allowedKabKota, $makePlaceholders) {
+    if ($isStatLimited && empty($allowedKabKota)) {
+        return 0;
+    }
+
+    if ($isStatLimited) {
+        $placeholders = $makePlaceholders(count($allowedKabKota));
+
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM profiles
+            WHERE type = ?
+              AND kab_kota IN ($placeholders)
+        ");
+
+        $stmt->execute(array_merge([$type], $allowedKabKota));
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM profiles
+        WHERE type = ?
+    ");
+    $stmt->execute([$type]);
+
+    return (int)$stmt->fetchColumn();
+};
+
+/*
+|--------------------------------------------------------------------------
+| Fungsi menghitung akun aktif
+|--------------------------------------------------------------------------
+| Superadmin : semua user aktif
+| Admin      : user aktif yang profilnya masuk dapil admin
+*/
+$countActiveUsers = function () use ($pdo, $isStatLimited, $allowedKabKota, $makePlaceholders) {
+    if ($isStatLimited && empty($allowedKabKota)) {
+        return 0;
+    }
+
+    if ($isStatLimited) {
+        $placeholders = $makePlaceholders(count($allowedKabKota));
+
+        $stmt = $pdo->prepare("
+            SELECT COUNT(DISTINCT u.id)
+            FROM users u
+            INNER JOIN profiles p ON p.user_id = u.id
+            WHERE u.is_active = 1
+              AND p.kab_kota IN ($placeholders)
+        ");
+
+        $stmt->execute($allowedKabKota);
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    $stmt = $pdo->query("
+        SELECT COUNT(*)
+        FROM users
+        WHERE is_active = 1
+    ");
+
+    return (int)$stmt->fetchColumn();
+};
+
+/*
+|--------------------------------------------------------------------------
+| Total statistik
+|--------------------------------------------------------------------------
+*/
+$totalRelawan = $countProfiles('relawan');
+$totalDukungan = $countProfiles('dukungan');
+$totalAdmin = $countProfiles('admin');
+$totalUser = $countActiveUsers();
+
+/*
+|--------------------------------------------------------------------------
+| Teks sambutan dan judul chart
+|--------------------------------------------------------------------------
+*/
+if ($role === 'superadmin') {
+    $welcomeRole = 'Superadmin';
+    $welcomeText = 'Anda memiliki akses penuh untuk mengelola admin kecamatan, relawan, dukungan, serta akun pengguna dalam sistem.';
+    $chartTitle = 'Bar Chart Relawan & Dukungan Seluruh Kabupaten/Kota';
+    $pieTitle = 'Persentase Data Keseluruhan';
+} elseif ($role === 'admin') {
+    $welcomeRole = 'Admin Dapil';
+    $welcomeText = 'Anda dapat melihat statistik relawan dan dukungan sesuai daerah pemilihan yang menjadi tanggung jawab Anda.';
+    $chartTitle = 'Bar Chart Relawan & Dukungan Berdasarkan Dapil Anda';
+    $pieTitle = 'Persentase Data Dapil Anda';
+} else {
+    $welcomeRole = 'Relawan';
+    $welcomeText = 'Anda dapat melihat profil pendaftaran diri dan menambahkan data dukungan yang berhasil dikumpulkan.';
+    $chartTitle = 'Bar Chart Relawan & Dukungan';
+    $pieTitle = 'Persentase Data';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Ambil data chart
+|--------------------------------------------------------------------------
+*/
+if ($isStatLimited && empty($allowedKabKota)) {
+    $rows = [];
+} elseif ($isStatLimited) {
+    $placeholders = $makePlaceholders(count($allowedKabKota));
+
+    $stmt = $pdo->prepare("
+        SELECT
+            kab_kota,
+            SUM(CASE WHEN type = 'relawan' THEN 1 ELSE 0 END) AS total_relawan,
+            SUM(CASE WHEN type = 'dukungan' THEN 1 ELSE 0 END) AS total_dukungan
+        FROM profiles
+        WHERE kab_kota IN ($placeholders)
+        GROUP BY kab_kota
+    ");
+
+    $stmt->execute($allowedKabKota);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $stmt = $pdo->query("
+        SELECT
+            kab_kota,
+            SUM(CASE WHEN type = 'relawan' THEN 1 ELSE 0 END) AS total_relawan,
+            SUM(CASE WHEN type = 'dukungan' THEN 1 ELSE 0 END) AS total_dukungan
+        FROM profiles
+        GROUP BY kab_kota
+    ");
+
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Susun data chart
+|--------------------------------------------------------------------------
+*/
+$dataMap = [];
 
 foreach ($rows as $row) {
-    $dataMap[$row['kab_kota']] = [
-        'relawan' => (int)$row['total_relawan'],
-        'dukungan' => (int)$row['total_dukungan']
-    ];
+    $kabKota = trim($row['kab_kota'] ?? '');
+
+    if ($kabKota !== '') {
+        $dataMap[$kabKota] = [
+            'relawan' => (int)$row['total_relawan'],
+            'dukungan' => (int)$row['total_dukungan']
+        ];
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Label chart
+|--------------------------------------------------------------------------
+| Superadmin : tampilkan semua kab/kota, termasuk data luar Kalsel jika ada.
+| Admin      : hanya tampilkan kab/kota dalam dapilnya.
+*/
+if ($isStatLimited) {
+    $chartKabKota = [];
+
+    foreach ($allKabKota as $kabKota) {
+        if (in_array($kabKota, $allowedKabKota, true)) {
+            $chartKabKota[] = $kabKota;
+        }
+    }
+
+    foreach ($allowedKabKota as $kabKota) {
+        if (!in_array($kabKota, $chartKabKota, true)) {
+            $chartKabKota[] = $kabKota;
+        }
+    }
+} else {
+    $chartKabKota = $allKabKota;
+
+    foreach ($rows as $row) {
+        $kabKota = trim($row['kab_kota'] ?? '');
+
+        if ($kabKota !== '' && !in_array($kabKota, $chartKabKota, true)) {
+            $chartKabKota[] = $kabKota;
+        }
+    }
 }
 
 $labels = [];
 $relawanData = [];
 $dukunganData = [];
 
-foreach ($allKabKota as $kabKota) {
+foreach ($chartKabKota as $kabKota) {
     $labels[] = $kabKota;
-
     $relawanData[] = $dataMap[$kabKota]['relawan'] ?? 0;
     $dukunganData[] = $dataMap[$kabKota]['dukungan'] ?? 0;
 }
@@ -80,22 +325,29 @@ foreach ($allKabKota as $kabKota) {
         </span>
 
         <h1 class="hero-title">
-            Halo, <?= e(current_user()['name']) ?> 👋
+            Halo, <?= e($currentUser['name'] ?? '-') ?> 👋
         </h1>
 
         <p class="hero-desc">
-            Anda masuk sebagai <b><?= e($welcomeRole) ?></b>. 
+            Anda masuk sebagai <b><?= e($welcomeRole) ?></b>.
             <?= e($welcomeText) ?>
         </p>
     </div>
 </div>
+
+<?php if ($role === 'admin' && empty($allowedKabKota)): ?>
+    <div class="alert alert-warning shadow-sm">
+        <b>Perhatian:</b> akun admin ini belum memiliki dapil.
+        Silakan hubungkan admin dengan daerah pemilihan terlebih dahulu agar statistik dapil dapat muncul.
+    </div>
+<?php endif; ?>
 
 <div class="row">
     <div class="col-lg-8 mb-4">
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">
-                    Bar Chart Relawan & Dukungan per Kabupaten/Kota
+                    <?= e($chartTitle) ?>
                 </h6>
             </div>
 
@@ -104,11 +356,12 @@ foreach ($allKabKota as $kabKota) {
             </div>
         </div>
     </div>
-      <div class="col-lg-4 mb-4">
+
+    <div class="col-lg-4 mb-4">
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">
-                    Persentase Data
+                    <?= e($pieTitle) ?>
                 </h6>
             </div>
 
@@ -127,8 +380,10 @@ foreach ($allKabKota as $kabKota) {
 
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="stat-label">Admin Kecamatan</div>
-                        <div class="stat-number"><?= $totalAdmin ?></div>
+                        <div class="stat-label">
+                            <?= $role === 'admin' ? 'Admin di Dapil' : 'Admin Kecamatan' ?>
+                        </div>
+                        <div class="stat-number"><?= e($totalAdmin) ?></div>
                     </div>
 
                     <div class="stat-icon primary">
@@ -147,7 +402,7 @@ foreach ($allKabKota as $kabKota) {
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-label">Relawan</div>
-                        <div class="stat-number"><?= $totalRelawan ?></div>
+                        <div class="stat-number"><?= e($totalRelawan) ?></div>
                     </div>
 
                     <div class="stat-icon success">
@@ -166,7 +421,7 @@ foreach ($allKabKota as $kabKota) {
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-label">Dukungan</div>
-                        <div class="stat-number"><?= $totalDukungan ?></div>
+                        <div class="stat-number"><?= e($totalDukungan) ?></div>
                     </div>
 
                     <div class="stat-icon info">
@@ -185,7 +440,7 @@ foreach ($allKabKota as $kabKota) {
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-label">Akun Aktif</div>
-                        <div class="stat-number"><?= $totalUser ?></div>
+                        <div class="stat-number"><?= e($totalUser) ?></div>
                     </div>
 
                     <div class="stat-icon warning">
@@ -214,8 +469,8 @@ foreach ($allKabKota as $kabKota) {
             <div class="card-body">
 
                 <p style="color:#5f788f; line-height:1.7;">
-                    Sistem ini digunakan untuk membantu proses pencatatan dan pengelolaan data 
-                    <b>admin kecamatan</b>, <b>relawan</b>, dan <b>dukungan</b>. 
+                    Sistem ini digunakan untuk membantu proses pencatatan dan pengelolaan data
+                    <b>admin dapil</b>, <b>relawan</b>, dan <b>dukungan</b>.
                     Setiap pengguna memiliki hak akses yang berbeda agar pengelolaan data lebih tertata.
                 </p>
 
@@ -234,16 +489,16 @@ foreach ($allKabKota as $kabKota) {
                                     <span class="role-pill">Superadmin</span>
                                 </td>
                                 <td>
-                                    Mengelola seluruh data, membuat admin kecamatan, membuat relawan, dan melihat data dukungan.
+                                    Melihat seluruh statistik, mengelola seluruh admin, relawan, dukungan, dan akun pengguna dalam sistem.
                                 </td>
                             </tr>
 
                             <tr>
                                 <td>
-                                    <span class="role-pill">Admin Kecamatan</span>
+                                    <span class="role-pill">Admin Dapil</span>
                                 </td>
                                 <td>
-                                    Membuat akun relawan, menginput dukungan, serta melihat data relawan dan dukungan.
+                                    Melihat statistik hanya berdasarkan dapil yang menjadi tanggung jawabnya, serta mengelola relawan dan dukungan pada wilayah tersebut.
                                 </td>
                             </tr>
 
@@ -291,30 +546,38 @@ foreach ($allKabKota as $kabKota) {
                     </div>
 
                     <div class="profile-name">
-                        <?= e(current_user()['name']) ?>
+                        <?= e($currentUser['name'] ?? '-') ?>
                     </div>
 
                     <div class="profile-role">
-                        <?= e(ucfirst(current_user()['role'])) ?>
+                        <?= e(ucfirst($role)) ?>
                     </div>
 
                     <p style="color:#7890a6; font-size:14px; margin-bottom:20px;">
                         Kecamatan:
-                        <b><?= e(current_user()['kecamatan'] ?? '-') ?></b>
+                        <b><?= e($currentUser['kecamatan'] ?? '-') ?></b>
                     </p>
+
+                    <?php if ($role === 'admin' && !empty($allowedKabKota)): ?>
+                        <p style="color:#7890a6; font-size:13px; line-height:1.6; margin-bottom:20px;">
+                            Wilayah Dapil:
+                            <br>
+                            <b><?= e(implode(', ', $allowedKabKota)) ?></b>
+                        </p>
+                    <?php endif; ?>
                 </div>
 
                 <a href="<?= url('dashboard/index.php') ?>" class="quick-action">
                     <i class="fas fa-home"></i> Dashboard
                 </a>
 
-                <?php if (in_array(current_user()['role'], ['superadmin','admin'])): ?>
+                <?php if (in_array($role, ['superadmin', 'admin'])): ?>
                     <a href="<?= url('admin/create-relawan.php') ?>" class="quick-action">
                         <i class="fas fa-user-plus"></i> Tambah Relawan
                     </a>
                 <?php endif; ?>
 
-                <?php if (in_array(current_user()['role'], ['superadmin','admin','relawan'])): ?>
+                <?php if (in_array($role, ['superadmin', 'admin', 'relawan'])): ?>
                     <a href="<?= url('dukungan/create.php') ?>" class="quick-action">
                         <i class="fas fa-hand-holding-heart"></i> Tambah Dukungan
                     </a>
@@ -340,7 +603,7 @@ new Chart(ctx, {
     type: 'bar',
 
     data: {
-        labels: <?= json_encode($labels) ?>,
+        labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
 
         datasets: [
             {
@@ -361,6 +624,7 @@ new Chart(ctx, {
 
     options: {
         responsive: true,
+        maintainAspectRatio: true,
 
         plugins: {
             legend: {
@@ -373,6 +637,13 @@ new Chart(ctx, {
                 beginAtZero: true,
                 ticks: {
                     precision: 0
+                }
+            },
+
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 35
                 }
             }
         }
@@ -389,8 +660,8 @@ new Chart(pieCtx, {
 
         datasets: [{
             data: [
-                <?= $totalRelawan ?>,
-                <?= $totalDukungan ?>
+                <?= (int)$totalRelawan ?>,
+                <?= (int)$totalDukungan ?>
             ],
 
             backgroundColor: [
@@ -413,4 +684,5 @@ new Chart(pieCtx, {
     }
 });
 </script>
+
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
