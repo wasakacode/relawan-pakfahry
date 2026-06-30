@@ -22,9 +22,9 @@ $p = $stmt->fetch();
     <div class="card shadow mb-4">
         <div class="card-body">
 
-            <div class="alert alert-success">
+            <!-- <div class="alert alert-success">
                 <b>Status:</b> Anda sudah terdaftar sebagai relawan.
-            </div>
+            </div> -->
 
             <table class="table table-bordered">
                 <tr>

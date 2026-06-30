@@ -4,6 +4,8 @@ require_once __DIR__ . '/../config/functions.php';
 
 require_role(['superadmin', 'admin', 'relawan']);
 
+require_profile_complete($pdo);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         create_profile($pdo, 'dukungan', null);

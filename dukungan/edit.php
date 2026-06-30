@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth/auth.php';
 
 require_role(['superadmin', 'admin', 'relawan']);
+require_profile_complete($pdo);
 
 $id = $_GET['id'] ?? null;
 

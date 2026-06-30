@@ -1,117 +1,225 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
 
-require_role(['superadmin', 'admin']);
+require_role([
+    'superadmin',
+    'admin',
+    'relawan'
+]);
 
-$id = $_GET['id'] ?? null;
+/*
+|--------------------------------------------------------------------------
+| Ambil Data Relawan
+|--------------------------------------------------------------------------
+*/
 
-if (!$id) {
-    flash('error', 'Data relawan tidak ditemukan.');
-    redirect('admin/list-relawan.php');
-}
+if (current_user()['role'] === 'relawan') {
 
-if (current_user()['role'] === 'admin') {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.is_active, u.id AS akun_id
-                           FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
-                           WHERE p.id = ? 
-                           AND p.type = 'relawan'
-                           AND p.created_by = ?
-                           LIMIT 1");
-    $stmt->execute([$id, current_user()['id']]);
+    // Relawan hanya boleh mengedit profil miliknya sendiri
+    $stmt = $pdo->prepare("
+        SELECT
+            p.*,
+            u.username,
+            u.is_active,
+            u.id AS akun_id
+        FROM profiles p
+        LEFT JOIN users u
+            ON p.user_id = u.id
+        WHERE
+            p.user_id = ?
+            AND p.type = 'relawan'
+        LIMIT 1
+    ");
+
+    $stmt->execute([
+        current_user()['id']
+    ]);
 } else {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.is_active, u.id AS akun_id
-                           FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
-                           WHERE p.id = ? 
-                           AND p.type = 'relawan'
-                           LIMIT 1");
-    $stmt->execute([$id]);
+
+    // Admin & Superadmin menggunakan parameter id
+    $id = $_GET['id'] ?? null;
+
+    if (!$id) {
+        flash('error', 'Data relawan tidak ditemukan.');
+        redirect('admin/list-relawan.php');
+    }
+
+    if (current_user()['role'] === 'admin') {
+
+        $stmt = $pdo->prepare("
+            SELECT
+                p.*,
+                u.username,
+                u.is_active,
+                u.id AS akun_id
+            FROM profiles p
+            LEFT JOIN users u
+                ON p.user_id = u.id
+            WHERE
+                p.id = ?
+                AND p.type = 'relawan'
+                AND p.created_by = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            $id,
+            current_user()['id']
+        ]);
+    } else {
+
+        $stmt = $pdo->prepare("
+            SELECT
+                p.*,
+                u.username,
+                u.is_active,
+                u.id AS akun_id
+            FROM profiles p
+            LEFT JOIN users u
+                ON p.user_id = u.id
+            WHERE
+                p.id = ?
+                AND p.type = 'relawan'
+            LIMIT 1
+        ");
+
+        $stmt->execute([$id]);
+    }
 }
+
+/*
+|--------------------------------------------------------------------------
+| Data Relawan
+|--------------------------------------------------------------------------
+*/
+
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$data) {
+
+    flash(
+        'error',
+        'Data relawan tidak ditemukan atau Anda tidak memiliki akses.'
+    );
+
+    if (current_user()['role'] === 'relawan') {
+        redirect('dashboard/index.php');
+    } else {
+        redirect('admin/list-relawan.php');
+    }
+}
+
+$id = $data['id'];
+
+/*
+|--------------------------------------------------------------------------
+| Data Anggota Keluarga
+|--------------------------------------------------------------------------
+*/
+
 $familyStmt = $pdo->prepare("
     SELECT *
     FROM family_members
     WHERE profile_id = ?
     ORDER BY id ASC
 ");
+
 $familyStmt->execute([$id]);
 
 $familyMembers = $familyStmt->fetchAll(PDO::FETCH_ASSOC);
-$stmtadmin = $pdo->query("
-SELECT
-    p.id,
-    p.nama_lengkap,
-    GROUP_CONCAT(
-        d.daerah_pemilihan
-        ORDER BY d.daerah_pemilihan
-        SEPARATOR ', '
-    ) AS dapil
-FROM profiles p
-LEFT JOIN profile_dapil pd
-    ON pd.profile_id = p.id
-LEFT JOIN dapil d
-    ON d.id = pd.dapil_id
-WHERE
-    p.type='admin'
-    AND p.profile_active=1
-GROUP BY p.id
-ORDER BY p.nama_lengkap
+
+/*
+|--------------------------------------------------------------------------
+| Daftar Admin
+|--------------------------------------------------------------------------
+*/
+
+$stmtAdmin = $pdo->query("
+    SELECT
+        p.id,
+        p.nama_lengkap,
+        GROUP_CONCAT(
+            d.daerah_pemilihan
+            ORDER BY d.daerah_pemilihan
+            SEPARATOR ', '
+        ) AS dapil
+    FROM profiles p
+    LEFT JOIN profile_dapil pd
+        ON pd.profile_id = p.id
+    LEFT JOIN dapil d
+        ON d.id = pd.dapil_id
+    WHERE
+        p.type='admin'
+        AND p.profile_active=1
+    GROUP BY
+        p.id,
+        p.nama_lengkap
+    ORDER BY
+        p.nama_lengkap
 ");
 
-$adminList = $stmtadmin->fetchAll(PDO::FETCH_ASSOC);
+$adminList = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
 
-$stmtadmin = $pdo->prepare("
-SELECT admin_profile_id
-FROM profile_admin
-WHERE profile_id = ?
+/*
+|--------------------------------------------------------------------------
+| Admin Yang Dipilih
+|--------------------------------------------------------------------------
+*/
+
+$stmtAdmin = $pdo->prepare("
+    SELECT admin_profile_id
+    FROM profile_admin
+    WHERE profile_id = ?
 ");
 
-$stmtadmin->execute([$id]);
+$stmtAdmin->execute([$id]);
 
-$selectedAdmin = $stmtadmin->fetchAll(PDO::FETCH_COLUMN);
-$data = $stmt->fetch();
-
-if (!$data) {
-    flash('error', 'Data relawan tidak ditemukan atau Anda tidak memiliki akses.');
-    redirect('admin/list-relawan.php');
-}
+$selectedAdmin = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     try {
+
         $pdo->beginTransaction();
 
         $errors = [];
 
-        // NIK Relawan
+        /*
+        |--------------------------------------------------------------------------
+        | Validasi
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
             $errors[] = 'NIK harus terdiri dari 16 digit angka';
         }
 
-        // Nomor KK
         if (!empty($_POST['nomor_kk']) && !preg_match('/^[0-9]{16}$/', $_POST['nomor_kk'])) {
             $errors[] = 'Nomor KK harus terdiri dari 16 digit angka';
         }
 
-        // RT
         if (!empty($_POST['rt']) && !preg_match('/^[0-9]{3}$/', $_POST['rt'])) {
             $errors[] = 'RT harus terdiri dari 3 digit angka';
         }
 
-        // RW
         if (!empty($_POST['rw']) && !preg_match('/^[0-9]{3}$/', $_POST['rw'])) {
             $errors[] = 'RW harus terdiri dari 3 digit angka';
         }
 
-        // TPS format: TPS 001
         if (!empty($_POST['tps']) && !preg_match('/^[0-9]{3}$/', $_POST['tps'])) {
             $errors[] = 'TPS harus terdiri dari 3 digit angka';
         }
 
-        // NIK Anggota Keluarga
         if (!empty($_POST['keluarga_nik'])) {
+
             foreach ($_POST['keluarga_nik'] as $i => $nik) {
+
                 if (!empty($nik) && !preg_match('/^[0-9]{16}$/', $nik)) {
-                    $errors[] = 'NIK Anggota Keluarga #' . ($i + 1) . ' harus terdiri dari 16 digit angka';
+
+                    $errors[] =
+                        'NIK Anggota Keluarga #' .
+                        ($i + 1) .
+                        ' harus terdiri dari 16 digit angka';
                 }
             }
         }
@@ -126,16 +234,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     implode("\n• ", $errors)
             );
 
-            redirect('admin/edit-relawan.php?id=' . $data['id']);
-            exit;
+            if (current_user()['role'] === 'relawan') {
+
+                redirect('admin/edit-relawan.php');
+            } else {
+
+                redirect('admin/edit-relawan.php?id=' . $data['id']);
+            }
         }
 
-        // Update data akun
-        $username = trim($_POST['username'] ?? '');
-        $passwordBaru = trim($_POST['password'] ?? '');
-        $isActive = isset($_POST['is_active']) ? 1 : 0;
+        /*
+        |--------------------------------------------------------------------------
+        | Update Akun
+        |--------------------------------------------------------------------------
+        */
 
-        // cek username sudah digunakan oleh akun lain
+        $username      = trim($_POST['username'] ?? '');
+        $passwordBaru  = trim($_POST['password'] ?? '');
+
+        if (current_user()['role'] !== 'relawan') {
+
+            $isActive = isset($_POST['is_active']) ? 1 : 0;
+        } else {
+
+            $isActive = $data['is_active'];
+        }
+
         $stmtCekUsername = $pdo->prepare("
             SELECT id
             FROM users
@@ -158,16 +282,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'Username sudah digunakan oleh akun lain.'
             );
 
-            redirect('admin/edit-relawan.php?id=' . $data['id']);
-            exit;
+            if (current_user()['role'] === 'relawan') {
+
+                redirect('admin/edit-relawan.php');
+            } else {
+
+                redirect('admin/edit-relawan.php?id=' . $data['id']);
+            }
         }
 
         if ($passwordBaru !== '') {
-            $hash = password_hash($passwordBaru, PASSWORD_DEFAULT);
 
-            $stmtUser = $pdo->prepare("UPDATE users 
-                                       SET username = ?, password = ?, is_active = ?, name = ?, kecamatan = ?
-                                       WHERE id = ?");
+            $hash = password_hash(
+                $passwordBaru,
+                PASSWORD_DEFAULT
+            );
+
+            $stmtUser = $pdo->prepare("
+                UPDATE users
+                SET
+                    username = ?,
+                    password = ?,
+                    is_active = ?,
+                    name = ?,
+                    kecamatan = ?
+                WHERE id = ?
+            ");
+
             $stmtUser->execute([
                 $username,
                 $hash,
@@ -177,9 +318,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $data['akun_id']
             ]);
         } else {
-            $stmtUser = $pdo->prepare("UPDATE users 
-                                       SET username = ?, is_active = ?, name = ?, kecamatan = ?
-                                       WHERE id = ?");
+
+            $stmtUser = $pdo->prepare("
+                UPDATE users
+                SET
+                    username = ?,
+                    is_active = ?,
+                    name = ?,
+                    kecamatan = ?
+                WHERE id = ?
+            ");
+
             $stmtUser->execute([
                 $username,
                 $isActive,
@@ -189,28 +338,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        // Update data profil relawan
-        $stmtProfile = $pdo->prepare("UPDATE profiles SET
-            nik = ?,
-            nama_lengkap = ?,
-            tempat_lahir = ?,
-            tanggal_lahir = ?,
-            jenis_kelamin = ?,
-            golongan_darah = ?,
-            status_pernikahan = ?,
-            agama = ?,
-            pekerjaan = ?,
-            alamat = ?,
-            provinsi = ?,
-            kab_kota = ?,
-            kecamatan = ?,
-            desa_kelurahan = ?,
-            rt = ?,
-            rw = ?,
-            tps = ?,
-            nomor_kk = ?,
-            nomor_telepon = ?,
-            nomor_whatsapp = ?
+        /*
+        |--------------------------------------------------------------------------
+        | Update Profile
+        |--------------------------------------------------------------------------
+        */
+
+        $stmtProfile = $pdo->prepare("
+            UPDATE profiles SET
+                nik = ?,
+                nama_lengkap = ?,
+                tempat_lahir = ?,
+                tanggal_lahir = ?,
+                jenis_kelamin = ?,
+                golongan_darah = ?,
+                status_pernikahan = ?,
+                agama = ?,
+                pekerjaan = ?,
+                alamat = ?,
+                provinsi = ?,
+                kab_kota = ?,
+                kecamatan = ?,
+                desa_kelurahan = ?,
+                rt = ?,
+                rw = ?,
+                tps = ?,
+                nomor_kk = ?,
+                nomor_telepon = ?,
+                nomor_whatsapp = ?
             WHERE id = ?
         ");
 
@@ -238,14 +393,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['id']
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Update Anggota Keluarga
+        |--------------------------------------------------------------------------
+        */
+
         $deleteFamily = $pdo->prepare("
             DELETE FROM family_members
             WHERE profile_id = ?
         ");
+
         $deleteFamily->execute([$data['id']]);
 
         $insertFamily = $pdo->prepare("
-            INSERT INTO family_members (
+            INSERT INTO family_members
+            (
                 profile_id,
                 hubungan_keluarga,
                 nik,
@@ -281,39 +444,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $stmtadmin = $pdo->prepare("
-        DELETE FROM profile_admin
-        WHERE profile_id = ?
+        /*
+        |--------------------------------------------------------------------------
+        | Upload Dokumen (jika diganti)
+        |--------------------------------------------------------------------------
+        */
+
+        $fotoKtp = $data['foto_ktp'];
+        if (!empty($_FILES['foto_ktp']['name'])) {
+            $upload = upload_file('foto_ktp', 'ktp');
+            if ($upload) {
+                $fotoKtp = $upload;
+            }
+        }
+
+        $fotoDiri = $data['foto_diri'];
+        if (!empty($_FILES['foto_diri']['name'])) {
+            $upload = upload_file('foto_diri', 'diri');
+            if ($upload) {
+                $fotoDiri = $upload;
+            }
+        }
+
+        $fotoKK = $data['foto_kartu_keluarga'];
+        if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
+            $upload = upload_file('foto_kartu_keluarga', 'kk');
+            if ($upload) {
+                $fotoKK = $upload;
+            }
+        }
+
+        $fotoSurat = $data['foto_surat_persetujuan'];
+        if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
+            $upload = upload_file('foto_surat_persetujuan', 'persetujuan');
+            if ($upload) {
+                $fotoSurat = $upload;
+            }
+        }
+
+        $stmtFoto = $pdo->prepare("
+            UPDATE profiles
+            SET
+                foto_ktp = ?,
+                foto_diri = ?,
+                foto_kartu_keluarga = ?,
+                foto_surat_persetujuan = ?
+            WHERE id = ?
         ");
 
-        $stmtadmin->execute([$id]);
-
-        if (!empty($_POST['admin_id'])) {
-
-    $stmtadmin = $pdo->prepare("
-        INSERT INTO profile_admin
-        (profile_id, admin_profile_id)
-        VALUES (?, ?)
-    ");
-
-    foreach ($_POST['admin_id'] as $adminId) {
-
-        $stmtadmin->execute([
-            $id,
-            $adminId
+        $stmtFoto->execute([
+            $fotoKtp,
+            $fotoDiri,
+            $fotoKK,
+            $fotoSurat,
+            $data['id']
         ]);
 
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Penanggung Jawab
+        |--------------------------------------------------------------------------
+        */
 
-}
+        if (current_user()['role'] !== 'relawan') {
+
+            $stmtAdmin = $pdo->prepare("
+                DELETE FROM profile_admin
+                WHERE profile_id = ?
+            ");
+
+            $stmtAdmin->execute([
+                $data['id']
+            ]);
+
+            if (!empty($_POST['admin_id'])) {
+
+                $stmtAdmin = $pdo->prepare("
+                    INSERT INTO profile_admin
+                    (
+                        profile_id,
+                        admin_profile_id
+                    )
+                    VALUES (?,?)
+                ");
+
+                foreach ($_POST['admin_id'] as $adminId) {
+
+                    $stmtAdmin->execute([
+                        $data['id'],
+                        $adminId
+                    ]);
+                }
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Commit
+        |--------------------------------------------------------------------------
+        */
 
         $pdo->commit();
 
-        flash('success', 'Data relawan berhasil diperbarui.');
-        redirect('admin/detail-relawan.php?id=' . $data['id']);
+        flash(
+            'success',
+            'Data relawan berhasil diperbarui.'
+        );
+
+        if (current_user()['role'] === 'relawan') {
+
+            redirect('admin/detail-relawan.php');
+        } else {
+
+            redirect('admin/detail-relawan.php?id=' . $data['id']);
+        }
     } catch (Exception $e) {
-        $pdo->rollBack();
-        flash('error', 'Gagal memperbarui data: ' . $e->getMessage());
+
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        flash(
+            'error',
+            'Gagal memperbarui data: ' . $e->getMessage()
+        );
+
+        if (current_user()['role'] === 'relawan') {
+
+            redirect('admin/edit-relawan.php');
+        } else {
+
+            redirect('admin/edit-relawan.php?id=' . $data['id']);
+        }
     }
 }
 
@@ -353,6 +615,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <small class="text-muted">Password lama tidak dapat ditampilkan. Isi kolom ini hanya jika ingin mengganti password.</small>
             </div>
 
+            <?php if(current_user()['role'] != 'relawan'): ?>
             <div class="form-group col-md-6">
                 <label>Status Akun</label><br>
                 <div class="custom-control custom-switch">
@@ -361,6 +624,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                     <label class="custom-control-label" for="is_active">Akun Aktif</label>
                 </div>
             </div>
+            <?php endif; ?>
 
         </div>
     </div>
@@ -863,54 +1127,52 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     <div class="card shadow mb-4">
 
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
-            Admin yang menaungi
-        </h6>
-    </div>
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Admin yang menaungi
+            </h6>
+        </div>
 
-    <div class="card-body row">
+        <div class="card-body row">
 
-        <?php foreach ($adminList as $admin): ?>
+            <?php foreach ($adminList as $admin): ?>
 
-            <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-3">
 
-                <div class="custom-control custom-checkbox">
+                    <div class="custom-control custom-checkbox">
 
-                    <input
-                        type="checkbox"
-                        class="custom-control-input"
-                        id="admin_<?= $admin['id'] ?>"
-                        name="admin_id[]"
-                        value="<?= $admin['id'] ?>"
+                        <input
+                            type="checkbox"
+                            class="custom-control-input"
+                            id="admin_<?= $admin['id'] ?>"
+                            name="admin_id[]"
+                            value="<?= $admin['id'] ?>"
 
-                        <?= in_array($admin['id'], $selectedAdmin) ? 'checked' : '' ?>
+                            <?= in_array($admin['id'], $selectedAdmin) ? 'checked' : '' ?>>
 
-                    >
+                        <label
+                            class="custom-control-label"
+                            for="admin_<?= $admin['id'] ?>">
 
-                    <label
-                        class="custom-control-label"
-                        for="admin_<?= $admin['id'] ?>">
+                            <strong><?= e($admin['nama_lengkap']) ?></strong>
 
-                        <strong><?= e($admin['nama_lengkap']) ?></strong>
+                            <br>
 
-                        <br>
+                            <small class="text-muted">
+                                <?= e($admin['dapil']) ?>
+                            </small>
 
-                        <small class="text-muted">
-                            <?= e($admin['dapil']) ?>
-                        </small>
+                        </label>
 
-                    </label>
+                    </div>
 
                 </div>
 
-            </div>
+            <?php endforeach; ?>
 
-        <?php endforeach; ?>
+        </div>
 
     </div>
-
-</div>
 
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan

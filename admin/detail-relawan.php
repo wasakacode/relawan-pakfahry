@@ -1,35 +1,121 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
 
-require_role(['superadmin', 'admin']);
+require_role([
+    'superadmin',
+    'admin',
+    'relawan'
+]);
 
-$id = $_GET['id'] ?? null;
+/*
+|--------------------------------------------------------------------------
+| Ambil Data Relawan
+|--------------------------------------------------------------------------
+*/
 
-if (!$id) {
-    flash('error', 'Data relawan tidak ditemukan.');
-    redirect('admin/list-relawan.php');
-}
+if (current_user()['role'] === 'relawan') {
 
-if (current_user()['role'] === 'admin') {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
-                           FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
-                           WHERE p.id = ? 
-                           AND p.type = 'relawan'
-                           AND p.created_by = ?
-                           LIMIT 1");
-    $stmt->execute([$id, current_user()['id']]);
+    // Relawan hanya boleh melihat profil miliknya sendiri
+    $stmt = $pdo->prepare("
+        SELECT
+            p.*,
+            u.username,
+            u.name AS nama_akun,
+            u.is_active
+        FROM profiles p
+        LEFT JOIN users u
+            ON u.id = p.user_id
+        WHERE
+            p.user_id = ?
+            AND p.type = 'relawan'
+        LIMIT 1
+    ");
+
+    $stmt->execute([
+        current_user()['id']
+    ]);
 } else {
-    $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
-                           FROM profiles p
-                           LEFT JOIN users u ON p.user_id = u.id
-                           WHERE p.id = ? 
-                           AND p.type = 'relawan'
-                           LIMIT 1");
-    $stmt->execute([$id]);
+
+    // Admin & Superadmin menggunakan parameter id
+    $id = $_GET['id'] ?? null;
+
+    if (!$id) {
+        flash('error', 'Data relawan tidak ditemukan.');
+        redirect('admin/list-relawan.php');
+    }
+
+    if (current_user()['role'] === 'admin') {
+
+        // Admin hanya boleh melihat relawan yang ia buat
+        $stmt = $pdo->prepare("
+            SELECT
+                p.*,
+                u.username,
+                u.name AS nama_akun,
+                u.is_active
+            FROM profiles p
+            LEFT JOIN users u
+                ON p.user_id = u.id
+            WHERE
+                p.id = ?
+                AND p.type = 'relawan'
+                AND p.created_by = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            $id,
+            current_user()['id']
+        ]);
+    } else {
+
+        // Superadmin boleh melihat semua relawan
+        $stmt = $pdo->prepare("
+            SELECT
+                p.*,
+                u.username,
+                u.name AS nama_akun,
+                u.is_active
+            FROM profiles p
+            LEFT JOIN users u
+                ON p.user_id = u.id
+            WHERE
+                p.id = ?
+                AND p.type = 'relawan'
+            LIMIT 1
+        ");
+
+        $stmt->execute([$id]);
+    }
 }
 
-$data = $stmt->fetch();
+/*
+|--------------------------------------------------------------------------
+| Data Relawan
+|--------------------------------------------------------------------------
+*/
+
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$data) {
+
+    flash(
+        'error',
+        'Data relawan tidak ditemukan atau Anda tidak memiliki akses.'
+    );
+
+    if (current_user()['role'] === 'relawan') {
+        redirect('dashboard/index.php');
+    } else {
+        redirect('admin/list-relawan.php');
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Admin yang menaungi relawan
+|--------------------------------------------------------------------------
+*/
 
 $stmtAdmin = $pdo->prepare("
     SELECT
@@ -65,16 +151,30 @@ $stmtAdmin->execute([$data['id']]);
 
 $adminList = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$data) {
-    flash('error', 'Data relawan tidak ditemukan atau Anda tidak memiliki akses.');
-    redirect('admin/list-relawan.php');
-}
+/*
+|--------------------------------------------------------------------------
+| Data Anggota Keluarga
+|--------------------------------------------------------------------------
+*/
 
-$stmtFamily = $pdo->prepare("SELECT * FROM family_members WHERE profile_id = ?");
+$stmtFamily = $pdo->prepare("
+    SELECT *
+    FROM family_members
+    WHERE profile_id = ?
+");
+
 $stmtFamily->execute([$data['id']]);
-$families = $stmtFamily->fetchAll();
 
-function tampilkanFileDokumentasi($file, $label) {
+$families = $stmtFamily->fetchAll(PDO::FETCH_ASSOC);
+
+/*
+|--------------------------------------------------------------------------
+| Helper Dokumentasi
+|--------------------------------------------------------------------------
+*/
+
+function tampilkanFileDokumentasi($file, $label)
+{
     if (empty($file)) {
         echo '<div class="doc-card">';
         echo '<div class="doc-label">' . e($label) . '</div>';
@@ -90,15 +190,18 @@ function tampilkanFileDokumentasi($file, $label) {
     echo '<div class="doc-label">' . e($label) . '</div>';
 
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+
         echo '<a href="' . $url . '" target="_blank">';
         echo '<img src="' . $url . '" class="doc-image" alt="' . e($label) . '">';
         echo '</a>';
     } elseif ($ext === 'pdf') {
+
         echo '<div class="doc-pdf">';
         echo '<i class="fas fa-file-pdf"></i>';
         echo '<p>File PDF</p>';
         echo '</div>';
     } else {
+
         echo '<div class="doc-pdf">';
         echo '<i class="fas fa-file"></i>';
         echo '<p>File Dokumen</p>';
@@ -124,13 +227,13 @@ require_once __DIR__ . '/../partials/topbar.php';
         border-radius: 28px;
         overflow: hidden;
         margin: 0 auto 18px;
-        background: linear-gradient(135deg,#3db7ee,#118dd0);
+        background: linear-gradient(135deg, #3db7ee, #118dd0);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         font-size: 42px;
-        box-shadow: 0 16px 30px rgba(17,141,208,.25);
+        box-shadow: 0 16px 30px rgba(17, 141, 208, .25);
     }
 
     .profile-photo-box img {
@@ -167,7 +270,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     .doc-image:hover {
         transform: scale(1.02);
-        box-shadow: 0 12px 28px rgba(17,141,208,.18);
+        box-shadow: 0 12px 28px rgba(17, 141, 208, .18);
     }
 
     .doc-pdf {
@@ -208,9 +311,15 @@ require_once __DIR__ . '/../partials/topbar.php';
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 text-gray-800 mb-0">Detail Data Relawan</h1>
 
-    <a href="<?= url('admin/list-relawan.php') ?>" class="btn btn-secondary btn-sm">
-        <i class="fas fa-arrow-left"></i> Kembali
-    </a>
+    <?php if (current_user()['role'] !== 'relawan'): ?>
+
+        <a href="<?= url('admin/list-relawan.php') ?>"
+            class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Kembali
+        </a>
+
+    <?php endif; ?>
 </div>
 
 <div class="row">
@@ -265,18 +374,34 @@ require_once __DIR__ . '/../partials/topbar.php';
 
                 <hr>
 
-                <a href="<?= url('admin/edit-relawan.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
-                    <i class="fas fa-edit"></i> Edit Data
-                </a>
+                <!-- Tombol Edit Data -->
+                <?php if (current_user()['role'] === 'relawan'): ?>
+                    <a href="<?= url('admin/edit-relawan.php') ?>"
+                        class="btn btn-warning btn-block mb-2">
+                        <i class="fas fa-user-edit"></i>
+                        <?= $data['profile_complete']
+                            ? 'Edit Profil'
+                            : 'Lengkapi Profil' ?>
+                    </a>
+                <?php else: ?>
+                    <a href="<?= url('admin/edit-relawan.php?id=' . $data['id']) ?>"
+                        class="btn btn-warning btn-block mb-2">
+                        <i class="fas fa-edit"></i>
+                        Edit Data
+                    </a>
+                <?php endif; ?>
 
-                <form action="<?= url('admin/delete-relawan.php') ?>" method="POST" 
-                      onsubmit="return confirm('Yakin ingin menghapus data relawan ini? Data yang dihapus tidak bisa dikembalikan.');">
-                    <input type="hidden" name="id" value="<?= e($data['id']) ?>">
+                <!-- Tombol Hapus Data -->
+                <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
+                    <form action="<?= url('admin/delete-relawan.php') ?>" method="POST"
+                        onsubmit="return confirm('Yakin ingin menghapus data relawan ini? Data yang dihapus tidak bisa dikembalikan.');">
+                        <input type="hidden" name="id" value="<?= e($data['id']) ?>">
 
-                    <button type="submit" class="btn btn-danger btn-sm btn-block">
-                        <i class="fas fa-trash"></i> Hapus Data
-                    </button>
-                </form>
+                        <button type="submit" class="btn btn-danger btn-sm btn-block">
+                            <i class="fas fa-trash"></i> Hapus Data
+                        </button>
+                    </form>
+                <?php endif; ?>
 
             </div>
         </div>
@@ -338,65 +463,65 @@ require_once __DIR__ . '/../partials/topbar.php';
 
 <div class="row">
     <div class="col-lg-12 mb-4">
-            <div class="card content-card shadow h-100">
-        <div class="card-header">
-            <h6 class="m-0 font-weight-bold">
-                Admin Yang Menaungi
-            </h6>
-        </div>
-         <div class="card-body">
+        <div class="card content-card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">
+                    Admin Yang Menaungi
+                </h6>
+            </div>
+            <div class="card-body">
 
-        <?php if ($adminList): ?>
+                <?php if ($adminList): ?>
 
-            <table class="table table-bordered">
+                    <table class="table table-bordered">
 
-                <thead>
+                        <thead>
 
-                    <tr>
+                            <tr>
 
-                        <th width="5%">No</th>
+                                <th width="5%">No</th>
 
-                        <th>Nama Admin</th>
+                                <th>Nama Admin</th>
 
-                        <th>Dapil</th>
+                                <th>Dapil</th>
 
-                    </tr>
+                            </tr>
 
-                </thead>
+                        </thead>
 
-                <tbody>
+                        <tbody>
 
-                    <?php foreach ($adminList as $i => $admin): ?>
+                            <?php foreach ($adminList as $i => $admin): ?>
 
-                        <tr>
+                                <tr>
 
-                            <td><?= $i + 1 ?></td>
+                                    <td><?= $i + 1 ?></td>
 
-                            <td><?= e($admin['nama_lengkap']) ?></td>
+                                    <td><?= e($admin['nama_lengkap']) ?></td>
 
-                            <td><?= e($admin['dapil']) ?></td>
+                                    <td><?= e($admin['dapil']) ?></td>
 
-                        </tr>
+                                </tr>
 
-                    <?php endforeach; ?>
+                            <?php endforeach; ?>
 
-                </tbody>
+                        </tbody>
 
-            </table>
+                    </table>
 
-        <?php else: ?>
+                <?php else: ?>
 
-            <div class="alert alert-warning mb-0">
-                Relawan ini belum memiliki admin yang menaungi.
+                    <div class="alert alert-warning mb-0">
+                        Relawan ini belum memiliki admin yang menaungi.
+                    </div>
+
+                <?php endif; ?>
+
             </div>
 
-        <?php endif; ?>
+        </div>
+    </div>
 
-    </div>
-        
-    </div>
-    </div>
-    
 </div>
 
 <div class="row">

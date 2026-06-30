@@ -71,8 +71,8 @@ function create_profile($pdo, $type, $userId = null)
         type, user_id, created_by, nik, nama_lengkap, tempat_lahir, tanggal_lahir,
         jenis_kelamin, golongan_darah, status_pernikahan, agama, pekerjaan, alamat,
         provinsi, kab_kota, kecamatan, desa_kelurahan, rt, rw, tps, nomor_kk,
-        nomor_telepon, nomor_whatsapp, foto_ktp, foto_diri, foto_kartu_keluarga, foto_surat_persetujuan
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        nomor_telepon, nomor_whatsapp, foto_ktp, foto_diri, foto_kartu_keluarga, foto_surat_persetujuan, status_verifikasi, profile_active, profile_complete
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
     $fotoKtp = upload_file('foto_ktp', 'ktp');
     $fotoDiri = upload_file('foto_diri', 'diri');
@@ -80,6 +80,22 @@ function create_profile($pdo, $type, $userId = null)
     $fotoSuratPersetujuan = upload_file('foto_surat_persetujuan', 'persetujuan');
 
     $createdBy = current_user()['id'] ?? null;
+
+    // Default untuk semua profile
+    $statusVerifikasi = null;
+    $profileActive    = null;
+    $profileComplete  = null;
+
+    // Relawan dibuat oleh admin/superadmin
+    if (
+        $type === 'relawan' &&
+        current_user() &&
+        in_array(current_user()['role'], ['superadmin', 'admin'])
+    ) {
+        $statusVerifikasi = 'tedaftar';
+        $profileActive    = 1;
+        $profileComplete  = 1;
+    }
 
     $stmt->execute([
         $type,
@@ -108,7 +124,10 @@ function create_profile($pdo, $type, $userId = null)
         $fotoKtp,
         $fotoDiri,
         $fotoKK,
-        $fotoSuratPersetujuan
+        $fotoSuratPersetujuan,
+        $statusVerifikasi,
+        $profileActive,
+        $profileComplete
     ]);
 
     $profileId = $pdo->lastInsertId();

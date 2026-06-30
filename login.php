@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Login - <?= APP_NAME ?></title>
@@ -215,6 +216,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 16px 28px rgba(17, 141, 208, 0.34);
         }
 
+        .btn-signup {
+            width: 100%;
+            height: 48px;
+            margin-top: 12px;
+            border: 2px solid #118dd0;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #118dd0;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            transition: all .25s ease;
+        }
+
+        .btn-signup:hover {
+            background: #118dd0;
+            color: #ffffff;
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(17, 141, 208, 0.20);
+        }
+
+        .signup-text {
+            text-align: center;
+            color: #8a9bad;
+            font-size: 13px;
+            margin: 18px 0 10px;
+        }
+
         .divider {
             display: flex;
             align-items: center;
@@ -313,66 +349,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-<div class="login-wrapper">
+    <div class="login-wrapper">
 
-    <!-- <div class="brand-text">
+        <!-- <div class="brand-text">
         <h1>Sistem Relawan</h1>
         <span>Kelola relawan dan dukungan dengan mudah</span>
     </div> -->
 
-    <div class="shape-left"></div>
-    <div class="shape-bottom"></div>
-    <div class="shape-right"></div>
-    <div class="shape-top"></div>
+        <div class="shape-left"></div>
+        <div class="shape-bottom"></div>
+        <div class="shape-right"></div>
+        <div class="shape-top"></div>
 
-    <div class="login-card">
+        <div class="login-card">
 
-        <h2>SELAMAT DATANG</h2>
-        <p>Masuk menggunakan akun yang telah terdaftar</p>
+            <h2>SELAMAT DATANG</h2>
+            <p>Masuk menggunakan akun yang telah terdaftar</p>
 
-        <?php if ($error): ?>
-            <div class="alert">
-                <?= htmlspecialchars($error) ?>
-            </div>
-        <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert">
+                    <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
 
-        <form method="POST">
+            <form method="POST">
 
-            <div class="form-group">
-                <input 
-                    type="text" 
-                    name="username" 
-                    placeholder="Username"
-                    required
-                >
-                <i class="fas fa-user"></i>
-            </div>
+                <div class="form-group">
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="Username"
+                        required>
+                    <i class="fas fa-user"></i>
+                </div>
 
-            <div class="form-group">
-                <input 
-                    type="password" 
-                    name="password" 
-                    placeholder="Password"
-                    required
-                >
-                <i class="fas fa-lock"></i>
-            </div>
+                <div class="form-group">
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Password"
+                        required>
+                    <i class="fas fa-lock"></i>
+                </div>
 
-            <button type="submit" class="btn-login">
-                Sign in
-            </button>
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
 
-        </form>
+                <a href="daftar.php" class="btn-signup">
+                    <i class="fas fa-user-plus"></i>
+                    Daftar Relawan
+                </a>
 
-        <div class="divider">atau</div>
+            </form>
 
-        <a href="cek-terdaftar.php" class="btn-check">
-            Cek status relawan
-        </a>
+            <div class="divider">atau</div>
+
+            <a href="cek-terdaftar.php" class="btn-check">
+                Cek status relawan
+            </a>
+
+        </div>
 
     </div>
 
-</div>
-
 </body>
+
 </html>

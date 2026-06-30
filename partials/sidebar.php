@@ -1,5 +1,16 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
+    <?php
+    $profileComplete = true;
+
+    if (
+        current_user()['role'] === 'relawan'
+    ) {
+
+        $profileComplete = profile_completed($pdo);
+    }
+    ?>
+
     <!-- Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?= url('dashboard/index.php') ?>">
         <div class="sidebar-brand-icon">
@@ -30,6 +41,7 @@
     </div>
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
+        <!-- Buat Admin -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/create-admin.php') ?>">
                 <i class="fas fa-user-shield"></i>
@@ -37,6 +49,7 @@
             </a>
         </li>
 
+        <!-- Buat Daerah Pemilihan -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/create-dapil.php') ?>">
                 <i class="fas fa-user-shield"></i>
@@ -45,6 +58,7 @@
         </li>
     <?php endif; ?>
 
+    <!-- Tambah Relawan -->
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/create-relawan.php') ?>">
@@ -54,13 +68,28 @@
         </li>
     <?php endif; ?>
 
-    <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
+    <!-- Tambah Dukungan -->
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
+
         <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
                 <i class="fas fa-hand-holding-heart"></i>
                 <span>Tambah Dukungan</span>
             </a>
         </li>
+
+    <?php elseif (current_user()['role'] === 'relawan'): ?>
+
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
+
+                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?>"></i>
+
+                <span>Tambah Dukungan</span>
+
+            </a>
+        </li>
+
     <?php endif; ?>
 
 
@@ -83,12 +112,14 @@
     <?php endif; ?>
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
+        <!-- Data Admin -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-admin.php') ?>">
                 <i class="fas fa-users-cog"></i>
                 <span>Data Admin</span>
             </a>
         </li>
+        <!-- Data Dapil -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-dapil.php') ?>">
                 <i class="fas fa-globe"></i>
@@ -97,6 +128,7 @@
         </li>
     <?php endif; ?>
 
+    <!-- Data Relawan -->
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-relawan.php') ?>">
@@ -106,16 +138,30 @@
         </li>
     <?php endif; ?>
 
-    <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
+    <!-- Data Dukungan -->
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
+
         <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/list.php') ?>">
                 <i class="fas fa-address-book"></i>
                 <span>Data Dukungan</span>
             </a>
         </li>
+
+    <?php elseif (current_user()['role'] === 'relawan'): ?>
+
+        <li class="nav-item">
+            <a class="nav-link"
+                href="<?= url('dukungan/list.php') ?>">
+
+                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?>"></i>
+
+                <span>Data Dukungan</span>
+
+            </a>
+        </li>
+
     <?php endif; ?>
-
-
 
     <?php if (current_user()['role'] === 'relawan'): ?>
         <hr class="sidebar-divider">
@@ -125,7 +171,7 @@
         </div>
 
         <li class="nav-item">
-            <a class="nav-link" href="<?= url('relawan/profil.php') ?>">
+            <a class="nav-link" href="<?= url('admin/detail-relawan.php') ?>">
                 <i class="fas fa-id-card"></i>
                 <span>Profil Saya</span>
             </a>
@@ -133,12 +179,13 @@
     <?php endif; ?>
 
     <hr class="sidebar-divider">
-    
-    <div class="sidebar-heading">
-        Statistik
-    </div>
 
-    <?php if (in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])): ?>
+    <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
+
+        <div class="sidebar-heading">
+            Statistik
+        </div>
+
         <li class="nav-item">
             <a class="nav-link" href="<?= url('statistik/statistik_wilayah.php') ?>">
                 <i class="fas fa-address-book"></i>
