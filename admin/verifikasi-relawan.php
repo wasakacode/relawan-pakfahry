@@ -50,8 +50,7 @@ try {
         ");
 
         $stmt->execute([
-            $id,
-            current_user()['id']
+            $id
         ]);
 
         if (!$stmt->fetch()) {

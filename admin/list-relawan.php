@@ -487,12 +487,20 @@ function sortLink($column, $label)
 </div>
 
 <!-- Script Tolak -->
-<script>
-    $('#modalTolak').on('show.bs.modal', function(e) {
-        let button = $(e.relatedTarget);
-        let id = button.data('id');
-        $('#tolakId').val(id);
-    });
-</script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
+
+<script>
+$(function () {
+
+    $('#modalTolak').on('show.bs.modal', function (e) {
+
+        let button = $(e.relatedTarget);
+        let id = button.data('id');
+
+        $('#tolakId').val(id);
+
+    });
+
+});
+</script>
