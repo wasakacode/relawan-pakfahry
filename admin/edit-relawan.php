@@ -450,55 +450,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        $fotoKtp = $data['foto_ktp'];
-        if (!empty($_FILES['foto_ktp']['name'])) {
-            $upload = upload_file('foto_ktp', 'ktp');
-            if ($upload) {
-                $fotoKtp = $upload;
+         $foto_ktp = $data['foto_ktp'];
+
+            if (!empty($_FILES['foto_ktp']['name'])) {
+
+                // upload file baru
+                $foto_ktp = uploadFile($_FILES['foto_ktp']);
+
+                // hapus file lama
+                if (!empty($data['foto_ktp']) && file_exists("../uploads/".$data['foto_ktp'])) {
+                    unlink("../" . $data['foto_ktp']);
+                }
             }
-        }
 
-        $fotoDiri = $data['foto_diri'];
-        if (!empty($_FILES['foto_diri']['name'])) {
-            $upload = upload_file('foto_diri', 'diri');
-            if ($upload) {
-                $fotoDiri = $upload;
-            }
-        }
+            $foto_diri = $data['foto_diri'];
 
-        $fotoKK = $data['foto_kartu_keluarga'];
-        if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
-            $upload = upload_file('foto_kartu_keluarga', 'kk');
-            if ($upload) {
-                $fotoKK = $upload;
-            }
-        }
+                if (!empty($_FILES['foto_diri']['name'])) {
 
-        $fotoSurat = $data['foto_surat_persetujuan'];
-        if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
-            $upload = upload_file('foto_surat_persetujuan', 'persetujuan');
-            if ($upload) {
-                $fotoSurat = $upload;
-            }
-        }
+                    $foto_diri = uploadFile($_FILES['foto_diri']);
 
-        $stmtFoto = $pdo->prepare("
-            UPDATE profiles
-            SET
-                foto_ktp = ?,
-                foto_diri = ?,
-                foto_kartu_keluarga = ?,
-                foto_surat_persetujuan = ?
-            WHERE id = ?
-        ");
+                    if (!empty($data['foto_diri']) && file_exists("../" . $data['foto_diri'])) {
+                        unlink("../" . $data['foto_diri']);
+                    }
+                }
 
-        $stmtFoto->execute([
-            $fotoKtp,
-            $fotoDiri,
-            $fotoKK,
-            $fotoSurat,
-            $data['id']
-        ]);
+                $foto_kartu_keluarga = $data['foto_kartu_keluarga'];
+
+                    if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
+
+                        $foto_kartu_keluarga = uploadFile($_FILES['foto_kartu_keluarga']);
+
+                        if (!empty($data['foto_kartu_keluarga']) && file_exists("../" . $data['foto_kartu_keluarga'])) {
+                            unlink("../" . $data['foto_kartu_keluarga']);
+                        }
+                    }
+
+            $stmtfoto = $pdo->prepare("
+                UPDATE profiles SET
+                    foto_ktp = ?,
+                    foto_diri = ?,
+                    foto_kartu_keluarga = ?
+                WHERE id = ?
+                ");
+
+                $stmtfoto->execute([
+                    $foto_ktp,
+                    $foto_diri,
+                    $foto_kartu_keluarga,
+                    $id
+                ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -1172,6 +1172,68 @@ require_once __DIR__ . '/../partials/topbar.php';
 
         </div>
 
+    </div>
+
+        <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Dokumentasi</h6>
+        </div>
+
+        <div class="card-body row">
+
+            <div class="form-group col-md-4">
+                <label>Foto KTP <span class="text-danger">*</span></label>
+                <?php if (!empty($data['foto_ktp'])): ?>
+                        <img src="../<?= e($data['foto_ktp']) ?>"
+                            class="img-thumbnail"
+                            style="max-height:180px;">
+                    <?php endif; ?>
+                <input type="file"
+                    name="foto_ktp"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
+                </small>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Foto Diri <span class="text-danger">*</span></label>
+                <?php if (!empty($data['foto_diri'])): ?>
+                    <img src="../<?= e($data['foto_diri']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
+                <input type="file"
+                    name="foto_diri"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+            <!-- Role Relawan -->
+            <div class="form-group col-md-4">
+                <label>Foto Kartu Keluarga <span class="text-danger">*</span></label>
+                <?php if (!empty($data['foto_kartu_keluarga'])): ?>
+                <img src="../<?= e($data['foto_kartu_keluarga']) ?>"
+                    class="img-thumbnail"
+                    style="max-height:180px;">
+            <?php endif; ?>
+                <input type="file"
+                    name="foto_kartu_keluarga"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+        </div>
     </div>
 
     <button type="submit" class="btn btn-primary mb-4">

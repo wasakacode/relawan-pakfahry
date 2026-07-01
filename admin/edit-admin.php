@@ -291,6 +291,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
+            $foto_ktp = $data['foto_ktp'];
+
+            if (!empty($_FILES['foto_ktp']['name'])) {
+
+                // upload file baru
+                $foto_ktp = uploadFile($_FILES['foto_ktp']);
+
+                // hapus file lama
+                if (!empty($data['foto_ktp']) && file_exists("../uploads/".$data['foto_ktp'])) {
+                    unlink("../" . $data['foto_ktp']);
+                }
+            }
+
+            $foto_diri = $data['foto_diri'];
+
+                if (!empty($_FILES['foto_diri']['name'])) {
+
+                    $foto_diri = uploadFile($_FILES['foto_diri']);
+
+                    if (!empty($data['foto_diri']) && file_exists("../" . $data['foto_diri'])) {
+                        unlink("../" . $data['foto_diri']);
+                    }
+                }
+
+                $foto_surat_persetujuan = $data['foto_surat_persetujuan'];
+
+                    if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
+
+                        $foto_surat_persetujuan = uploadFile($_FILES['foto_surat_persetujuan']);
+
+                        if (!empty($data['foto_surat_persetujuan']) && file_exists("../" . $data['foto_surat_persetujuan'])) {
+                            unlink("../" . $data['foto_surat_persetujuan']);
+                        }
+                    }
+
+            $stmtfoto = $pdo->prepare("
+                UPDATE profiles SET
+                    foto_ktp = ?,
+                    foto_diri = ?,
+                    foto_surat_persetujuan = ?
+                WHERE id = ?
+                ");
+
+                $stmtfoto->execute([
+                    $foto_ktp,
+                    $foto_diri,
+                    $foto_surat_persetujuan,
+                    $id
+                ]);
+
         $pdo->commit();
 
         flash('success', 'Data admin berhasil diperbarui.');
@@ -923,6 +973,70 @@ require_once __DIR__ . '/../partials/topbar.php';
     </div>
 
 </div>
+
+   <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Dokumentasi</h6>
+        </div>
+
+        <div class="card-body row">
+
+            <div class="form-group col-md-4">
+                <label>Foto KTP</label>
+
+                <?php if (!empty($data['foto_ktp'])): ?>
+                        <img src="../<?= e($data['foto_ktp']) ?>"
+                            class="img-thumbnail"
+                            style="max-height:180px;">
+                    <?php endif; ?>
+
+                <input type="file"
+                    name="foto_ktp"
+                    class="form-control-file"
+                    accept=".pdf,image/*">
+
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
+                </small>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Foto Diri <span class="text-danger">*</span></label>
+                <?php if (!empty($data['foto_diri'])): ?>
+                    <img src="../<?= e($data['foto_diri']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
+                <input type="file"
+                    name="foto_diri"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+            <!-- Role Admin -->
+            <div class="form-group col-md-4">
+                <label>Foto Surat Persetujuan <span class="text-danger">*</span></label>
+                <?php if (!empty($data['foto_surat_persetujuan'])): ?>
+                <img src="../<?= e($data['foto_surat_persetujuan']) ?>"
+                    class="img-thumbnail"
+                    style="max-height:180px;">
+            <?php endif; ?>
+                <input type="file"
+                    name="foto_surat_persetujuan"
+                    class="form-control-file"
+                    accept=".pdf,image/*"
+                    required>
+                <small class="text-danger">
+                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                </small>
+            </div>
+
+        </div>
+    </div>
 
     <button type="submit" class="btn btn-primary mb-4">
         <i class="fas fa-save"></i> Simpan Perubahan
