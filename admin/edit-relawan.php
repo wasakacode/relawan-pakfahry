@@ -340,6 +340,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /*
         |--------------------------------------------------------------------------
+        | Status Verifikasi
+        |--------------------------------------------------------------------------
+        */
+
+        $statusVerifikasi = $data['status_verifikasi'];
+        $catatanVerifikasi = $data['catatan_verifikasi'];
+
+        if (current_user()['role'] === 'relawan') {
+
+            $statusVerifikasi = 'pending';
+
+            // Hapus alasan verifikasi lama
+            $catatanVerifikasi = null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Update Profile
         |--------------------------------------------------------------------------
         */
@@ -365,7 +382,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 tps = ?,
                 nomor_kk = ?,
                 nomor_telepon = ?,
-                nomor_whatsapp = ?
+                nomor_whatsapp = ?,
+                status_verifikasi = ?,
+                catatan_verifikasi = ?
             WHERE id = ?
         ");
 
@@ -390,6 +409,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['nomor_kk'] ?: null,
             $_POST['nomor_telepon'] ?: null,
             $_POST['nomor_whatsapp'] ?: null,
+            $statusVerifikasi,
+            $catatanVerifikasi,
             $data['id']
         ]);
 
@@ -546,10 +567,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
 
-        flash(
-            'success',
-            'Data relawan berhasil diperbarui.'
-        );
+        if (current_user()['role'] === 'relawan') {
+
+            flash(
+                'success',
+                'Profil berhasil diperbarui. Data Anda telah dikirim kembali dan sedang menunggu verifikasi Admin.'
+            );
+        } else {
+
+            flash(
+                'success',
+                'Data relawan berhasil diperbarui.'
+            );
+        }
 
         if (current_user()['role'] === 'relawan') {
 
@@ -615,15 +645,15 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <small class="text-muted">Password lama tidak dapat ditampilkan. Isi kolom ini hanya jika ingin mengganti password.</small>
             </div>
 
-            <?php if(current_user()['role'] != 'relawan'): ?>
-            <div class="form-group col-md-6">
-                <label>Status Akun</label><br>
-                <div class="custom-control custom-switch">
-                    <input type="checkbox" name="is_active" class="custom-control-input" id="is_active"
-                        <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
-                    <label class="custom-control-label" for="is_active">Akun Aktif</label>
+            <?php if (current_user()['role'] != 'relawan'): ?>
+                <div class="form-group col-md-6">
+                    <label>Status Akun</label><br>
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" name="is_active" class="custom-control-input" id="is_active"
+                            <?= ((int)$data['is_active'] === 1) ? 'checked' : '' ?>>
+                        <label class="custom-control-label" for="is_active">Akun Aktif</label>
+                    </div>
                 </div>
-            </div>
             <?php endif; ?>
 
         </div>

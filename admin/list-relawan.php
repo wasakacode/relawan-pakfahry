@@ -35,6 +35,7 @@ $order  = $_GET['order'] ?? 'DESC';
 $allowedColumns = [
     'nik',
     'nama_lengkap',
+    'status_verifikasi',
     'is_active',
     'created_at'
 ];
@@ -301,8 +302,10 @@ function sortLink($column, $label)
                         <th>Detail</th>
 
                         <th>
-                            <?= sortLink('is_active', 'Status') ?>
+                            <?= sortLink('is_active', 'Status Aktif') ?>
                         </th>
+
+                        <th>Status Verifikasi</th>
 
                     </tr>
                 </thead>
@@ -314,15 +317,18 @@ function sortLink($column, $label)
                         <?php foreach ($rows as $i => $r): ?>
 
                             <tr>
-
+                                <!-- No -->
                                 <td><?= $i + 1 ?></td>
 
+                                <!-- NIK -->
                                 <td>
                                     <b><?= e($r['nik']) ?></b>
                                 </td>
 
+                                <!-- Nama -->
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
+                                <!-- Detail -->
                                 <td>
                                     <a
                                         href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
@@ -333,12 +339,52 @@ function sortLink($column, $label)
                                     </a>
                                 </td>
 
+                                <!-- Status Aktif -->
                                 <td>
                                     <?php if ($r['is_active'] == '1'): ?>
                                         <span class="badge badge-success">Aktif</span>
                                     <?php else: ?>
                                         <span class="badge badge-danger">Nonaktif</span>
                                     <?php endif; ?>
+                                </td>
+
+                                <!-- Status Verifikasi -->
+                                <td class="text-center">
+
+                                    <?php if ($r['status_verifikasi'] == 'pending'): ?>
+
+                                        <!-- Verifikasi -->
+                                        <a href="<?= url('admin/verifikasi-relawan.php?id=' . $r['id'] . '&status_verifikasi=terdaftar') ?>"
+                                            class="btn btn-success btn-circle btn-sm"
+                                            onclick="return confirm('Yakin ingin memverifikasi relawan ini?')">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+
+                                        <!-- Tolak -->
+                                        <button
+                                            class="btn btn-danger btn-circle btn-sm"
+                                            data-toggle="modal"
+                                            data-target="#modalTolak"
+                                            data-id="<?= $r['id'] ?>">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+
+                                    <?php elseif ($r['status_verifikasi'] == 'terdaftar'): ?>
+
+                                        <span class="badge badge-success px-3 py-2">
+                                            <i class="fas fa-check-circle"></i>
+                                            Terdaftar
+                                        </span>
+
+                                    <?php else: ?>
+
+                                        <span class="badge badge-danger px-3 py-2">
+                                            <i class="fas fa-times-circle"></i>
+                                            Ditolak
+                                        </span>
+
+                                    <?php endif; ?>
+
                                 </td>
 
                             </tr>
@@ -363,5 +409,90 @@ function sortLink($column, $label)
     </div>
 
 </div>
+
+<!-- Modal Tolak -->
+<div class="modal fade" id="modalTolak">
+
+    <div class="modal-dialog">
+
+        <form
+            method="POST"
+            action="<?= url('admin/verifikasi-relawan.php') ?>">
+
+            <div class="modal-content">
+
+                <div class="modal-header bg-danger text-white">
+
+                    <h5 class="modal-title">
+                        Tolak Relawan
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="close text-white"
+                        data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <input
+                        type="hidden"
+                        name="id"
+                        id="tolakId">
+                    <input
+                        type="hidden"
+                        name="status_verifikasi"
+                        value="ditolak">
+
+                    <div class="form-group">
+
+                        <label>
+                            Alasan Penolakan
+                        </label>
+
+                        <textarea
+                            name="catatan_verifikasi"
+                            class="form-control"
+                            rows="5"
+                            required></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        class="btn btn-secondary"
+                        data-dismiss="modal">
+                        Batal
+                    </button>
+
+                    <button
+                        class="btn btn-danger">
+                        Tolak Relawan
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- Script Tolak -->
+<script>
+    $('#modalTolak').on('show.bs.modal', function(e) {
+        let button = $(e.relatedTarget);
+        let id = button.data('id');
+        $('#tolakId').val(id);
+    });
+</script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
