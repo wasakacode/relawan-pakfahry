@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
+require_once __DIR__ . '/../config/functions.php';
 
 require_role([
     'superadmin',
@@ -476,11 +477,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($_FILES['foto_ktp']['name'])) {
 
                 // upload file baru
-                $foto_ktp = uploadFile($_FILES['foto_ktp']);
+                $foto_ktp = upload_file('foto_ktp', 'ktp');
 
                 // hapus file lama
-                if (!empty($data['foto_ktp']) && file_exists("../uploads/".$data['foto_ktp'])) {
-                    unlink("../" . $data['foto_ktp']);
+                if (
+                    $foto_ktp &&
+                    !empty($data['foto_ktp']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_ktp'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_ktp']);
                 }
             }
 
@@ -488,22 +493,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!empty($_FILES['foto_diri']['name'])) {
 
-                    $foto_diri = uploadFile($_FILES['foto_diri']);
+                    $foto_diri = upload_file('foto_diri', 'diri');
 
-                    if (!empty($data['foto_diri']) && file_exists("../" . $data['foto_diri'])) {
-                        unlink("../" . $data['foto_diri']);
-                    }
+                    if (
+                    $foto_diri &&
+                    !empty($data['foto_diri']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_diri'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_diri']);
+                }
                 }
 
                 $foto_kartu_keluarga = $data['foto_kartu_keluarga'];
 
                     if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
 
-                        $foto_kartu_keluarga = uploadFile($_FILES['foto_kartu_keluarga']);
+                        $foto_kartu_keluarga = upload_file('foto_kartu_keluarga', 'kk');
 
-                        if (!empty($data['foto_kartu_keluarga']) && file_exists("../" . $data['foto_kartu_keluarga'])) {
-                            unlink("../" . $data['foto_kartu_keluarga']);
-                        }
+                        if (
+                    $foto_kartu_keluarga &&
+                    !empty($data['foto_kartu_keluarga']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_kartu_keluarga'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_kartu_keluarga']);
+                }
                     }
 
             $stmtfoto = $pdo->prepare("
@@ -1222,7 +1235,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                     name="foto_ktp"
                     class="form-control-file"
                     accept=".pdf,image/*"
-                    required>
+                >
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -1239,9 +1252,9 @@ require_once __DIR__ . '/../partials/topbar.php';
                     name="foto_diri"
                     class="form-control-file"
                     accept=".pdf,image/*"
-                    required>
-                <small class="text-danger">
-                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                    >
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 
@@ -1257,9 +1270,9 @@ require_once __DIR__ . '/../partials/topbar.php';
                     name="foto_kartu_keluarga"
                     class="form-control-file"
                     accept=".pdf,image/*"
-                    required>
-                <small class="text-danger">
-                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                    >
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 

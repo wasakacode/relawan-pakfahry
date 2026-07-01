@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../auth/auth.php';
+require_once __DIR__ . '/../config/functions.php';
 
 require_role('superadmin');
 
@@ -290,56 +291,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
             }
-
             $foto_ktp = $data['foto_ktp'];
 
             if (!empty($_FILES['foto_ktp']['name'])) {
 
-                // upload file baru
-                $foto_ktp = uploadFile($_FILES['foto_ktp']);
+                $foto_ktp = upload_file('foto_ktp', 'ktp');
 
-                // hapus file lama
-                if (!empty($data['foto_ktp']) && file_exists("../uploads/".$data['foto_ktp'])) {
-                    unlink("../" . $data['foto_ktp']);
+                if (
+                    $foto_ktp &&
+                    !empty($data['foto_ktp']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_ktp'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_ktp']);
                 }
             }
 
             $foto_diri = $data['foto_diri'];
 
-                if (!empty($_FILES['foto_diri']['name'])) {
+            if (!empty($_FILES['foto_diri']['name'])) {
 
-                    $foto_diri = uploadFile($_FILES['foto_diri']);
+                $foto_diri = upload_file('foto_diri', 'diri');
 
-                    if (!empty($data['foto_diri']) && file_exists("../" . $data['foto_diri'])) {
-                        unlink("../" . $data['foto_diri']);
-                    }
+                if (
+                    $foto_diri &&
+                    !empty($data['foto_diri']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_diri'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_diri']);
                 }
+            }
 
-                $foto_surat_persetujuan = $data['foto_surat_persetujuan'];
+            $foto_surat_persetujuan = $data['foto_surat_persetujuan'];
 
-                    if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
+            if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
 
-                        $foto_surat_persetujuan = uploadFile($_FILES['foto_surat_persetujuan']);
+                $foto_surat_persetujuan = upload_file('foto_surat_persetujuan', 'persetujuan');
 
-                        if (!empty($data['foto_surat_persetujuan']) && file_exists("../" . $data['foto_surat_persetujuan'])) {
-                            unlink("../" . $data['foto_surat_persetujuan']);
-                        }
-                    }
+                if (
+                    $foto_surat_persetujuan &&
+                    !empty($data['foto_surat_persetujuan']) &&
+                    file_exists(__DIR__ . '/../' . $data['foto_surat_persetujuan'])
+                ) {
+                    unlink(__DIR__ . '/../' . $data['foto_surat_persetujuan']);
+                }
+            }
 
             $stmtfoto = $pdo->prepare("
-                UPDATE profiles SET
+                UPDATE profiles
+                SET
                     foto_ktp = ?,
                     foto_diri = ?,
                     foto_surat_persetujuan = ?
                 WHERE id = ?
-                ");
+            ");
 
-                $stmtfoto->execute([
-                    $foto_ktp,
-                    $foto_diri,
-                    $foto_surat_persetujuan,
-                    $id
-                ]);
+            $stmtfoto->execute([
+                $foto_ktp,
+                $foto_diri,
+                $foto_surat_persetujuan,
+                $data['id']
+            ]);
 
         $pdo->commit();
 
@@ -364,7 +375,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </a>
 </div>
 
-<form method="POST">
+<form method="POST"  enctype="multipart/form-data">
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
@@ -1010,10 +1021,9 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <input type="file"
                     name="foto_diri"
                     class="form-control-file"
-                    accept=".pdf,image/*"
-                    required>
-                <small class="text-danger">
-                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                    accept=".pdf,image/*">
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 
@@ -1028,10 +1038,9 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <input type="file"
                     name="foto_surat_persetujuan"
                     class="form-control-file"
-                    accept=".pdf,image/*"
-                    required>
-                <small class="text-danger">
-                    Wajib upload file PDF atau gambar (JPG, JPEG, PNG).
+                    accept=".pdf,image/*">
+                <small class="text-muted">
+                    note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 
