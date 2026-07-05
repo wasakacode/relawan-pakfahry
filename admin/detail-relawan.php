@@ -344,9 +344,43 @@ require_once __DIR__ . '/../partials/topbar.php';
                     NIK: <?= e($data['nik']) ?>
                 </p>
 
-                <span class="badge badge-success px-3 py-2">
-                    <?= e($data['status_verifikasi']) ?>
+                <!-- Status Verifikasi -->
+                <?php
+                $status = $data['status_verifikasi'];
+
+                if ($status == 'terdaftar') {
+                    $badge = 'success';
+                    $icon = 'fa-check-circle';
+                    $text = 'Terdaftar';
+                } elseif ($status == 'pending') {
+                    $badge = 'warning';
+                    $icon = 'fa-clock';
+                    $text = 'Pending';
+                } elseif ($status == 'ditolak') {
+                    $badge = 'danger';
+                    $icon = 'fa-times-circle';
+                    $text = 'Ditolak';
+                } else {
+                    $badge = 'secondary';
+                    $icon = 'fa-question-circle';
+                    $text = ucfirst($status);
+                }
+                ?>
+
+                <span class="badge badge-<?= $badge ?> px-3 py-2">
+                    <i class="fas <?= $icon ?>"></i>
+                    <?= $text ?>
                 </span>
+
+                <!-- Catatan Ditolak -->
+                <?php if (
+                    current_user()['role'] === 'relawan' &&
+                    $data['status_verifikasi'] === 'ditolak'
+                ): ?>
+                    <p class="mb-1">
+                        <b>Catatan Ditolak:</b> <?= e($data['catatan_verifikasi'] ?? '-') ?>
+                    </p>
+                <?php endif; ?>
 
                 <hr>
 
