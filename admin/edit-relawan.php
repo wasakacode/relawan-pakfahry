@@ -345,13 +345,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
+        $profileComplete = $data['profile_complete'];
         $statusVerifikasi = $data['status_verifikasi'];
         $catatanVerifikasi = $data['catatan_verifikasi'];
 
         if (current_user()['role'] === 'relawan') {
 
+            $profileComplete = '1';
             $statusVerifikasi = 'pending';
-
             // Hapus alasan verifikasi lama
             $catatanVerifikasi = null;
         }
@@ -384,6 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 nomor_kk = ?,
                 nomor_telepon = ?,
                 nomor_whatsapp = ?,
+                profile_complete = ?,
                 status_verifikasi = ?,
                 catatan_verifikasi = ?
             WHERE id = ?
@@ -410,6 +412,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['nomor_kk'] ?: null,
             $_POST['nomor_telepon'] ?: null,
             $_POST['nomor_whatsapp'] ?: null,
+            $profileComplete,
             $statusVerifikasi,
             $catatanVerifikasi,
             $data['id']

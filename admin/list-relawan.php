@@ -37,6 +37,8 @@ $allowedColumns = [
     'nama_lengkap',
     'status_verifikasi',
     'is_active',
+    'profile_complete',
+    'catatan_verifikasi',
     'created_at'
 ];
 
@@ -287,7 +289,7 @@ function sortLink($column, $label)
             <table class="table table-bordered table-hover" width="100%">
 
                 <thead style="background:#f1faff;">
-                    <tr>
+                    <tr class="text-center">
 
                         <th>No</th>
 
@@ -305,7 +307,13 @@ function sortLink($column, $label)
                             <?= sortLink('is_active', 'Status Aktif') ?>
                         </th>
 
+                        <th>
+                            <?= sortLink('profile_complete', 'Kelengkapan Data') ?>
+                        </th>
+
                         <th>Status Verifikasi</th>
+
+                        <th>Keterangan</th>
 
                     </tr>
                 </thead>
@@ -329,7 +337,7 @@ function sortLink($column, $label)
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
                                 <!-- Detail -->
-                                <td>
+                                <td class="text-center">
                                     <a
                                         href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
                                         class="btn btn-sm btn-info">
@@ -340,11 +348,20 @@ function sortLink($column, $label)
                                 </td>
 
                                 <!-- Status Aktif -->
-                                <td>
+                                <td class="text-center">
                                     <?php if ($r['is_active'] == '1'): ?>
                                         <span class="badge badge-success">Aktif</span>
                                     <?php else: ?>
                                         <span class="badge badge-danger">Nonaktif</span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- Kelengkapan Data -->
+                                <td class="text-center">
+                                    <?php if ($r['profile_complete'] == '1'): ?>
+                                        <span class="badge badge-success">Lengkap</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Belum Lengkap</span>
                                     <?php endif; ?>
                                 </td>
 
@@ -386,6 +403,9 @@ function sortLink($column, $label)
                                     <?php endif; ?>
 
                                 </td>
+
+                                <!-- Keterangan Tolak -->
+                                <td><?= e($r['catatan_verifikasi']) ?></td>
 
                             </tr>
 
