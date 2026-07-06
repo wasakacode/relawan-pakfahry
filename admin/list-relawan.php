@@ -59,13 +59,38 @@ if (!in_array($order, $allowedOrder)) {
 */
 
 $sql = "
-    SELECT p.*, u.username, u.is_active
+    SELECT DISTINCT p.*, u.username, u.is_active
     FROM profiles p
-    LEFT JOIN users u ON p.user_id = u.id
+    LEFT JOIN users u
+        ON p.user_id = u.id
+    LEFT JOIN profile_admin pa
+        ON pa.profile_id = p.id
     WHERE p.type = 'relawan'
 ";
 
 $params = [];
+
+if (current_user()['role'] == 'admin') {
+
+    // ambil id profile admin yang login
+    $stmtAdmin = $pdo->prepare("
+        SELECT id
+        FROM profiles
+        WHERE user_id = ?
+        AND type = 'admin'
+        LIMIT 1
+    ");
+
+    $stmtAdmin->execute([
+        current_user()['id']
+    ]);
+
+    $adminProfileId = $stmtAdmin->fetchColumn();
+
+    $sql .= " AND pa.admin_profile_id = :admin_profile_id";
+
+    $params['admin_profile_id'] = $adminProfileId;
+}
 
 /*
 |--------------------------------------------------------------------------
