@@ -268,75 +268,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($_POST['dapil_id'])) {
-                throw new Exception('Pilih minimal satu dapil.');
-            }
-                    $stmtDapil = $pdo->prepare("
+            throw new Exception('Pilih minimal satu dapil.');
+        }
+        $stmtDapil = $pdo->prepare("
                 DELETE FROM profile_dapil
                 WHERE profile_id = ?
             ");
 
-            $stmtDapil->execute([$data['id']]);
+        $stmtDapil->execute([$data['id']]);
 
-            $stmtDapil = $pdo->prepare("
+        $stmtDapil = $pdo->prepare("
                 INSERT INTO profile_dapil
                 (profile_id, dapil_id)
                 VALUES (?, ?)
             ");
 
-            foreach ($_POST['dapil_id'] as $dapilId) {
+        foreach ($_POST['dapil_id'] as $dapilId) {
 
-                $stmtDapil->execute([
-                    $data['id'],
-                    $dapilId
-                ]);
+            $stmtDapil->execute([
+                $data['id'],
+                $dapilId
+            ]);
+        }
+        $foto_ktp = $data['foto_ktp'];
 
+        if (!empty($_FILES['foto_ktp']['name'])) {
+
+            $foto_ktp = upload_file('foto_ktp', 'ktp');
+
+            if (
+                $foto_ktp &&
+                !empty($data['foto_ktp']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_ktp'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_ktp']);
             }
-            $foto_ktp = $data['foto_ktp'];
+        }
 
-            if (!empty($_FILES['foto_ktp']['name'])) {
+        $foto_diri = $data['foto_diri'];
 
-                $foto_ktp = upload_file('foto_ktp', 'ktp');
+        if (!empty($_FILES['foto_diri']['name'])) {
 
-                if (
-                    $foto_ktp &&
-                    !empty($data['foto_ktp']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_ktp'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_ktp']);
-                }
+            $foto_diri = upload_file('foto_diri', 'diri');
+
+            if (
+                $foto_diri &&
+                !empty($data['foto_diri']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_diri'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_diri']);
             }
+        }
 
-            $foto_diri = $data['foto_diri'];
+        $foto_surat_persetujuan = $data['foto_surat_persetujuan'];
 
-            if (!empty($_FILES['foto_diri']['name'])) {
+        if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
 
-                $foto_diri = upload_file('foto_diri', 'diri');
+            $foto_surat_persetujuan = upload_file('foto_surat_persetujuan', 'persetujuan');
 
-                if (
-                    $foto_diri &&
-                    !empty($data['foto_diri']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_diri'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_diri']);
-                }
+            if (
+                $foto_surat_persetujuan &&
+                !empty($data['foto_surat_persetujuan']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_surat_persetujuan'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_surat_persetujuan']);
             }
+        }
 
-            $foto_surat_persetujuan = $data['foto_surat_persetujuan'];
-
-            if (!empty($_FILES['foto_surat_persetujuan']['name'])) {
-
-                $foto_surat_persetujuan = upload_file('foto_surat_persetujuan', 'persetujuan');
-
-                if (
-                    $foto_surat_persetujuan &&
-                    !empty($data['foto_surat_persetujuan']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_surat_persetujuan'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_surat_persetujuan']);
-                }
-            }
-
-            $stmtfoto = $pdo->prepare("
+        $stmtfoto = $pdo->prepare("
                 UPDATE profiles
                 SET
                     foto_ktp = ?,
@@ -345,12 +344,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id = ?
             ");
 
-            $stmtfoto->execute([
-                $foto_ktp,
-                $foto_diri,
-                $foto_surat_persetujuan,
-                $data['id']
-            ]);
+        $stmtfoto->execute([
+            $foto_ktp,
+            $foto_diri,
+            $foto_surat_persetujuan,
+            $data['id']
+        ]);
 
         $pdo->commit();
 
@@ -375,7 +374,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </a>
 </div>
 
-<form method="POST"  enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data">
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
@@ -520,12 +519,61 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-3">
                 <label>Status Pernikahan</label>
-                <input name="status_pernikahan" class="form-control" value="<?= e($data['status_pernikahan']) ?>">
+                <select name="status_pernikahan" class="form-control">
+                    <option value="">Pilih</option>
+
+                    <option value="Belum Menikah"
+                        <?= ($data['status_pernikahan'] == 'Belum Menikah') ? 'selected' : '' ?>>
+                        Belum Menikah
+                    </option>
+
+                    <option value="Sudah Menikah"
+                        <?= ($data['status_pernikahan'] == 'Sudah Menikah') ? 'selected' : '' ?>>
+                        Sudah Menikah
+                    </option>
+
+                    <option value="Pernah Menikah"
+                        <?= ($data['status_pernikahan'] == 'Pernah Menikah') ? 'selected' : '' ?>>
+                        Pernah Menikah
+                    </option>
+                </select>
             </div>
 
             <div class="form-group col-md-3">
                 <label>Agama</label>
-                <input name="agama" class="form-control" value="<?= e($data['agama']) ?>">
+                <select name="agama" class="form-control">
+                    <option value="">Pilih</option>
+
+                    <option value="Islam"
+                        <?= ($data['agama'] == 'Islam') ? 'selected' : '' ?>>
+                        Islam
+                    </option>
+
+                    <option value="Kristen Protestan"
+                        <?= ($data['agama'] == 'Kristen Protestan') ? 'selected' : '' ?>>
+                        Kristen Protestan
+                    </option>
+
+                    <option value="Katolik"
+                        <?= ($data['agama'] == 'Katolik') ? 'selected' : '' ?>>
+                        Katolik
+                    </option>
+
+                    <option value="Hindu"
+                        <?= ($data['agama'] == 'Hindu') ? 'selected' : '' ?>>
+                        Hindu
+                    </option>
+
+                    <option value="Budha"
+                        <?= ($data['agama'] == 'Budha') ? 'selected' : '' ?>>
+                        Budha
+                    </option>
+
+                    <option value="Konghuchu"
+                        <?= ($data['agama'] == 'Konghuchu') ? 'selected' : '' ?>>
+                        Konghuchu
+                    </option>
+                </select>
             </div>
 
             <div class="form-group col-md-3">
@@ -554,22 +602,58 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-6">
                 <label>Provinsi</label>
-                <input name="provinsi" class="form-control" value="<?= e($data['provinsi']) ?>">
+                <select
+                    id="provinsi"
+                    name="provinsi"
+                    class="form-control"
+
+                    data-selected="<?= e($data['provinsi']) ?>">
+
+                    <option value="">Memuat Provinsi...</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kabupaten/Kota</label>
-                <input name="kab_kota" class="form-control" value="<?= e($data['kab_kota']) ?>">
+                <select
+                    id="kab_kota"
+                    name="kab_kota"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kab_kota']) ?>">
+
+                    <option value="">Pilih Provinsi dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kecamatan</label>
-                <input name="kecamatan" class="form-control" value="<?= e($data['kecamatan']) ?>">
+                <select
+                    id="kecamatan"
+                    name="kecamatan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kecamatan']) ?>">
+
+                    <option value="">Pilih Kabupaten dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Desa/Kelurahan</label>
-                <input name="desa_kelurahan" class="form-control" value="<?= e($data['desa_kelurahan']) ?>">
+                <select
+                    id="desa_kelurahan"
+                    name="desa_kelurahan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['desa_kelurahan']) ?>">
+
+                    <option value="">Pilih Kecamatan dahulu</option>
+
+                </select>
             </div>
 
             <!-- RT -->
@@ -706,11 +790,34 @@ require_once __DIR__ . '/../partials/topbar.php';
         <div class="card-header">
             <h6 class="m-0 font-weight-bold">
                 <i class="fas fa-phone mr-2" style="color:#3db7ee;"></i>
-                Kontak dan KK
+                Kontak
             </h6>
         </div>
 
         <div class="card-body row">
+
+            <div class="form-group col-md-4">
+                <label>Nomor Telepon</label>
+                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Nomor WhatsApp</label>
+                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card content-card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
+                Data Anggota Keluarga
+            </h6>
+        </div>
+
+        <div class="card-body">
 
             <div class="form-group col-md-4">
                 <label>Nomor KK</label>
@@ -752,29 +859,6 @@ require_once __DIR__ . '/../partials/topbar.php';
                     }
                 }
             </script>
-
-            <div class="form-group col-md-4">
-                <label>Nomor Telepon</label>
-                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
-            </div>
-
-            <div class="form-group col-md-4">
-                <label>Nomor WhatsApp</label>
-                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
-            </div>
-
-        </div>
-    </div>
-
-    <div class="card content-card shadow mb-4">
-        <div class="card-header">
-            <h6 class="m-0 font-weight-bold">
-                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
-                Data Anggota Keluarga
-            </h6>
-        </div>
-
-        <div class="card-body">
 
             <div id="anggotaKeluargaContainer">
 
@@ -927,65 +1011,65 @@ require_once __DIR__ . '/../partials/topbar.php';
         </div>
     </div>
 
-<div class="card shadow mb-4">
+    <div class="card shadow mb-4">
 
-    <div class="card-header">
-        <h6 class="m-0 font-weight-bold">
-            <i class="fas fa-map mr-2" style="color:#3db7ee;"></i>
-            Dapil
-        </h6>
-    </div>
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-map mr-2" style="color:#3db7ee;"></i>
+                Dapil
+            </h6>
+        </div>
 
-    <div class="card-body row">
+        <div class="card-body row">
 
-        <?php foreach ($dapilList as $d): ?>
+            <?php foreach ($dapilList as $d): ?>
 
-            <div class="col-md-4 mb-2">
+                <div class="col-md-4 mb-2">
 
-                <div class="custom-control custom-checkbox">
+                    <div class="custom-control custom-checkbox">
 
-                    <input
-                        type="checkbox"
-                        class="custom-control-input"
-                        id="dapil_<?= $d['id'] ?>"
-                        name="dapil_id[]"
-                        value="<?= $d['id'] ?>"
+                        <input
+                            type="checkbox"
+                            class="custom-control-input"
+                            id="dapil_<?= $d['id'] ?>"
+                            name="dapil_id[]"
+                            value="<?= $d['id'] ?>"
 
-                        <?= in_array($d['id'], $selectedDapil) ? 'checked' : '' ?>>
+                            <?= in_array($d['id'], $selectedDapil) ? 'checked' : '' ?>>
 
-                    <label
-                        class="custom-control-label"
-                        for="dapil_<?= $d['id'] ?>">
+                        <label
+                            class="custom-control-label"
+                            for="dapil_<?= $d['id'] ?>">
 
-                        <strong><?= e($d['daerah_pemilihan']) ?></strong>
+                            <strong><?= e($d['daerah_pemilihan']) ?></strong>
 
-                        <br>
+                            <br>
 
-                        <small class="text-muted">
+                            <small class="text-muted">
 
-                            <?= e($d['provinsi']) ?>
+                                <?= e($d['provinsi']) ?>
 
-                            <?php if (!empty($d['kab_kota'])): ?>
+                                <?php if (!empty($d['kab_kota'])): ?>
 
-                                - <?= e($d['kab_kota']) ?>
+                                    - <?= e($d['kab_kota']) ?>
 
-                            <?php endif; ?>
+                                <?php endif; ?>
 
-                        </small>
+                            </small>
 
-                    </label>
+                        </label>
+
+                    </div>
 
                 </div>
 
-            </div>
+            <?php endforeach; ?>
 
-        <?php endforeach; ?>
+        </div>
 
     </div>
 
-</div>
-
-   <div class="card shadow mb-4">
+    <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Dokumentasi</h6>
         </div>
@@ -996,10 +1080,10 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <label>Foto KTP</label>
 
                 <?php if (!empty($data['foto_ktp'])): ?>
-                        <img src="../<?= e($data['foto_ktp']) ?>"
-                            class="img-thumbnail"
-                            style="max-height:180px;">
-                    <?php endif; ?>
+                    <img src="../<?= e($data['foto_ktp']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
 
                 <input type="file"
                     name="foto_ktp"
@@ -1031,10 +1115,10 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-4">
                 <label>Foto Surat Persetujuan <span class="text-danger">*</span></label>
                 <?php if (!empty($data['foto_surat_persetujuan'])): ?>
-                <img src="../<?= e($data['foto_surat_persetujuan']) ?>"
-                    class="img-thumbnail"
-                    style="max-height:180px;">
-            <?php endif; ?>
+                    <img src="../<?= e($data['foto_surat_persetujuan']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
                 <input type="file"
                     name="foto_surat_persetujuan"
                     class="form-control-file"
@@ -1152,6 +1236,217 @@ require_once __DIR__ . '/../partials/topbar.php';
         if (e.target.classList.contains('btnHapus')) {
             e.target.closest('.anggota-item').remove();
         }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const provinsiSelect = document.getElementById('provinsi');
+        const kabKotaSelect = document.getElementById('kab_kota');
+        const kecamatanSelect = document.getElementById('kecamatan');
+        const desaSelect = document.getElementById('desa_kelurahan');
+
+        const API_URL = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+        function resetSelect(select, text) {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        function setLoading(select, text = 'Memuat data...') {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        async function fetchWilayah(url) {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil data wilayah');
+            }
+
+            return await response.json();
+        }
+
+        async function loadProvinsi() {
+            try {
+                setLoading(provinsiSelect, 'Memuat data provinsi...');
+
+                const data = await fetchWilayah(`${API_URL}/provinces.json`);
+
+                provinsiSelect.innerHTML = '<option value="">Pilih Provinsi</option>';
+
+                const selectedProvinsi = provinsiSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedProvinsi) {
+
+                        option.selected = true;
+
+                        loadKabKota(item.id);
+
+                    }
+
+                    provinsiSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(provinsiSelect, 'Gagal memuat provinsi');
+                console.error(error);
+            }
+        }
+
+        async function loadKabKota(provinsiId) {
+            try {
+                setLoading(kabKotaSelect, 'Memuat kabupaten/kota...');
+                resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/regencies/${provinsiId}.json`);
+
+                kabKotaSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+
+                const selectedKab = kabKotaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKab) {
+
+                        option.selected = true;
+
+                        loadKecamatan(item.id);
+
+                    }
+
+                    kabKotaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kabKotaSelect, 'Gagal memuat kabupaten/kota');
+                console.error(error);
+            }
+        }
+
+        async function loadKecamatan(kabKotaId) {
+            try {
+                setLoading(kecamatanSelect, 'Memuat kecamatan...');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/districts/${kabKotaId}.json`);
+
+                kecamatanSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+
+                const selectedKecamatan = kecamatanSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKecamatan) {
+
+                        option.selected = true;
+
+                        loadDesa(item.id);
+
+                    }
+
+                    kecamatanSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kecamatanSelect, 'Gagal memuat kecamatan');
+                console.error(error);
+            }
+        }
+
+        async function loadDesa(kecamatanId) {
+            try {
+                setLoading(desaSelect, 'Memuat desa/kelurahan...');
+
+                const data = await fetchWilayah(`${API_URL}/villages/${kecamatanId}.json`);
+
+                desaSelect.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+
+                const selectedDesa = desaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+
+                    if (item.name === selectedDesa) {
+
+                        option.selected = true;
+
+                    }
+
+                    desaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(desaSelect, 'Gagal memuat desa/kelurahan');
+                console.error(error);
+            }
+        }
+
+        provinsiSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const provinsiId = selected.dataset.id;
+
+            resetSelect(kabKotaSelect, 'Pilih provinsi terlebih dahulu');
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (provinsiId) {
+                loadKabKota(provinsiId);
+            }
+        });
+
+        kabKotaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kabKotaId = selected.dataset.id;
+
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kabKotaId) {
+                loadKecamatan(kabKotaId);
+            }
+        });
+
+        kecamatanSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kecamatanId = selected.dataset.id;
+
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kecamatanId) {
+                loadDesa(kecamatanId);
+            }
+        });
+
+        loadProvinsi();
     });
 </script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

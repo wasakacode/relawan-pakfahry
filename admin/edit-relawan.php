@@ -475,54 +475,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-         $foto_ktp = $data['foto_ktp'];
+        $foto_ktp = $data['foto_ktp'];
 
-            if (!empty($_FILES['foto_ktp']['name'])) {
+        if (!empty($_FILES['foto_ktp']['name'])) {
 
-                // upload file baru
-                $foto_ktp = upload_file('foto_ktp', 'ktp');
+            // upload file baru
+            $foto_ktp = upload_file('foto_ktp', 'ktp');
 
-                // hapus file lama
-                if (
-                    $foto_ktp &&
-                    !empty($data['foto_ktp']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_ktp'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_ktp']);
-                }
+            // hapus file lama
+            if (
+                $foto_ktp &&
+                !empty($data['foto_ktp']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_ktp'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_ktp']);
             }
+        }
 
-            $foto_diri = $data['foto_diri'];
+        $foto_diri = $data['foto_diri'];
 
-                if (!empty($_FILES['foto_diri']['name'])) {
+        if (!empty($_FILES['foto_diri']['name'])) {
 
-                    $foto_diri = upload_file('foto_diri', 'diri');
+            $foto_diri = upload_file('foto_diri', 'diri');
 
-                    if (
-                    $foto_diri &&
-                    !empty($data['foto_diri']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_diri'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_diri']);
-                }
-                }
+            if (
+                $foto_diri &&
+                !empty($data['foto_diri']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_diri'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_diri']);
+            }
+        }
 
-                $foto_kartu_keluarga = $data['foto_kartu_keluarga'];
+        $foto_kartu_keluarga = $data['foto_kartu_keluarga'];
 
-                    if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
+        if (!empty($_FILES['foto_kartu_keluarga']['name'])) {
 
-                        $foto_kartu_keluarga = upload_file('foto_kartu_keluarga', 'kk');
+            $foto_kartu_keluarga = upload_file('foto_kartu_keluarga', 'kk');
 
-                        if (
-                    $foto_kartu_keluarga &&
-                    !empty($data['foto_kartu_keluarga']) &&
-                    file_exists(__DIR__ . '/../' . $data['foto_kartu_keluarga'])
-                ) {
-                    unlink(__DIR__ . '/../' . $data['foto_kartu_keluarga']);
-                }
-                    }
+            if (
+                $foto_kartu_keluarga &&
+                !empty($data['foto_kartu_keluarga']) &&
+                file_exists(__DIR__ . '/../' . $data['foto_kartu_keluarga'])
+            ) {
+                unlink(__DIR__ . '/../' . $data['foto_kartu_keluarga']);
+            }
+        }
 
-            $stmtfoto = $pdo->prepare("
+        $stmtfoto = $pdo->prepare("
                 UPDATE profiles SET
                     foto_ktp = ?,
                     foto_diri = ?,
@@ -530,12 +530,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id = ?
                 ");
 
-                $stmtfoto->execute([
-                    $foto_ktp,
-                    $foto_diri,
-                    $foto_kartu_keluarga,
-                    $id
-                ]);
+        $stmtfoto->execute([
+            $foto_ktp,
+            $foto_diri,
+            $foto_kartu_keluarga,
+            $id
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -764,12 +764,61 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-3">
                 <label>Status Pernikahan</label>
-                <input name="status_pernikahan" class="form-control" value="<?= e($data['status_pernikahan']) ?>">
+                <select name="status_pernikahan" class="form-control">
+                    <option value="">Pilih</option>
+
+                    <option value="Belum Menikah"
+                        <?= ($data['status_pernikahan'] == 'Belum Menikah') ? 'selected' : '' ?>>
+                        Belum Menikah
+                    </option>
+
+                    <option value="Sudah Menikah"
+                        <?= ($data['status_pernikahan'] == 'Sudah Menikah') ? 'selected' : '' ?>>
+                        Sudah Menikah
+                    </option>
+
+                    <option value="Pernah Menikah"
+                        <?= ($data['status_pernikahan'] == 'Pernah Menikah') ? 'selected' : '' ?>>
+                        Pernah Menikah
+                    </option>
+                </select>
             </div>
 
             <div class="form-group col-md-3">
                 <label>Agama</label>
-                <input name="agama" class="form-control" value="<?= e($data['agama']) ?>">
+                <select name="agama" class="form-control">
+                    <option value="">Pilih</option>
+
+                    <option value="Islam"
+                        <?= ($data['agama'] == 'Islam') ? 'selected' : '' ?>>
+                        Islam
+                    </option>
+
+                    <option value="Kristen Protestan"
+                        <?= ($data['agama'] == 'Kristen Protestan') ? 'selected' : '' ?>>
+                        Kristen Protestan
+                    </option>
+
+                    <option value="Katolik"
+                        <?= ($data['agama'] == 'Katolik') ? 'selected' : '' ?>>
+                        Katolik
+                    </option>
+
+                    <option value="Hindu"
+                        <?= ($data['agama'] == 'Hindu') ? 'selected' : '' ?>>
+                        Hindu
+                    </option>
+
+                    <option value="Budha"
+                        <?= ($data['agama'] == 'Budha') ? 'selected' : '' ?>>
+                        Budha
+                    </option>
+
+                    <option value="Konghuchu"
+                        <?= ($data['agama'] == 'Konghuchu') ? 'selected' : '' ?>>
+                        Konghuchu
+                    </option>
+                </select>
             </div>
 
             <div class="form-group col-md-3">
@@ -798,22 +847,58 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-6">
                 <label>Provinsi</label>
-                <input name="provinsi" class="form-control" value="<?= e($data['provinsi']) ?>">
+                <select
+                    id="provinsi"
+                    name="provinsi"
+                    class="form-control"
+
+                    data-selected="<?= e($data['provinsi']) ?>">
+
+                    <option value="">Memuat Provinsi...</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kabupaten/Kota</label>
-                <input name="kab_kota" class="form-control" value="<?= e($data['kab_kota']) ?>">
+                <select
+                    id="kab_kota"
+                    name="kab_kota"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kab_kota']) ?>">
+
+                    <option value="">Pilih Provinsi dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kecamatan</label>
-                <input name="kecamatan" class="form-control" value="<?= e($data['kecamatan']) ?>">
+                <select
+                    id="kecamatan"
+                    name="kecamatan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kecamatan']) ?>">
+
+                    <option value="">Pilih Kabupaten dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Desa/Kelurahan</label>
-                <input name="desa_kelurahan" class="form-control" value="<?= e($data['desa_kelurahan']) ?>">
+                <select
+                    id="desa_kelurahan"
+                    name="desa_kelurahan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['desa_kelurahan']) ?>">
+
+                    <option value="">Pilih Kecamatan dahulu</option>
+
+                </select>
             </div>
 
             <!-- RT -->
@@ -950,11 +1035,34 @@ require_once __DIR__ . '/../partials/topbar.php';
         <div class="card-header">
             <h6 class="m-0 font-weight-bold">
                 <i class="fas fa-phone mr-2" style="color:#3db7ee;"></i>
-                Kontak dan KK
+                Kontak
             </h6>
         </div>
 
         <div class="card-body row">
+
+            <div class="form-group col-md-4">
+                <label>Nomor Telepon</label>
+                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Nomor WhatsApp</label>
+                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card content-card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
+                Data Anggota Keluarga
+            </h6>
+        </div>
+
+        <div class="card-body">
 
             <div class="form-group col-md-4">
                 <label>Nomor KK</label>
@@ -996,29 +1104,6 @@ require_once __DIR__ . '/../partials/topbar.php';
                     }
                 }
             </script>
-
-            <div class="form-group col-md-4">
-                <label>Nomor Telepon</label>
-                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
-            </div>
-
-            <div class="form-group col-md-4">
-                <label>Nomor WhatsApp</label>
-                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
-            </div>
-
-        </div>
-    </div>
-
-    <div class="card content-card shadow mb-4">
-        <div class="card-header">
-            <h6 class="m-0 font-weight-bold">
-                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
-                Data Anggota Keluarga
-            </h6>
-        </div>
-
-        <div class="card-body">
 
             <div id="anggotaKeluargaContainer">
 
@@ -1220,7 +1305,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     </div>
 
-        <div class="card shadow mb-4">
+    <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Dokumentasi</h6>
         </div>
@@ -1230,15 +1315,14 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-4">
                 <label>Foto KTP <span class="text-danger">*</span></label>
                 <?php if (!empty($data['foto_ktp'])): ?>
-                        <img src="../<?= e($data['foto_ktp']) ?>"
-                            class="img-thumbnail"
-                            style="max-height:180px;">
-                    <?php endif; ?>
+                    <img src="../<?= e($data['foto_ktp']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
                 <input type="file"
                     name="foto_ktp"
                     class="form-control-file"
-                    accept=".pdf,image/*"
-                >
+                    accept=".pdf,image/*">
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -1254,8 +1338,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                 <input type="file"
                     name="foto_diri"
                     class="form-control-file"
-                    accept=".pdf,image/*"
-                    >
+                    accept=".pdf,image/*">
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -1265,15 +1348,14 @@ require_once __DIR__ . '/../partials/topbar.php';
             <div class="form-group col-md-4">
                 <label>Foto Kartu Keluarga <span class="text-danger">*</span></label>
                 <?php if (!empty($data['foto_kartu_keluarga'])): ?>
-                <img src="../<?= e($data['foto_kartu_keluarga']) ?>"
-                    class="img-thumbnail"
-                    style="max-height:180px;">
-            <?php endif; ?>
+                    <img src="../<?= e($data['foto_kartu_keluarga']) ?>"
+                        class="img-thumbnail"
+                        style="max-height:180px;">
+                <?php endif; ?>
                 <input type="file"
                     name="foto_kartu_keluarga"
                     class="form-control-file"
-                    accept=".pdf,image/*"
-                    >
+                    accept=".pdf,image/*">
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -1386,6 +1468,217 @@ require_once __DIR__ . '/../partials/topbar.php';
         if (e.target.classList.contains('btnHapus')) {
             e.target.closest('.anggota-item').remove();
         }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const provinsiSelect = document.getElementById('provinsi');
+        const kabKotaSelect = document.getElementById('kab_kota');
+        const kecamatanSelect = document.getElementById('kecamatan');
+        const desaSelect = document.getElementById('desa_kelurahan');
+
+        const API_URL = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+        function resetSelect(select, text) {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        function setLoading(select, text = 'Memuat data...') {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        async function fetchWilayah(url) {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil data wilayah');
+            }
+
+            return await response.json();
+        }
+
+        async function loadProvinsi() {
+            try {
+                setLoading(provinsiSelect, 'Memuat data provinsi...');
+
+                const data = await fetchWilayah(`${API_URL}/provinces.json`);
+
+                provinsiSelect.innerHTML = '<option value="">Pilih Provinsi</option>';
+
+                const selectedProvinsi = provinsiSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedProvinsi) {
+
+                        option.selected = true;
+
+                        loadKabKota(item.id);
+
+                    }
+
+                    provinsiSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(provinsiSelect, 'Gagal memuat provinsi');
+                console.error(error);
+            }
+        }
+
+        async function loadKabKota(provinsiId) {
+            try {
+                setLoading(kabKotaSelect, 'Memuat kabupaten/kota...');
+                resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/regencies/${provinsiId}.json`);
+
+                kabKotaSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+
+                const selectedKab = kabKotaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKab) {
+
+                        option.selected = true;
+
+                        loadKecamatan(item.id);
+
+                    }
+
+                    kabKotaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kabKotaSelect, 'Gagal memuat kabupaten/kota');
+                console.error(error);
+            }
+        }
+
+        async function loadKecamatan(kabKotaId) {
+            try {
+                setLoading(kecamatanSelect, 'Memuat kecamatan...');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/districts/${kabKotaId}.json`);
+
+                kecamatanSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+
+                const selectedKecamatan = kecamatanSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKecamatan) {
+
+                        option.selected = true;
+
+                        loadDesa(item.id);
+
+                    }
+
+                    kecamatanSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kecamatanSelect, 'Gagal memuat kecamatan');
+                console.error(error);
+            }
+        }
+
+        async function loadDesa(kecamatanId) {
+            try {
+                setLoading(desaSelect, 'Memuat desa/kelurahan...');
+
+                const data = await fetchWilayah(`${API_URL}/villages/${kecamatanId}.json`);
+
+                desaSelect.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+
+                const selectedDesa = desaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+
+                    if (item.name === selectedDesa) {
+
+                        option.selected = true;
+
+                    }
+
+                    desaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(desaSelect, 'Gagal memuat desa/kelurahan');
+                console.error(error);
+            }
+        }
+
+        provinsiSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const provinsiId = selected.dataset.id;
+
+            resetSelect(kabKotaSelect, 'Pilih provinsi terlebih dahulu');
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (provinsiId) {
+                loadKabKota(provinsiId);
+            }
+        });
+
+        kabKotaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kabKotaId = selected.dataset.id;
+
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kabKotaId) {
+                loadKecamatan(kabKotaId);
+            }
+        });
+
+        kecamatanSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kecamatanId = selected.dataset.id;
+
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kecamatanId) {
+                loadDesa(kecamatanId);
+            }
+        });
+
+        loadProvinsi();
     });
 </script>
 
