@@ -47,27 +47,44 @@ if (current_user()['role'] === 'relawan') {
 
     if (current_user()['role'] === 'admin') {
 
-        $stmt = $pdo->prepare("
-            SELECT
-                p.*,
-                u.username,
-                u.is_active,
-                u.id AS akun_id
-            FROM profiles p
-            LEFT JOIN users u
-                ON p.user_id = u.id
-            WHERE
-                p.id = ?
-                AND p.type = 'relawan'
-                AND p.created_by = ?
-            LIMIT 1
-        ");
+    // ambil profile admin yang login
+    $stmtAdmin = $pdo->prepare("
+        SELECT id
+        FROM profiles
+        WHERE user_id = ?
+        AND type='admin'
+        LIMIT 1
+    ");
 
-        $stmt->execute([
-            $id,
-            current_user()['id']
-        ]);
-    } else {
+    $stmtAdmin->execute([
+        current_user()['id']
+    ]);
+
+    $adminProfileId = $stmtAdmin->fetchColumn();
+
+    $stmt = $pdo->prepare("
+        SELECT
+            p.*,
+            u.username,
+            u.is_active,
+            u.id AS akun_id
+        FROM profiles p
+        LEFT JOIN users u
+            ON p.user_id = u.id
+        INNER JOIN profile_admin pa
+            ON pa.profile_id = p.id
+        WHERE
+            p.id = ?
+            AND p.type = 'relawan'
+            AND pa.admin_profile_id = ?
+        LIMIT 1
+    ");
+
+    $stmt->execute([
+        $id,
+        $adminProfileId
+    ]);
+} else {
 
         $stmt = $pdo->prepare("
             SELECT
