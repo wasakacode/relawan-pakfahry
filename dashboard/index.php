@@ -342,347 +342,348 @@ foreach ($chartKabKota as $kabKota) {
     </div>
 <?php endif; ?>
 
-<div class="row">
-    <div class="col-lg-8 mb-4">
-        <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    <?= e($chartTitle) ?>
-                </h6>
-            </div>
+<?php if ($role === 'admin' || $role === 'superadmin'): ?>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <?= e($chartTitle) ?>
+                    </h6>
+                </div>
 
-            <div class="card-body">
-                <canvas id="kabupatenChart" height="135"></canvas>
+                <div class="card-body">
+                    <canvas id="kabupatenChart" height="135"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <?= e($pieTitle) ?>
+                    </h6>
+                </div>
+
+                <div class="card-body">
+                    <canvas id="pieChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4 mb-4">
-        <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    <?= e($pieTitle) ?>
-                </h6>
-            </div>
+    <div class="row">
 
-            <div class="card-body">
-                <canvas id="pieChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
 
-<div class="row">
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card h-100">
-            <div class="card-body">
-
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-label">
-                            <?= $role === 'admin' ? 'Admin di Dapil' : 'Admin Kecamatan' ?>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">
+                                <?= $role === 'admin' ? 'Admin di Dapil' : 'Admin Kecamatan' ?>
+                            </div>
+                            <div class="stat-number"><?= e($totalAdmin) ?></div>
                         </div>
-                        <div class="stat-number"><?= e($totalAdmin) ?></div>
+
+                        <div class="stat-icon primary">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-icon primary">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card h-100">
-            <div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
 
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-label">Relawan</div>
-                        <div class="stat-number"><?= e($totalRelawan) ?></div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">Relawan</div>
+                            <div class="stat-number"><?= e($totalRelawan) ?></div>
+                        </div>
+
+                        <div class="stat-icon success">
+                            <i class="fas fa-users"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-icon success">
-                        <i class="fas fa-users"></i>
-                    </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card h-100">
-            <div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
 
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-label">Dukungan</div>
-                        <div class="stat-number"><?= e($totalDukungan) ?></div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">Dukungan</div>
+                            <div class="stat-number"><?= e($totalDukungan) ?></div>
+                        </div>
+
+                        <div class="stat-icon info">
+                            <i class="fas fa-handshake"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-icon info">
-                        <i class="fas fa-handshake"></i>
-                    </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card h-100">
-            <div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
 
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="stat-label">Akun Aktif</div>
-                        <div class="stat-number"><?= e($totalUser) ?></div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-label">Akun Aktif</div>
+                            <div class="stat-number"><?= e($totalUser) ?></div>
+                        </div>
+
+                        <div class="stat-icon warning">
+                            <i class="fas fa-user-check"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-icon warning">
-                        <i class="fas fa-user-check"></i>
-                    </div>
                 </div>
-
             </div>
         </div>
+
     </div>
 
-</div>
+    <div class="row">
 
-<div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card content-card h-100">
 
-    <div class="col-lg-8 mb-4">
-        <div class="card content-card h-100">
-
-            <div class="card-header">
-                <h6 class="m-0">
-                    <i class="fas fa-layer-group mr-2" style="color:#3db7ee;"></i>
-                    Ringkasan Hak Akses Sistem
-                </h6>
-            </div>
-
-            <div class="card-body">
-
-                <p style="color:#5f788f; line-height:1.7;">
-                    Sistem ini digunakan untuk membantu proses pencatatan dan pengelolaan data
-                    <b>admin dapil</b>, <b>relawan</b>, dan <b>dukungan</b>.
-                    Setiap pengguna memiliki hak akses yang berbeda agar pengelolaan data lebih tertata.
-                </p>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered role-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 28%;">Role</th>
-                                <th>Hak Akses</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <span class="role-pill">Superadmin</span>
-                                </td>
-                                <td>
-                                    Melihat seluruh statistik, mengelola seluruh admin, relawan, dukungan, dan akun pengguna dalam sistem.
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <span class="role-pill">Admin Dapil</span>
-                                </td>
-                                <td>
-                                    Melihat statistik hanya berdasarkan dapil yang menjadi tanggung jawabnya, serta mengelola relawan dan dukungan pada wilayah tersebut.
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <span class="role-pill">Relawan</span>
-                                </td>
-                                <td>
-                                    Melihat profil dirinya dan menginput data dukungan yang diperoleh.
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <span class="role-pill">Dukungan</span>
-                                </td>
-                                <td>
-                                    Tidak memiliki akun login. Data dukungan hanya dicatat oleh admin atau relawan.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="card-header">
+                    <h6 class="m-0">
+                        <i class="fas fa-layer-group mr-2" style="color:#3db7ee;"></i>
+                        Ringkasan Hak Akses Sistem
+                    </h6>
                 </div>
 
-            </div>
+                <div class="card-body">
 
-        </div>
-    </div>
-
-    <div class="col-lg-4 mb-4">
-        <div class="card content-card h-100">
-
-            <div class="card-header">
-                <h6 class="m-0">
-                    <i class="fas fa-user-circle mr-2" style="color:#3db7ee;"></i>
-                    Profil Pengguna
-                </h6>
-            </div>
-
-            <div class="card-body">
-
-                <div class="profile-box">
-                    <div class="profile-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-
-                    <div class="profile-name">
-                        <?= e($currentUser['name'] ?? '-') ?>
-                    </div>
-
-                    <div class="profile-role">
-                        <?= e(ucfirst($role)) ?>
-                    </div>
-
-                    <p style="color:#7890a6; font-size:14px; margin-bottom:20px;">
-                        Kecamatan:
-                        <b><?= e($currentUser['kecamatan'] ?? '-') ?></b>
+                    <p style="color:#5f788f; line-height:1.7;">
+                        Sistem ini digunakan untuk membantu proses pencatatan dan pengelolaan data
+                        <b>admin dapil</b>, <b>relawan</b>, dan <b>dukungan</b>.
+                        Setiap pengguna memiliki hak akses yang berbeda agar pengelolaan data lebih tertata.
                     </p>
 
-                    <?php if ($role === 'admin' && !empty($allowedKabKota)): ?>
-                        <p style="color:#7890a6; font-size:13px; line-height:1.6; margin-bottom:20px;">
-                            Wilayah Dapil:
-                            <br>
-                            <b><?= e(implode(', ', $allowedKabKota)) ?></b>
-                        </p>
-                    <?php endif; ?>
+                    <div class="table-responsive">
+                        <table class="table table-bordered role-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 28%;">Role</th>
+                                    <th>Hak Akses</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <span class="role-pill">Superadmin</span>
+                                    </td>
+                                    <td>
+                                        Melihat seluruh statistik, mengelola seluruh admin, relawan, dukungan, dan akun pengguna dalam sistem.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <span class="role-pill">Admin Dapil</span>
+                                    </td>
+                                    <td>
+                                        Melihat statistik hanya berdasarkan dapil yang menjadi tanggung jawabnya, serta mengelola relawan dan dukungan pada wilayah tersebut.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <span class="role-pill">Relawan</span>
+                                    </td>
+                                    <td>
+                                        Melihat profil dirinya dan menginput data dukungan yang diperoleh.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <span class="role-pill">Dukungan</span>
+                                    </td>
+                                    <td>
+                                        Tidak memiliki akun login. Data dukungan hanya dicatat oleh admin atau relawan.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
                 </div>
 
-                <a href="<?= url('dashboard/index.php') ?>" class="quick-action">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
+            </div>
+        </div>
 
-                <?php if (in_array($role, ['superadmin', 'admin'])): ?>
-                    <a href="<?= url('admin/create-relawan.php') ?>" class="quick-action">
-                        <i class="fas fa-user-plus"></i> Tambah Relawan
+        <div class="col-lg-4 mb-4">
+            <div class="card content-card h-100">
+
+                <div class="card-header">
+                    <h6 class="m-0">
+                        <i class="fas fa-user-circle mr-2" style="color:#3db7ee;"></i>
+                        Profil Pengguna
+                    </h6>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="profile-box">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+
+                        <div class="profile-name">
+                            <?= e($currentUser['name'] ?? '-') ?>
+                        </div>
+
+                        <div class="profile-role">
+                            <?= e(ucfirst($role)) ?>
+                        </div>
+
+                        <p style="color:#7890a6; font-size:14px; margin-bottom:20px;">
+                            Kecamatan:
+                            <b><?= e($currentUser['kecamatan'] ?? '-') ?></b>
+                        </p>
+
+                        <?php if ($role === 'admin' && !empty($allowedKabKota)): ?>
+                            <p style="color:#7890a6; font-size:13px; line-height:1.6; margin-bottom:20px;">
+                                Wilayah Dapil:
+                                <br>
+                                <b><?= e(implode(', ', $allowedKabKota)) ?></b>
+                            </p>
+                        <?php endif; ?>
+                    </div>
+
+                    <a href="<?= url('dashboard/index.php') ?>" class="quick-action">
+                        <i class="fas fa-home"></i> Dashboard
                     </a>
-                <?php endif; ?>
 
-                <?php if (in_array($role, ['superadmin', 'admin', 'relawan'])): ?>
-                    <a href="<?= url('dukungan/create.php') ?>" class="quick-action">
-                        <i class="fas fa-hand-holding-heart"></i> Tambah Dukungan
+                    <?php if (in_array($role, ['superadmin', 'admin'])): ?>
+                        <a href="<?= url('admin/create-relawan.php') ?>" class="quick-action">
+                            <i class="fas fa-user-plus"></i> Tambah Relawan
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if (in_array($role, ['superadmin', 'admin', 'relawan'])): ?>
+                        <a href="<?= url('dukungan/create.php') ?>" class="quick-action">
+                            <i class="fas fa-hand-holding-heart"></i> Tambah Dukungan
+                        </a>
+                    <?php endif; ?>
+
+                    <a href="<?= url('logout.php') ?>" class="quick-action">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
-                <?php endif; ?>
 
-                <a href="<?= url('logout.php') ?>" class="quick-action">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+                </div>
 
             </div>
-
         </div>
+        
     </div>
+    <?php endif; ?>
 
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('kabupatenChart');
 
-<script>
-const ctx = document.getElementById('kabupatenChart');
+        new Chart(ctx, {
+            type: 'bar',
 
-new Chart(ctx, {
-    type: 'bar',
+            data: {
+                labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
 
-    data: {
-        labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
+                datasets: [{
+                        label: 'Relawan',
+                        data: <?= json_encode($relawanData) ?>,
+                        backgroundColor: '#1cc88a',
+                        borderRadius: 6
+                    },
 
-        datasets: [
-            {
-                label: 'Relawan',
-                data: <?= json_encode($relawanData) ?>,
-                backgroundColor: '#1cc88a',
-                borderRadius: 6
+                    {
+                        label: 'Dukungan',
+                        data: <?= json_encode($dukunganData) ?>,
+                        backgroundColor: '#36b9cc',
+                        borderRadius: 6
+                    }
+                ]
             },
 
-            {
-                label: 'Dukungan',
-                data: <?= json_encode($dukunganData) ?>,
-                backgroundColor: '#36b9cc',
-                borderRadius: 6
-            }
-        ]
-    },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
 
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
 
-        plugins: {
-            legend: {
-                position: 'top'
-            }
-        },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    },
 
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    precision: 0
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 35
+                        }
+                    }
                 }
+            }
+        });
+
+        const pieCtx = document.getElementById('pieChart');
+
+        new Chart(pieCtx, {
+            type: 'doughnut',
+
+            data: {
+                labels: ['Relawan', 'Dukungan'],
+
+                datasets: [{
+                    data: [
+                        <?= (int)$totalRelawan ?>,
+                        <?= (int)$totalDukungan ?>
+                    ],
+
+                    backgroundColor: [
+                        '#1cc88a',
+                        '#36b9cc'
+                    ],
+
+                    borderWidth: 1
+                }]
             },
 
-            x: {
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 35
+            options: {
+                responsive: true,
+
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 }
             }
-        }
-    }
-});
+        });
+    </script>
 
-const pieCtx = document.getElementById('pieChart');
-
-new Chart(pieCtx, {
-    type: 'doughnut',
-
-    data: {
-        labels: ['Relawan', 'Dukungan'],
-
-        datasets: [{
-            data: [
-                <?= (int)$totalRelawan ?>,
-                <?= (int)$totalDukungan ?>
-            ],
-
-            backgroundColor: [
-                '#1cc88a',
-                '#36b9cc'
-            ],
-
-            borderWidth: 1
-        }]
-    },
-
-    options: {
-        responsive: true,
-
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
-    }
-});
-</script>
-
-<?php require_once __DIR__ . '/../partials/footer.php'; ?>
+    <?php require_once __DIR__ . '/../partials/footer.php'; ?>
