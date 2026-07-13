@@ -225,36 +225,89 @@ if ($role === 'superadmin') {
 | Ambil data chart
 |--------------------------------------------------------------------------
 */
-if ($isStatLimited && empty($allowedKabKota)) {
-    $rows = [];
-} elseif ($isStatLimited) {
-    $placeholders = $makePlaceholders(count($allowedKabKota));
 
-    $stmt = $pdo->prepare("
-        SELECT
-            kab_kota,
-            SUM(CASE WHEN type = 'relawan' THEN 1 ELSE 0 END) AS total_relawan,
-            SUM(CASE WHEN type = 'dukungan' THEN 1 ELSE 0 END) AS total_dukungan
-        FROM profiles
-        WHERE kab_kota IN ($placeholders)
-        GROUP BY kab_kota
-    ");
+/*
+|--------------------------------------------------------------------------
+| Ambil data chart
+|--------------------------------------------------------------------------
+*/
 
-    $stmt->execute($allowedKabKota);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} else {
+if ($role === 'superadmin') {
+
+    // Superadmin melihat statistik PER DAPIL
     $stmt = $pdo->query("
         SELECT
-            kab_kota,
-            SUM(CASE WHEN type = 'relawan' THEN 1 ELSE 0 END) AS total_relawan,
-            SUM(CASE WHEN type = 'dukungan' THEN 1 ELSE 0 END) AS total_dukungan
-        FROM profiles
-        GROUP BY kab_kota
+    d.daerah_pemilihan,
+
+    COUNT(DISTINCT r.id) AS total_relawan,
+
+    0 AS total_dukungan
+
+FROM dapil d
+
+LEFT JOIN profile_dapil pd
+    ON pd.dapil_id = d.id
+
+LEFT JOIN profiles a
+    ON a.id = pd.profile_id
+   AND a.type='admin'
+
+LEFT JOIN profile_admin pa
+    ON pa.admin_profile_id = a.id
+
+LEFT JOIN profiles r
+    ON r.id = pa.profile_id
+   AND r.type='relawan'
+
+GROUP BY
+    d.id,
+    d.daerah_pemilihan
+
+ORDER BY
+    d.daerah_pemilihan;
     ");
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
 
+} else {
+
+    // Admin tetap berdasarkan kabupaten/kota
+    if ($isStatLimited && empty($allowedKabKota)) {
+
+        $rows = [];
+
+    } elseif ($isStatLimited) {
+
+        $placeholders = $makePlaceholders(count($allowedKabKota));
+
+        $stmt = $pdo->prepare("
+            SELECT
+                kab_kota,
+                SUM(CASE WHEN type='relawan' THEN 1 ELSE 0 END) AS total_relawan,
+                SUM(CASE WHEN type='dukungan' THEN 1 ELSE 0 END) AS total_dukungan
+            FROM profiles
+            WHERE kab_kota IN ($placeholders)
+            GROUP BY kab_kota
+        ");
+
+        $stmt->execute($allowedKabKota);
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    } else {
+
+        $stmt = $pdo->query("
+            SELECT
+                kab_kota,
+                SUM(CASE WHEN type='relawan' THEN 1 ELSE 0 END) AS total_relawan,
+                SUM(CASE WHEN type='dukungan' THEN 1 ELSE 0 END) AS total_dukungan
+            FROM profiles
+            GROUP BY kab_kota
+        ");
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
 /*
 |--------------------------------------------------------------------------
 | Susun data chart
@@ -263,14 +316,21 @@ if ($isStatLimited && empty($allowedKabKota)) {
 $dataMap = [];
 
 foreach ($rows as $row) {
-    $kabKota = trim($row['kab_kota'] ?? '');
 
-    if ($kabKota !== '') {
-        $dataMap[$kabKota] = [
-            'relawan' => (int)$row['total_relawan'],
-            'dukungan' => (int)$row['total_dukungan']
-        ];
+    if ($role === 'superadmin') {
+
+        $label = trim($row['daerah_pemilihan']);
+
+    } else {
+
+        $label = trim($row['kab_kota']);
+
     }
+
+    $dataMap[$label] = [
+        'relawan'  => (int)$row['total_relawan'],
+        'dukungan' => (int)$row['total_dukungan']
+    ];
 }
 
 /*
@@ -280,40 +340,43 @@ foreach ($rows as $row) {
 | Superadmin : tampilkan semua kab/kota, termasuk data luar Kalsel jika ada.
 | Admin      : hanya tampilkan kab/kota dalam dapilnya.
 */
-if ($isStatLimited) {
-    $chartKabKota = [];
+if ($role === 'superadmin') {
 
-    foreach ($allKabKota as $kabKota) {
-        if (in_array($kabKota, $allowedKabKota, true)) {
-            $chartKabKota[] = $kabKota;
-        }
-    }
+    $chartLabels = array_keys($dataMap);
 
-    foreach ($allowedKabKota as $kabKota) {
-        if (!in_array($kabKota, $chartKabKota, true)) {
-            $chartKabKota[] = $kabKota;
-        }
-    }
 } else {
-    $chartKabKota = $allKabKota;
 
-    foreach ($rows as $row) {
-        $kabKota = trim($row['kab_kota'] ?? '');
+    if ($isStatLimited) {
 
-        if ($kabKota !== '' && !in_array($kabKota, $chartKabKota, true)) {
-            $chartKabKota[] = $kabKota;
+        $chartLabels = [];
+
+        foreach ($allKabKota as $kab) {
+
+            if (in_array($kab, $allowedKabKota)) {
+                $chartLabels[] = $kab;
+            }
+        }
+
+    } else {
+
+        $chartLabels = $allKabKota;
+
+        foreach ($rows as $row) {
+
+            if (!in_array($row['kab_kota'], $chartLabels)) {
+                $chartLabels[] = $row['kab_kota'];
+            }
         }
     }
 }
 
-$labels = [];
-$relawanData = [];
-$dukunganData = [];
+foreach ($chartLabels as $label) {
 
-foreach ($chartKabKota as $kabKota) {
-    $labels[] = $kabKota;
-    $relawanData[] = $dataMap[$kabKota]['relawan'] ?? 0;
-    $dukunganData[] = $dataMap[$kabKota]['dukungan'] ?? 0;
+    $labels[] = $label;
+
+    $relawanData[] = $dataMap[$label]['relawan'] ?? 0;
+
+    $dukunganData[] = $dataMap[$label]['dukungan'] ?? 0;
 }
 
 ?>

@@ -92,7 +92,7 @@ function create_profile($pdo, $type, $userId = null)
         current_user() &&
         in_array(current_user()['role'], ['superadmin', 'admin'])
     ) {
-        $statusVerifikasi = 'tedaftar';
+        $statusVerifikasi = 'terdaftar';
         $profileActive    = 1;
         $profileComplete  = 1;
     }
