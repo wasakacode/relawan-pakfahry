@@ -26,7 +26,7 @@
     <!-- Dashboard -->
     <li class="nav-item">
         <a class="nav-link" href="<?= url('dashboard/index.php') ?>">
-            <i class="fas fa-home"></i>
+            <i class="fas fa-home fa-fw"></i>
             <span>Dashboard</span>
         </a>
     </li>
@@ -44,16 +44,8 @@
         <!-- Buat Admin -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/create-admin.php') ?>">
-                <i class="fas fa-user-shield"></i>
+                <i class="fas fa-user-shield fa-fw"></i>
                 <span>Buat Admin</span>
-            </a>
-        </li>
-
-        <!-- Buat Daerah Pemilihan -->
-        <li class="nav-item">
-            <a class="nav-link" href="<?= url('admin/create-dapil.php') ?>">
-                <i class="fas fa-user-shield"></i>
-                <span>Buat Daerah Pemilihan</span>
             </a>
         </li>
     <?php endif; ?>
@@ -62,7 +54,7 @@
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/create-relawan.php') ?>">
-                <i class="fas fa-user-plus"></i>
+                <i class="fas fa-user-plus fa-fw"></i>
                 <span>Buat Relawan</span>
             </a>
         </li>
@@ -70,28 +62,30 @@
 
     <!-- Tambah Dukungan -->
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
-
         <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
-                <i class="fas fa-hand-holding-heart"></i>
+                <i class="fas fa-hand-holding-heart fa-fw"></i>
                 <span>Tambah Dukungan</span>
             </a>
         </li>
-
     <?php elseif (current_user()['role'] === 'relawan'): ?>
-
         <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
-
-                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?>"></i>
-
+                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?> fa-fw"></i>
                 <span>Tambah Dukungan</span>
-
             </a>
         </li>
-
     <?php endif; ?>
 
+    <?php if (current_user()['role'] === 'superadmin'): ?>
+        <!-- Buat Daerah Pemilihan -->
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/create-dapil.php') ?>">
+                <i class="fas fa-map fa-fw"></i>
+                <span>Buat Daerah Pemilihan</span>
+            </a>
+        </li>
+    <?php endif; ?>
 
     <hr class="sidebar-divider">
 
@@ -103,77 +97,76 @@
     </div>
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
-        <li class="nav-item">
-            <a class="nav-link" href="<?= url('admin/list-users.php') ?>">
-                <i class="fas fa-users"></i>
-                <span>Data Users</span>
-            </a>
-        </li>
-    <?php endif; ?>
-
-    <?php if (current_user()['role'] === 'superadmin'): ?>
         <!-- Data Admin -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-admin.php') ?>">
-                <i class="fas fa-users-cog"></i>
+                <i class="fas fa-users-cog fa-fw"></i>
                 <span>Data Admin</span>
-            </a>
-        </li>
-        <!-- Data Dapil -->
-        <li class="nav-item">
-            <a class="nav-link" href="<?= url('admin/list-dapil.php') ?>">
-                <i class="fas fa-globe"></i>
-                <span>Data Dapil</span>
             </a>
         </li>
     <?php endif; ?>
 
-    <!-- Data Relawan -->
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
+        <!-- Data Relawan -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/list-relawan.php') ?>">
-                <i class="fas fa-clipboard-list"></i>
+                <i class="fas fa-id-badge fa-fw"></i>
                 <span>Data Relawan</span>
             </a>
         </li>
     <?php endif; ?>
 
-    <!-- Data Dukungan -->
     <?php if (in_array(current_user()['role'], ['superadmin', 'admin'])): ?>
-
+        <!-- Data Dukungan -->
         <li class="nav-item">
             <a class="nav-link" href="<?= url('dukungan/list.php') ?>">
-                <i class="fas fa-address-book"></i>
+                <i class="fas fa-hand-holding-heart fa-fw"></i>
                 <span>Data Dukungan</span>
             </a>
         </li>
-
     <?php elseif (current_user()['role'] === 'relawan'): ?>
-
         <li class="nav-item">
             <a class="nav-link"
                 href="<?= url('dukungan/list.php') ?>">
-
-                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?>"></i>
-
+                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?> fa-fw"></i>
                 <span>Data Dukungan</span>
-
             </a>
         </li>
-
     <?php endif; ?>
 
     <?php if (current_user()['role'] === 'relawan'): ?>
         <hr class="sidebar-divider">
-
         <div class="sidebar-heading">
             Profil
         </div>
-
         <li class="nav-item">
             <a class="nav-link" href="<?= url('admin/detail-relawan.php') ?>">
-                <i class="fas fa-id-card"></i>
+                <i class="fas fa-id-card fa-fw"></i>
                 <span>Profil Saya</span>
+            </a>
+        </li>
+    <?php endif; ?>
+
+    <?php if (current_user()['role'] === 'superadmin'): ?>
+        <!-- Data Dapil -->
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-dapil.php') ?>">
+                <i class="fas fa-globe fa-fw"></i>
+                <span>Data Dapil</span>
+            </a>
+        </li>
+        <!-- Data TPS -->
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-tps.php') ?>">
+                <i class="fas fa-map-pin fa-fw"></i>
+                <span>Data TPS</span>
+            </a>
+        </li>
+        <!-- Data Users -->
+        <li class="nav-item">
+            <a class="nav-link" href="<?= url('admin/list-users.php') ?>">
+                <i class="fas fa-users fa-fw"></i>
+                <span>Data Users</span>
             </a>
         </li>
     <?php endif; ?>
@@ -188,13 +181,13 @@
 
         <li class="nav-item">
             <a class="nav-link" href="<?= url('statistik/statistik_wilayah.php') ?>">
-                <i class="fas fa-address-book"></i>
+                <i class="fas fa-address-book fa-fw"></i>
                 <span>Statistik Wilayah</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" href="<?= url('statistik/keterisian_tps.php') ?>">
-                <i class="fas fa-address-book"></i>
+                <i class="fas fa-address-book fa-fw"></i>
                 <span>Statistik Keterisian TPS</span>
             </a>
         </li>
@@ -211,7 +204,7 @@
 
     <li class="nav-item">
         <a class="nav-link" href="<?= url('logout.php') ?>">
-            <i class="fas fa-sign-out-alt"></i>
+            <i class="fas fa-sign-out-alt fa-fw"></i>
             <span>Logout</span>
         </a>
     </li>
