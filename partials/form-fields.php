@@ -225,8 +225,8 @@ function input_value($name)
 
             <small id="pesanRW" style="color:red;"></small>
         </div>
-        
-       
+
+
         <div class="form-group col-md-4">
             <label>TPS</label>
             <input
@@ -241,9 +241,9 @@ function input_value($name)
 
             <small id="pesanTPS" style="color:red;"></small>
         </div>
-            
- <?php if (current_user()['role'] === 'superadmin'): ?>
-            <?php endif; ?>
+
+        <?php if (current_user()['role'] === 'superadmin'): ?>
+        <?php endif; ?>
         <script>
             function validasiTPS() {
                 let input = document.getElementById("tps");
@@ -679,29 +679,27 @@ function input_value($name)
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <script>
-function validasiNIKKeluarga(input) {
+    function validasiNIKKeluarga(input) {
 
-    let error = input.parentElement.querySelector('.error-keluarga-nik');
+        let error = input.parentElement.querySelector('.error-keluarga-nik');
 
-    // Hanya boleh angka
-    input.value = input.value.replace(/[^0-9]/g, '');
+        // Hanya boleh angka
+        input.value = input.value.replace(/[^0-9]/g, '');
 
-    if (input.value === "") {
-        error.innerHTML = "";
-        input.classList.remove("is-valid");
-        input.classList.remove("is-invalid");
+        if (input.value === "") {
+            error.innerHTML = "";
+            input.classList.remove("is-valid");
+            input.classList.remove("is-invalid");
+        } else if (input.value.length === 16) {
+            error.innerHTML = "";
+            input.classList.remove("is-invalid");
+            input.classList.add("is-valid");
+        } else {
+            error.innerHTML = "NIK harus terdiri dari 16 digit angka";
+            input.classList.remove("is-valid");
+            input.classList.add("is-invalid");
+        }
     }
-    else if (input.value.length === 16) {
-        error.innerHTML = "";
-        input.classList.remove("is-invalid");
-        input.classList.add("is-valid");
-    }
-    else {
-        error.innerHTML = "NIK harus terdiri dari 16 digit angka";
-        input.classList.remove("is-valid");
-        input.classList.add("is-invalid");
-    }
-}
 </script>
 
 <script>

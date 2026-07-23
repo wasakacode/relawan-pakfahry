@@ -220,8 +220,9 @@ sort($kabupatenList);
 
         <!-- TABLE -->
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="thead-light">
+            <table class="table table-bordered table-hover" width="100%">
+
+                <thead style="background:#f1faff;">
                     <tr>
                         <th width="60">No</th>
                         <th>Daerah Pemilihan</th>
