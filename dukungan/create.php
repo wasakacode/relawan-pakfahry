@@ -8,7 +8,45 @@ require_profile_complete($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        create_profile($pdo, 'dukungan', null);
+        $profileId = create_profile($pdo, 'dukungan', null);
+
+            // cari id TPS
+            $stmt = $pdo->prepare("
+                SELECT id
+                FROM tps_kalsel
+                WHERE provinsi = ?
+                AND kabupaten = ?
+                AND kecamatan = ?
+                AND kelurahan = ?
+                AND no_tps = ?
+                LIMIT 1
+            ");
+
+            $stmt->execute([
+                $_POST['provinsi'],
+                $_POST['kab_kota'],
+                $_POST['kecamatan'],
+                $_POST['desa_kelurahan'],
+                $_POST['tps']
+            ]);
+
+            $tpsId = $stmt->fetchColumn();
+
+            if (!$tpsId) {
+                throw new Exception('TPS tidak ditemukan.');
+            }
+
+            // simpan relasi
+            $stmt = $pdo->prepare("
+                INSERT INTO profiles_tps
+                (profile_id, tps_id)
+                VALUES (?, ?)
+            ");
+
+            $stmt->execute([
+                $profileId,
+                $tpsId
+            ]);
 
         flash('success', 'Data dukungan berhasil disimpan. Dukungan tidak dibuatkan akun login.');
         redirect('dukungan/list.php');

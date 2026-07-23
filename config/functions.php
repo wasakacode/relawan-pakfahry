@@ -97,6 +97,16 @@ function create_profile($pdo, $type, $userId = null)
         $profileComplete  = 1;
     }
 
+    if (
+        $type === 'dukungan' &&
+        current_user() &&
+        in_array(current_user()['role'], ['superadmin', 'admin', 'relawan'])
+    ) {
+        $statusVerifikasi = 'terdaftar';
+        $profileActive    = 1;
+        $profileComplete  = 1;
+    }
+
     $stmt->execute([
         $type,
         $userId,
