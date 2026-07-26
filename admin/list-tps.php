@@ -7,33 +7,12 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-/*
-|--------------------------------------------------------------------------
-| Filter & Search
-|--------------------------------------------------------------------------
-*/
-
 $search     = $_GET['search'] ?? '';
 $kabupaten   = $_GET['kabupaten'] ?? '';
 $kecamatan   = $_GET['kecamatan'] ?? '';
 $kelurahan   = $_GET['kelurahan'] ?? '';
-
-
-/*
-|--------------------------------------------------------------------------
-| Sorting
-|--------------------------------------------------------------------------
-*/
-
 $sortBy = $_GET['sort_by'] ?? 'provinsi';
 $order  = $_GET['order'] ?? 'ASC';
-
-/*
-|--------------------------------------------------------------------------
-| Validasi Sorting
-|--------------------------------------------------------------------------
-*/
-
 $allowedColumns = [
     'provinsi',
     'kabupaten',
@@ -52,11 +31,6 @@ if (!in_array($order, $allowedOrder, true)) {
     $order = 'ASC';
 }
 
-/*
-|--------------------------------------------------------------------------
-| Query Awal
-|--------------------------------------------------------------------------
-*/
 
 $sql = "
     SELECT 
@@ -72,12 +46,6 @@ $sql = "
 
 $params = [];
 
-/*
-|--------------------------------------------------------------------------
-| Search
-|--------------------------------------------------------------------------
-*/
-
 if (!empty($search)) {
 
     $sql .= "
@@ -92,11 +60,6 @@ if (!empty($search)) {
     $params['search'] = "%{$search}%";
 }
 
-/*
-|--------------------------------------------------------------------------
-| Filter Kabupaten
-|--------------------------------------------------------------------------
-*/
 
 if (!empty($kabupaten)) {
 
@@ -105,11 +68,6 @@ if (!empty($kabupaten)) {
     $params['kabupaten'] = $kabupaten;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Filter Kecamatan
-|--------------------------------------------------------------------------
-*/
 
 if (!empty($kecamatan)) {
 
@@ -118,11 +76,6 @@ if (!empty($kecamatan)) {
     $params['kecamatan'] = $kecamatan;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Filter Kelurahan
-|--------------------------------------------------------------------------
-*/
 
 if (!empty($kelurahan)) {
 
@@ -130,13 +83,6 @@ if (!empty($kelurahan)) {
 
     $params['kelurahan'] = $kelurahan;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Sorting Query
-|--------------------------------------------------------------------------
-*/
-
 $sortMap = [
     'provinsi'         => 'provinsi',
     'kabupaten'       => 'kabupaten',
@@ -147,12 +93,6 @@ $sortMap = [
 
 $sortColumn = $sortMap[$sortBy];
 $sql .= " ORDER BY $sortColumn $order";
-
-/*
-|--------------------------------------------------------------------------
-| Function Sort Link
-|--------------------------------------------------------------------------
-*/
 
 function sortLink($column, $label)
 {
@@ -192,12 +132,6 @@ function sortLink($column, $label)
     ';
 }
 
-/*
-|--------------------------------------------------------------------------
-| Pagination
-|--------------------------------------------------------------------------
-*/
-
 $perPage = 25;
 
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -205,48 +139,58 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
 $no = $offset + 1;
+$countSql = "
+    SELECT COUNT(*)
+    FROM tps_kalsel
+    WHERE 1=1
+";
 
-/*
-|--------------------------------------------------------------------------
-| Total Data
-|--------------------------------------------------------------------------
-*/
+$countParams = [];
 
-$countSql = str_replace(
-    "SELECT
-        id,
-        provinsi,
-        kabupaten,
-        kecamatan,
-        kelurahan,
-        no_tps",
-    "SELECT COUNT(*)",
-    $sql
-);
+if (!empty($search)) {
+    $countSql .= "
+        AND (
+            kabupaten LIKE :search
+            OR kecamatan LIKE :search
+            OR kelurahan LIKE :search
+            OR CAST(no_tps AS CHAR) LIKE :search
+        )
+    ";
+
+    $countParams['search'] = "%{$search}%";
+}
+
+if (!empty($kabupaten)) {
+    $countSql .= " AND kabupaten = :kabupaten";
+    $countParams['kabupaten'] = $kabupaten;
+}
+
+if (!empty($kecamatan)) {
+    $countSql .= " AND kecamatan = :kecamatan";
+    $countParams['kecamatan'] = $kecamatan;
+}
+
+if (!empty($kelurahan)) {
+    $countSql .= " AND kelurahan = :kelurahan";
+    $countParams['kelurahan'] = $kelurahan;
+}
 
 $countStmt = $pdo->prepare($countSql);
-$countStmt->execute($params);
+$countStmt->execute($countParams);
 
-$totalData = $countStmt->fetchColumn();
-
-$totalPages = ceil($totalData / $perPage);
+$totalData = (int) $countStmt->fetchColumn();
+$totalPages = (int) ceil($totalData / $perPage);
+if ($totalPages > 0 && $page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+    $no = $offset + 1;
+}
 
 // Pagination Query String
 $queryParams = $_GET;
 unset($queryParams['page']);
 
-/*
-|--------------------------------------------------------------------------
-| LIMIT & OFFSET
-|--------------------------------------------------------------------------
-*/
 $sql .= " LIMIT :limit OFFSET :offset";
-
-/*
-|--------------------------------------------------------------------------
-| Dropdown Kabupaten
-|--------------------------------------------------------------------------
-*/
 
 $stmtKabupaten = $pdo->query("
     SELECT DISTINCT kabupaten
@@ -255,15 +199,6 @@ $stmtKabupaten = $pdo->query("
 ");
 
 $kabupatenList = $stmtKabupaten->fetchAll(PDO::FETCH_COLUMN);
-
-/*
-|--------------------------------------------------------------------------
-| Dropdown Kecamatan
-|--------------------------------------------------------------------------
-| Mengambil daftar kecamatan berdasarkan kabupaten yang dipilih.
-|--------------------------------------------------------------------------
-*/
-
 $kecamatanList = [];
 
 if (!empty($kabupaten)) {
@@ -288,16 +223,6 @@ if (!empty($kabupaten)) {
 }
 
 $kecamatanList = $stmtKecamatan->fetchAll(PDO::FETCH_COLUMN);
-
-/*
-|--------------------------------------------------------------------------
-| Dropdown Kelurahan
-|--------------------------------------------------------------------------
-| Mengambil daftar kelurahan berdasarkan kabupaten dan kecamatan
-| yang dipilih.
-|--------------------------------------------------------------------------
-*/
-
 $kelurahanList = [];
 
 if (!empty($kabupaten) && !empty($kecamatan)) {
@@ -337,12 +262,6 @@ if (!empty($kabupaten) && !empty($kecamatan)) {
 }
 
 $kelurahanList = $stmtKelurahan->fetchAll(PDO::FETCH_COLUMN);
-
-/*
-|--------------------------------------------------------------------------
-| Execute Query
-|--------------------------------------------------------------------------
-*/
 $stmt = $pdo->prepare($sql);
 
 foreach ($params as $key => $value) {
@@ -392,36 +311,20 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
             </div>
-
-            <!-- Filter -->
             <div class="row">
-
-                <!-- Kabupaten -->
                 <div class="col-md-4 mb-3">
-
                     <label>Kabupaten/Kota</label>
-
                     <select name="kabupaten" class="form-control">
-
                         <option value="">Semua Kabupaten/Kota</option>
-
                         <?php foreach ($kabupatenList as $kab): ?>
-
                             <option
                                 value="<?= e($kab) ?>"
                                 <?= ($kabupaten == $kab) ? 'selected' : '' ?>>
-
                                 <?= e($kab) ?>
-
                             </option>
-
                         <?php endforeach; ?>
-
                     </select>
-
                 </div>
-
-                <!-- Kecamatan -->
                 <div class="col-md-4 mb-3">
 
                     <label>Kecamatan</label>
@@ -445,8 +348,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </select>
 
                 </div>
-
-                <!-- Kelurahan -->
                 <div class="col-md-4 mb-3">
 
                     <label>Kelurahan/Desa</label>
@@ -472,8 +373,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
             </div>
-
-            <!-- Button -->
             <div class="text-right">
 
                 <button type="submit" class="btn btn-primary mr-2">
@@ -491,8 +390,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
         </form>
-
-        <!-- TABLE -->
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
@@ -576,15 +473,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php if ($totalPages > 1): ?>
 
             <?php
-            /*
-            |--------------------------------------------------------------------------
-            | Pagination Range
-            |--------------------------------------------------------------------------
-            | Menentukan nomor halaman yang ditampilkan di sekitar halaman aktif.
-            | Contoh:
-            | 1 ... 48 49 50 51 52 ... 214
-            |--------------------------------------------------------------------------
-            */
             $startPage = max(1, $page - 2);
             $endPage   = min($totalPages, $page + 2);
             ?>
@@ -600,8 +488,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             Previous
                         </a>
                     </li>
-
-                    <!-- Halaman Pertama -->
                     <?php if ($startPage > 1): ?>
 
                         <li class="page-item">
@@ -618,8 +504,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php endif; ?>
 
                     <?php endif; ?>
-
-                    <!-- Halaman Sekitar -->
                     <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
 
                         <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
