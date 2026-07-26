@@ -4,22 +4,73 @@ require_once __DIR__ . '/../auth/auth.php';
 
 require_role([
     'superadmin',
-    'admin',
-    'relawan'
+    'admin'
 ]);
 
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN
-|--------------------------------------------------------------------------
-*/
-
 $user = current_user();
 $role = $user['role'];
+
+
+function buat_url(array $parameter = []): string
+{
+    return '?' . http_build_query($parameter);
+}
+
+function normalisasi_daftar_wilayah($json): array
+{
+    $daftar = json_decode($json ?? '[]', true);
+
+    if (!is_array($daftar)) {
+        return [];
+    }
+
+    $daftar = array_map('trim', $daftar);
+    $daftar = array_filter($daftar, static function ($item) {
+        return $item !== '';
+    });
+
+    return array_values(array_unique($daftar));
+}
+
+function ambil_kabupaten_dapil(PDO $pdo, int $dapilId): array
+{
+    $stmt = $pdo->prepare("
+        SELECT kab_kota
+        FROM dapil
+        WHERE id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$dapilId]);
+
+    return normalisasi_daftar_wilayah($stmt->fetchColumn());
+}
+
+function hitung_relawan_kabupaten(PDO $pdo, array $daftarKabupaten): int
+{
+    if (empty($daftarKabupaten)) {
+        return 0;
+    }
+
+    $placeholder = implode(
+        ',',
+        array_fill(0, count($daftarKabupaten), '?')
+    );
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM profiles
+        WHERE
+            type = 'relawan'
+            AND kab_kota IN ($placeholder)
+    ");
+    $stmt->execute($daftarKabupaten);
+
+    return (int) $stmt->fetchColumn();
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -27,126 +78,163 @@ $role = $user['role'];
 |--------------------------------------------------------------------------
 */
 
-$dapil = $_GET['dapil'] ?? '';
-$kab   = $_GET['kab'] ?? '';
-$kec   = $_GET['kec'] ?? '';
-$desa  = $_GET['desa'] ?? '';
-
-/*
-|--------------------------------------------------------------------------
-| VARIABEL
-|--------------------------------------------------------------------------
-*/
-
-$totalRelawan = 0;
-
-$dapilAdmin = null;
-$namaDapilAdmin = null;
-$kabupatenAdmin = [];
-
-$dataLevel1 = [];
-$dataLevel2 = [];
-$dataLevel3 = [];
-$dataLevel4 = [];
-
-$dataTampil = [];
-
-$breadcrumb = [];
-
+$dapil = isset($_GET['dapil']) ? (int) $_GET['dapil'] : 0;
+$kab   = trim($_GET['kab'] ?? '');
+$kec   = trim($_GET['kec'] ?? '');
+$desa  = trim($_GET['desa'] ?? '');
 
 /*
 |--------------------------------------------------------------------------
 | WILAYAH ADMIN
 |--------------------------------------------------------------------------
+| Admin hanya dapat melihat relawan pada kabupaten/kota yang berada dalam
+| dapil yang terhubung dengan profil admin tersebut.
 */
 
-if ($role == 'admin') {
+$dapilAdmin = [];
+$namaDapilAdmin = [];
+$kabupatenAdmin = [];
 
+if ($role === 'admin') {
     $stmt = $pdo->prepare("
-        SELECT
+        SELECT DISTINCT
             d.id,
             d.daerah_pemilihan,
             d.kab_kota
         FROM profile_dapil pd
 
-        JOIN dapil d
+        INNER JOIN dapil d
             ON d.id = pd.dapil_id
 
-        JOIN profiles p
+        INNER JOIN profiles p
             ON p.id = pd.profile_id
 
         WHERE
             p.user_id = ?
-            AND p.type='admin'
-    ");
+            AND p.type = 'admin'
 
+        ORDER BY d.id
+    ");
     $stmt->execute([$user['id']]);
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $dapilAdmin[] = (int) $row['id'];
+        $namaDapilAdmin[] = $row['daerah_pemilihan'];
 
-        $dapilAdmin = $row['id'];
-        $namaDapilAdmin = $row['daerah_pemilihan'];
-
-        $list = json_decode($row['kab_kota'] ?? '[]', true);
-
-        if (is_array($list)) {
-
-            $kabupatenAdmin = array_merge(
-                $kabupatenAdmin,
-                $list
-            );
-        }
+        $kabupatenAdmin = array_merge(
+            $kabupatenAdmin,
+            normalisasi_daftar_wilayah($row['kab_kota'])
+        );
     }
 
-    $kabupatenAdmin = array_unique($kabupatenAdmin);
+    $dapilAdmin = array_values(array_unique($dapilAdmin));
+    $namaDapilAdmin = array_values(array_unique($namaDapilAdmin));
+    $kabupatenAdmin = array_values(array_unique($kabupatenAdmin));
+    sort($kabupatenAdmin, SORT_NATURAL | SORT_FLAG_CASE);
+
+    // Admin tidak menggunakan parameter dapil dari URL.
+    $dapil = 0;
 }
 
 /*
-|--------------------------------------------------------------------------
-| TOTAL RELAWAN
-|--------------------------------------------------------------------------
+Total Rerlawan 
 */
 
-if ($role == 'superadmin') {
-
+if ($role === 'superadmin') {
     $stmt = $pdo->query("
         SELECT COUNT(*)
         FROM profiles
-        WHERE type='relawan'
+        WHERE type = 'relawan'
     ");
 
-    $totalRelawan = $stmt->fetchColumn();
+    $totalRelawan = (int) $stmt->fetchColumn();
 } else {
+    $totalRelawan = hitung_relawan_kabupaten(
+        $pdo,
+        $kabupatenAdmin
+    );
+}
 
-    if (!empty($kabupatenAdmin)) {
+/*
+| VALIDASI DAPIL SUPERADMIN
+*/
+$namaDapil = '';
+$kabupatenDapil = [];
 
-        $placeholder = implode(
-            ',',
-            array_fill(0, count($kabupatenAdmin), '?')
+if ($role === 'superadmin' && $dapil > 0) {
+    $stmt = $pdo->prepare("
+        SELECT daerah_pemilihan
+        FROM dapil
+        WHERE id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$dapil]);
+
+    $namaDapil = (string) $stmt->fetchColumn();
+
+    if ($namaDapil === '') {
+        $dapil = 0;
+        $kab = '';
+        $kec = '';
+        $desa = '';
+    } else {
+        $kabupatenDapil = ambil_kabupaten_dapil(
+            $pdo,
+            $dapil
         );
-
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*)
-            FROM profiles
-            WHERE
-                type='relawan'
-                AND kab_kota IN ($placeholder)
-        ");
-
-        $stmt->execute($kabupatenAdmin);
-
-        $totalRelawan = $stmt->fetchColumn();
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| LEVEL 1
+| VALIDASI AKSES WILAYAH
 |--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin') {
+if ($role === 'superadmin') {
+    // Superadmin harus memilih dapil sebelum memilih kabupaten/kota.
+    if ($dapil === 0) {
+        $kab = '';
+        $kec = '';
+        $desa = '';
+    } elseif (
+        $kab !== ''
+        && !in_array($kab, $kabupatenDapil, true)
+    ) {
+        $kab = '';
+        $kec = '';
+        $desa = '';
+    }
+} else {
+    // Admin hanya boleh membuka kabupaten/kota sesuai dapilnya.
+    if (
+        $kab !== ''
+        && !in_array($kab, $kabupatenAdmin, true)
+    ) {
+        $kab = '';
+        $kec = '';
+        $desa = '';
+    }
+}
 
+/*
+|--------------------------------------------------------------------------
+| DATA YANG DITAMPILKAN
+|--------------------------------------------------------------------------
+*/
+
+$dataTampil = [];
+$levelAktif = $role === 'superadmin'
+    ? 'dapil'
+    : 'kabupaten';
+
+/*
+|--------------------------------------------------------------------------
+| LEVEL 1 SUPERADMIN: SEMUA DAPIL
+|--------------------------------------------------------------------------
+*/
+
+if ($role === 'superadmin' && $dapil === 0) {
     $stmt = $pdo->query("
         SELECT
             id,
@@ -155,41 +243,34 @@ if ($role == 'superadmin') {
         FROM dapil
         ORDER BY id
     ");
-
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        // Ambil daftar kabupaten dalam dapil
-        $kabupaten = json_decode($row['kab_kota'], true);
-
-        $total = 0;
-
-        if (!empty($kabupaten)) {
-
-            $placeholder = implode(',', array_fill(0, count($kabupaten), '?'));
-
-            $stmtTotal = $pdo->prepare("
-                SELECT COUNT(*)
-                FROM profiles
-                WHERE
-                    type = 'relawan'
-                    AND kab_kota IN ($placeholder)
-            ");
-
-            $stmtTotal->execute($kabupaten);
-
-            $total = $stmtTotal->fetchColumn();
-        }
-
-        $dataLevel1[] = [
+        $daftarKabupaten = normalisasi_daftar_wilayah(
+            $row['kab_kota']
+        );
+        $dataTampil[] = [
             'nama'  => $row['daerah_pemilihan'],
-            'total' => $total,
-            'url'   => '?dapil=' . $row['id']
+            'total' => hitung_relawan_kabupaten(
+                $pdo,
+                $daftarKabupaten
+            ),
+            'url'   => buat_url([
+                'dapil' => $row['id']
+            ])
         ];
     }
-} else {
+}
+/*
+|--------------------------------------------------------------------------
+| LEVEL KABUPATEN/KOTA
+|--------------------------------------------------------------------------
+*/
+elseif ($kab === '') {
+    $levelAktif = 'kabupaten';
 
-    foreach ($kabupatenAdmin as $kabupaten) {
-
+    $daftarKabupaten = $role === 'superadmin'
+        ? $kabupatenDapil
+        : $kabupatenAdmin;
+    foreach ($daftarKabupaten as $namaKabupaten) {
         $stmt = $pdo->prepare("
             SELECT COUNT(*)
             FROM profiles
@@ -197,65 +278,37 @@ if ($role == 'superadmin') {
                 type = 'relawan'
                 AND kab_kota = ?
         ");
-
-        $stmt->execute([$kabupaten]);
-
-        $dataLevel1[] = [
-            'nama'  => $kabupaten,
-            'total' => $stmt->fetchColumn(),
-            'url'   => '?kab=' . urlencode($kabupaten)
+        $stmt->execute([$namaKabupaten]);
+        $parameterUrl = [
+            'kab' => $namaKabupaten
+        ];
+        if ($role === 'superadmin') {
+            $parameterUrl = [
+                'dapil' => $dapil,
+                'kab'   => $namaKabupaten
+            ];
+        }
+        $dataTampil[] = [
+            'nama'  => $namaKabupaten,
+            'total' => (int) $stmt->fetchColumn(),
+            'url'   => buat_url($parameterUrl)
         ];
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| LEVEL 2
+| LEVEL KECAMATAN
 |--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin' && $dapil != '') {
-
-    $stmt = $pdo->prepare("
-        SELECT kab_kota
-        FROM dapil
-        WHERE id = ?
-    ");
-
-    $stmt->execute([$dapil]);
-
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($row) {
-
-        $listKabupaten = json_decode($row['kab_kota'], true);
-
-        foreach ($listKabupaten as $kabupaten) {
-
-            $stmtJumlah = $pdo->prepare("
-                SELECT COUNT(*)
-                FROM profiles
-                WHERE
-                    type='relawan'
-                    AND kab_kota=?
-            ");
-
-            $stmtJumlah->execute([$kabupaten]);
-
-            $dataLevel2[] = [
-                'nama'  => $kabupaten,
-                'total' => $stmtJumlah->fetchColumn(),
-                'url'   => '?dapil=' . $dapil .
-                    '&kab=' . urlencode($kabupaten)
-            ];
-        }
-    }
-} elseif ($role == 'admin' && $kab != '') {
+elseif ($kec === '') {
+    $levelAktif = 'kecamatan';
 
     $stmt = $pdo->prepare("
         SELECT
             t.kecamatan,
-            COUNT(p.id) AS total
+            COUNT(DISTINCT p.id) AS total
         FROM (
             SELECT DISTINCT kecamatan
             FROM tps_kalsel
@@ -263,36 +316,49 @@ if ($role == 'superadmin' && $dapil != '') {
         ) t
 
         LEFT JOIN profiles p
-            ON p.kab_kota = ?
+            ON p.type = 'relawan'
+            AND p.kab_kota = ?
             AND p.kecamatan = t.kecamatan
-            AND p.type = 'relawan'
 
         GROUP BY t.kecamatan
         ORDER BY t.kecamatan
     ");
-
     $stmt->execute([
         $kab,
         $kab
     ]);
-
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $parameterUrl = [
+            'kab' => $kab,
+            'kec' => $row['kecamatan']
+        ];
 
-        $dataLevel2[] = [
+        if ($role === 'superadmin') {
+            $parameterUrl['dapil'] = $dapil;
+            $parameterUrl = [
+                'dapil' => $dapil,
+                'kab'   => $kab,
+                'kec'   => $row['kecamatan']
+            ];
+        }
+        $dataTampil[] = [
             'nama'  => $row['kecamatan'],
-            'total' => $row['total'],
-            'url'   => '?kab=' . urlencode($kab) .
-                '&kec=' . urlencode($row['kecamatan'])
+            'total' => (int) $row['total'],
+            'url'   => buat_url($parameterUrl)
         ];
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| LEVEL 3
+| LEVEL DESA/KELURAHAN
 |--------------------------------------------------------------------------
 */
 
+<<<<<<< HEAD
+elseif ($desa === '') {
+    $levelAktif = 'kelurahan';
+=======
 if ($kab != '' && $kec != '') {
 
     // Batasi akses admin
@@ -338,16 +404,16 @@ if ($kab != '' && $kec != '') {
                 $url = '?dapil=' . $dapil .
                     '&kab=' . urlencode($kab) .
                     '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['desa_kelurahan']);
+                    '&desa=' . urlencode($row['kelurahan']);
             } else {
 
                 $url = '?kab=' . urlencode($kab) .
                     '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['desa_kelurahan']);
+                    '&desa=' . urlencode($row['kelurahan']);
             }
 
             $dataLevel3[] = [
-                'nama'  => $row['desa_kelurahan'],
+                'nama'  => $row['kelurahan'],
                 'total' => $row['total'],
                 'url'   => $url
             ];
@@ -382,65 +448,109 @@ if ($kab != '' && $kec != '' && $desa != '') {
                 AND p.kecamatan = t.kecamatan
                 AND p.desa_kelurahan = t.kelurahan
                 AND p.type = 'relawan'
+>>>>>>> 07082fb0f0f149e15e14eab831cf90f2366bb849
 
+    $stmt = $pdo->prepare("
+        SELECT
+            t.kelurahan,
+            COUNT(DISTINCT p.id) AS total
+        FROM (
+            SELECT DISTINCT kelurahan
+            FROM tps_kalsel
             WHERE
-                t.kabupaten = ?
-                AND t.kecamatan = ?
-                AND t.kelurahan = ?
+                kabupaten = ?
+                AND kecamatan = ?
+        ) t
 
-            GROUP BY t.no_tps
-            ORDER BY CAST(t.no_tps AS UNSIGNED)
-        ");
+        LEFT JOIN profiles p
+            ON p.type = 'relawan'
+            AND p.kab_kota = ?
+            AND p.kecamatan = ?
+            AND p.desa_kelurahan = t.kelurahan
 
-        $stmt->execute([
-            $kab,
-            $kec,
-            $desa
-        ]);
+        GROUP BY t.kelurahan
+        ORDER BY t.kelurahan
+    ");
 
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $stmt->execute([
+        $kab,
+        $kec,
+        $kab,
+        $kec
+    ]);
 
-            $dataLevel4[] = [
-                'nama'  => 'TPS ' . str_pad($row['no_tps'], 3, '0', STR_PAD_LEFT),
-                'total' => $row['total']
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $parameterUrl = [
+            'kab'  => $kab,
+            'kec'  => $kec,
+            'desa' => $row['kelurahan']
+        ];
+
+        if ($role === 'superadmin') {
+            $parameterUrl = [
+                'dapil' => $dapil,
+                'kab'   => $kab,
+                'kec'   => $kec,
+                'desa'  => $row['kelurahan']
             ];
         }
+
+        $dataTampil[] = [
+            'nama'  => $row['kelurahan'],
+            'total' => (int) $row['total'],
+            'url'   => buat_url($parameterUrl)
+        ];
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| DATA TAMPIL
+| LEVEL TPS
 |--------------------------------------------------------------------------
 */
 
-$dataTampil = $dataLevel1;
+else {
+    $levelAktif = 'tps';
 
-if ($role == 'superadmin') {
+    $stmt = $pdo->prepare("
+        SELECT
+            t.no_tps,
+            COUNT(DISTINCT p.id) AS total
+        FROM tps_kalsel t
 
-    if ($dapil != '') {
-        $dataTampil = $dataLevel2;
-    }
+        LEFT JOIN profiles p
+            ON p.type = 'relawan'
+            AND p.tps = t.no_tps
+            AND p.kab_kota = t.kabupaten
+            AND p.kecamatan = t.kecamatan
+            AND p.desa_kelurahan = t.kelurahan
 
-    if ($kab != '') {
-        $dataTampil = $dataLevel3;
-    }
+        WHERE
+            t.kabupaten = ?
+            AND t.kecamatan = ?
+            AND t.kelurahan = ?
 
-    if ($kec != '' && $desa != '') {
-        $dataTampil = $dataLevel4;
-    }
-} else {
+        GROUP BY t.no_tps
+        ORDER BY CAST(t.no_tps AS UNSIGNED)
+    ");
 
-    if ($kab != '') {
-        $dataTampil = $dataLevel2;
-    }
+    $stmt->execute([
+        $kab,
+        $kec,
+        $desa
+    ]);
 
-    if ($kec != '') {
-        $dataTampil = $dataLevel3;
-    }
-
-    if ($desa != '') {
-        $dataTampil = $dataLevel4;
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $dataTampil[] = [
+            'nama'  => 'TPS ' . str_pad(
+                (string) $row['no_tps'],
+                3,
+                '0',
+                STR_PAD_LEFT
+            ),
+            'total' => (int) $row['total'],
+            'url'   => ''
+        ];
     }
 }
 
@@ -450,235 +560,404 @@ if ($role == 'superadmin') {
 |--------------------------------------------------------------------------
 */
 
-$breadcrumb = [];
+if ($role === 'superadmin') {
+    $breadcrumb = [
+        [
+            'nama' => 'Semua Dapil',
+            'url'  => buat_url()
+        ]
+    ];
 
-$breadcrumb[] = [
-    'nama' => 'Kalimantan Selatan',
-    'url'  => '?'
-];
-
-if ($role == 'superadmin' && $dapil != '') {
-
-    $stmt = $pdo->prepare("
-        SELECT daerah_pemilihan
-        FROM dapil
-        WHERE id = ?
-    ");
-
-    $stmt->execute([$dapil]);
-
-    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
+    if ($dapil > 0) {
         $breadcrumb[] = [
-            'nama' => $row['daerah_pemilihan'],
-            'url'  => '?dapil=' . $dapil
+            'nama' => $namaDapil,
+            'url'  => buat_url([
+                'dapil' => $dapil
+            ])
         ];
     }
-}
-
-if ($role == 'admin' && $namaDapilAdmin != '') {
-
-    $breadcrumb[] = [
-        'nama' => $namaDapilAdmin,
-        'url'  => '#'
+} else {
+    $breadcrumb = [
+        [
+            'nama' => 'Kota/Kabupaten (sesuai dapil admin)',
+            'url'  => buat_url()
+        ]
     ];
 }
 
-if ($kab != '') {
+if ($kab !== '') {
+    $parameterUrl = [
+        'kab' => $kab
+    ];
 
-    if ($role == 'superadmin') {
-
-        $url = '?dapil=' . $dapil .
-            '&kab=' . urlencode($kab);
-    } else {
-
-        $url = '?kab=' . urlencode($kab);
+    if ($role === 'superadmin') {
+        $parameterUrl = [
+            'dapil' => $dapil,
+            'kab'   => $kab
+        ];
     }
 
     $breadcrumb[] = [
         'nama' => $kab,
-        'url'  => $url
+        'url'  => buat_url($parameterUrl)
     ];
 }
 
-if ($kec != '') {
+if ($kec !== '') {
+    $parameterUrl = [
+        'kab' => $kab,
+        'kec' => $kec
+    ];
 
-    if ($role == 'superadmin') {
-
-        $url = '?dapil=' . $dapil .
-            '&kab=' . urlencode($kab) .
-            '&kec=' . urlencode($kec);
-    } else {
-
-        $url = '?kab=' . urlencode($kab) .
-            '&kec=' . urlencode($kec);
+    if ($role === 'superadmin') {
+        $parameterUrl = [
+            'dapil' => $dapil,
+            'kab'   => $kab,
+            'kec'   => $kec
+        ];
     }
 
     $breadcrumb[] = [
         'nama' => $kec,
-        'url'  => $url
+        'url'  => buat_url($parameterUrl)
     ];
 }
 
-if ($desa != '') {
-
+if ($desa !== '') {
     $breadcrumb[] = [
         'nama' => $desa,
-        'url'  => '#'
+        'url'  => ''
     ];
 }
+
+$labelLevel = [
+    'dapil'     => 'Daerah Pemilihan',
+    'kabupaten' => 'Kota/Kabupaten',
+    'kecamatan' => 'Kecamatan',
+    'kelurahan' => 'Desa/Kelurahan',
+    'tps'       => 'TPS'
+];
+
+$judulRole = $role === 'superadmin'
+    ? 'Superadmin'
+    : 'Admin';
+
+$keteranganTotal = $role === 'superadmin'
+    ? '*total keseluruhan relawan'
+    : '*total sesuai dengan dapil';
+
 ?>
 
-<!-- JUDUL -->
-<div class="text-center mb-4">
+<style>
+    .statistik-wilayah-wrapper {
+        padding-bottom: 30px;
+    }
 
-    <h3 class="font-weight-bold">
-        Statistik Wilayah Relawan
-        <?php if ($role == 'superadmin'): ?>
-            (Role Superadmin)
-        <?php else: ?>
-            (Role Admin)
+    .total-relawan-card {
+        width: 100%;
+        max-width: 310px;
+        margin: 0 auto;
+        border: 0;
+        border-radius: 4px;
+        background: #56b3e9;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .total-relawan-card .card-body {
+        padding: 18px 20px;
+    }
+
+    .total-relawan-card .judul-total {
+        margin: 0;
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .total-relawan-card .angka-total {
+        margin: 5px 0 0;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .total-relawan-card .keterangan-total {
+        margin: 6px 0 0;
+        font-size: 13px;
+    }
+
+    .info-dapil-admin {
+        max-width: 720px;
+        margin: 12px auto 0;
+        color: #6c757d;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .breadcrumb-wilayah {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+        margin: 24px 0 14px;
+        font-size: 17px;
+        font-weight: 600;
+    }
+
+    .breadcrumb-wilayah a {
+        color: #343a40;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .breadcrumb-wilayah a:hover {
+        color: #007bff;
+    }
+
+    .breadcrumb-wilayah .aktif {
+        color: #343a40;
+    }
+
+    .breadcrumb-wilayah .pemisah {
+        color: #6c757d;
+    }
+
+    .judul-level {
+        margin-bottom: 14px;
+        color: #6c757d;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+    }
+
+    .grid-wilayah {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .kartu-wilayah {
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 3px;
+        background: #9ac6ee;
+        color: #111;
+        text-decoration: none !important;
+        text-align: center;
+        box-shadow: 0 3px 9px rgba(0, 0, 0, 0.08);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .kartu-wilayah:hover {
+        color: #111;
+        transform: translateY(-3px);
+        box-shadow: 0 7px 17px rgba(0, 0, 0, 0.14);
+    }
+
+    .kartu-wilayah.kosong {
+        background: #d7d7d7;
+    }
+
+    .kartu-wilayah.tidak-aktif:hover {
+        transform: none;
+        box-shadow: 0 3px 9px rgba(0, 0, 0, 0.08);
+    }
+
+    .kartu-wilayah .isi-kartu {
+        width: 100%;
+        padding: 18px 14px;
+    }
+
+    .kartu-wilayah .nama-wilayah {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 500;
+        word-break: break-word;
+    }
+
+    .kartu-wilayah .jumlah-relawan {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 500;
+        line-height: 1;
+    }
+
+    .kartu-wilayah .label-relawan {
+        margin: 8px 0 0;
+        font-size: 18px;
+    }
+
+    .data-kosong {
+        padding: 50px 20px;
+        border-radius: 4px;
+        background: #f2f2f2;
+        color: #6c757d;
+        text-align: center;
+    }
+
+    @media (max-width: 991.98px) {
+        .grid-wilayah {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .grid-wilayah {
+            grid-template-columns: 1fr;
+        }
+
+        .breadcrumb-wilayah {
+            font-size: 15px;
+        }
+
+        .kartu-wilayah {
+            min-height: 135px;
+        }
+    }
+</style>
+
+<div class="container-fluid statistik-wilayah-wrapper">
+
+    <!-- JUDUL -->
+    <div class="text-center mb-4">
+        <h3 class="font-weight-bold mb-0">
+            Statistik Wilayah Relawan
+            <!-- (Role <?= e($judulRole) ?>) -->
+        </h3>
+    </div>
+
+    <!-- TOTAL RELAWAN -->
+    <div class="total-relawan-card">
+        <div class="card-body text-center">
+            <p class="judul-total">TOTAL RELAWAN</p>
+
+            <p class="angka-total">
+                <?= number_format($totalRelawan, 0, ',', '.') ?>
+            </p>
+
+            <p class="keterangan-total">
+                <?= e($keteranganTotal) ?>
+            </p>
+        </div>
+    </div>
+
+    <?php if ($role === 'admin' && !empty($namaDapilAdmin)): ?>
+        <div class="info-dapil-admin">
+            Dapil admin:
+            <?= e(implode(', ', $namaDapilAdmin)) ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- BREADCRUMB -->
+   <div class="breadcrumb-wilayah">
+    <?php foreach ($breadcrumb as $index => $item): ?>
+
+        <?php if ($index > 0): ?>
+            <span class="pemisah">&gt;</span>
         <?php endif; ?>
-    </h3>
 
-</div>
+        <?php
+        $itemTerakhir = $index === count($breadcrumb) - 1;
+        $namaBreadcrumb = str_replace(
+            [
+                ' (sesuai dapil admin)',
+                '(sesuai dapil admin)'
+            ],
+            '',
+            $item['nama']
+        );
+        
+        $namaBreadcrumb = trim($namaBreadcrumb);
+        ?>
+        <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
+            <a href="<?= e($item['url']) ?>">
+                <?= e($namaBreadcrumb) ?>
+            </a>
+        <?php else: ?>
+            <span class="aktif">
+                <?= e($namaBreadcrumb) ?>
+            </span>
+        <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
 
-<!-- TOTAL RELAWAN -->
-<div class="row justify-content-center mb-4">
+    <div class="judul-level">
+        Daftar <?= e($labelLevel[$levelAktif] ?? 'Wilayah') ?>
+    </div>
 
-    <div class="col-md-3">
+    <!-- KARTU DATA -->
+    <?php if (empty($dataTampil)): ?>
 
-        <div class="card border-primary shadow">
-
-            <div class="card-body text-center">
-
-                <h5 class="mb-2">TOTAL RELAWAN</h5>
-
-                <h2 class="font-weight-bold text-primary">
-                    <?= number_format($totalRelawan) ?>
-                </h2>
-
-            </div>
-
+        <div class="data-kosong">
+            <?php if ($role === 'admin' && empty($kabupatenAdmin)): ?>
+                Admin belum memiliki dapil atau wilayah yang terhubung.
+            <?php else: ?>
+                Tidak ada data wilayah yang dapat ditampilkan.
+            <?php endif; ?>
         </div>
 
-    </div>
-
-</div>
-
-<!-- BREADCRUMB -->
-<nav aria-label="breadcrumb">
-
-    <ol class="breadcrumb bg-white">
-
-        <?php foreach ($breadcrumb as $index => $item): ?>
-
-            <?php if ($index == count($breadcrumb) - 1): ?>
-
-                <li class="breadcrumb-item active">
-
-                    <?= e($item['nama']) ?>
-
-                </li>
-
-            <?php else: ?>
-
-                <li class="breadcrumb-item">
-
-                    <?php if ($item['url'] != '#'): ?>
-
-                        <a href="<?= $item['url'] ?>">
-
-                            <?= e($item['nama']) ?>
-
-                        </a>
-
-                    <?php else: ?>
-
-                        <?= e($item['nama']) ?>
-
-                    <?php endif; ?>
-
-                </li>
-
-            <?php endif; ?>
-
-        <?php endforeach; ?>
-
-    </ol>
-
-</nav>
-
-<!-- LIST DATA -->
-<div class="card shadow">
-
-    <div class="list-group list-group-flush">
-
-        <?php if (empty($dataTampil)): ?>
-
-            <div class="list-group-item text-center text-muted py-5">
-
-                Tidak ada data.
-
-            </div>
-
-        <?php else: ?>
-
+    <?php else: ?>
+        <div class="grid-wilayah">
             <?php foreach ($dataTampil as $row): ?>
-
-                <?php if (!empty($row['url'])): ?>
-
-                    <a href="<?= $row['url'] ?>"
-                        class="list-group-item list-group-item-action">
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong>
-
+                <?php
+                $totalKosong = (int) $row['total'] === 0;
+                $punyaUrl = !empty($row['url']);
+                $classKartu = 'kartu-wilayah';
+                if ($totalKosong) {
+                    $classKartu .= ' kosong';
+                }
+                if (!$punyaUrl) {
+                    $classKartu .= ' tidak-aktif';
+                }
+                ?>
+                <?php if ($punyaUrl): ?>
+                    <a
+                        href="<?= e($row['url']) ?>"
+                        class="<?= e($classKartu) ?>"
+                    >
+                        <div class="isi-kartu">
+                            <h5 class="nama-wilayah">
                                 <?= e($row['nama']) ?>
-
-                            </strong>
-
-                            <span class="badge badge-primary badge-pill">
-
-                                <?= number_format($row['total']) ?>
-
-                            </span>
-
+                            </h5>
+                            <p class="jumlah-relawan">
+                                <?= number_format(
+                                    (int) $row['total'],
+                                    0,
+                                    ',',
+                                    '.'
+                                ) ?>
+                            </p>
+                            <p class="label-relawan">
+                                Relawan
+                            </p>
                         </div>
-
                     </a>
-
                 <?php else: ?>
-
-                    <div class="list-group-item">
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong>
-
+                    <div class="<?= e($classKartu) ?>">
+                        <div class="isi-kartu">
+                            <h5 class="nama-wilayah">
                                 <?= e($row['nama']) ?>
-
-                            </strong>
-
-                            <span class="badge badge-secondary badge-pill">
-
-                                <?= number_format($row['total']) ?>
-
-                            </span>
-
+                            </h5>
+                            <p class="jumlah-relawan">
+                                <?= number_format(
+                                    (int) $row['total'],
+                                    0,
+                                    ',',
+                                    '.'
+                                ) ?>
+                            </p>
+                            <p class="label-relawan">
+                                Relawan
+                            </p>
                         </div>
-
                     </div>
-
                 <?php endif; ?>
-
             <?php endforeach; ?>
-
-        <?php endif; ?>
-
-    </div>
-
+        </div>
+    <?php endif; ?>
 </div>
-
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

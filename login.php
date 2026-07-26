@@ -184,6 +184,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #9fb4c7;
         }
 
+
+        .password-group input {
+            padding-right: 54px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .toggle-password i {
+            position: static;
+            right: auto;
+            top: auto;
+            transform: none;
+            color: #9fb4c7;
+            font-size: 15px;
+        }
+
+        .toggle-password:hover,
+        .toggle-password:focus-visible {
+            background: #e8f5fc;
+            outline: none;
+        }
+
+        .toggle-password:hover i,
+        .toggle-password:focus-visible i {
+            color: #168ed0;
+        }
+
         .forgot {
             display: block;
             text-align: left;
@@ -383,13 +425,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-user"></i>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group password-group">
                     <input
                         type="password"
+                        id="password"
                         name="password"
                         placeholder="Password"
+                        autocomplete="current-password"
                         required>
-                    <i class="fas fa-lock"></i>
+
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="togglePassword"
+                        aria-label="Tampilkan password"
+                        aria-pressed="false">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
                 </div>
 
                 <button type="submit" class="btn-login">
@@ -412,6 +464,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
     </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleIcon = togglePassword.querySelector('i');
+
+        togglePassword.addEventListener('click', function () {
+            const passwordIsHidden = passwordInput.type === 'password';
+
+            passwordInput.type = passwordIsHidden ? 'text' : 'password';
+            toggleIcon.classList.toggle('fa-eye', !passwordIsHidden);
+            toggleIcon.classList.toggle('fa-eye-slash', passwordIsHidden);
+
+            togglePassword.setAttribute(
+                'aria-label',
+                passwordIsHidden ? 'Sembunyikan password' : 'Tampilkan password'
+            );
+            togglePassword.setAttribute('aria-pressed', String(passwordIsHidden));
+        });
+    </script>
 
 </body>
 
