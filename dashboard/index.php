@@ -731,7 +731,7 @@ foreach ($chartLabels as $label) {
             <div class="support-box">
                 <div class="support-title">
                     <i class="fas fa-headset"></i>
-                    <span>Pusat Bantuan SimPAN</span>
+                    <span>Pusat Bantuan</span>
                 </div>
 
                 <p class="support-description">
