@@ -775,6 +775,7 @@ $keteranganTotal = $role === 'superadmin'
 
     <!-- BREADCRUMB -->
     <div class="breadcrumb-wilayah">
+<<<<<<< HEAD
         <?php foreach ($breadcrumb as $index => $item): ?>
 
             <?php if ($index > 0): ?>
@@ -804,6 +805,37 @@ $keteranganTotal = $role === 'superadmin'
 
         <?php endforeach; ?>
     </div>
+=======
+    <?php foreach ($breadcrumb as $index => $item): ?>
+
+        <?php if ($index > 0): ?>
+            <span class="pemisah">&gt;</span>
+        <?php endif; ?>
+
+        <?php
+        $itemTerakhir = $index === count($breadcrumb) - 1;
+
+        // Khusus breadcrumb pertama milik admin
+        $namaBreadcrumb = (
+            $role === 'admin' && $index === 0
+        )
+            ? 'Kota/Kabupaten'
+            : $item['nama'];
+        ?>
+
+        <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
+            <a href="<?= e($item['url']) ?>">
+                <?= e($namaBreadcrumb) ?>
+            </a>
+        <?php else: ?>
+            <span class="aktif">
+                <?= e($namaBreadcrumb) ?>
+            </span>
+        <?php endif; ?>
+
+    <?php endforeach; ?>
+</div>
+>>>>>>> 1b46cfd9494c6d61b4d6e233159cbd5437757cb5
 
     <div class="judul-level">
         Daftar <?= e($labelLevel[$levelAktif] ?? 'Wilayah') ?>
