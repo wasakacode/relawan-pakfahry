@@ -338,16 +338,16 @@ if ($kab != '' && $kec != '') {
                 $url = '?dapil=' . $dapil .
                     '&kab=' . urlencode($kab) .
                     '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['desa_kelurahan']);
+                    '&desa=' . urlencode($row['kelurahan']);
             } else {
 
                 $url = '?kab=' . urlencode($kab) .
                     '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['desa_kelurahan']);
+                    '&desa=' . urlencode($row['kelurahan']);
             }
 
             $dataLevel3[] = [
-                'nama'  => $row['desa_kelurahan'],
+                'nama'  => $row['kelurahan'],
                 'total' => $row['total'],
                 'url'   => $url
             ];
