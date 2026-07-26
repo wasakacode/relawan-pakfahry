@@ -374,6 +374,8 @@ function input_value($name)
     </div>
 </div>
 <script>
+
+    
     const ROLE = <?= json_encode($role) ?>;
     const ALLOWED_PROVINSI = <?= json_encode($allowedProvinsi) ?>;
     const ALLOWED_KABKOTA = <?= json_encode($allowedKabKota) ?>;
@@ -495,7 +497,45 @@ function input_value($name)
                 console.error(error);
             }
         }
+               const tambahanKelurahan = {
+                "KABUPATEN TANAH LAUT": {
+                    "BATU AMPAR": [
+                        "BLURU"
+                    ]
+                },
 
+                "KABUPATEN KOTA BARU": {
+                    "PULAU LAUT BARAT": [
+                        "GEMURUH"
+                    ],
+                    "PULAU LAUT TIMUR": [
+                        "BETUNG"
+                    ],
+                    "PAMUKAN UTARA": [
+                        "BETUNG"
+                    ],
+                    "PULAU SEBUKU": [
+                        "UJUNG"
+                    ],
+                    "PAMUKAN SELATAN": [
+                        "SESULUNG"
+                    ]
+                },
+
+                "KABUPATEN TANAH BUMBU": {
+                    "KUSAN HILIR": [
+                        "BETUNG",
+                        "GUSUNGE",
+                        "SEPUNGGUR"
+                    ],
+                    "KUSAN HULU": [
+                        "GUNTUNG"
+                    ],
+                    "SIMPANG EMPAT": [
+                        "BERSUJUD"
+                    ]
+                }
+            };
         async function loadDesa(kecamatanId) {
             try {
                 setLoading(desaSelect, 'Memuat desa/kelurahan...');
@@ -511,6 +551,34 @@ function input_value($name)
                     option.dataset.id = item.id;
                     desaSelect.appendChild(option);
                 });
+                // Tambahkan desa yang tidak ada di API
+        const kabupaten = kabKotaSelect.value.toUpperCase();
+        const kecamatan = kecamatanSelect.value.toUpperCase();
+
+        if (
+            tambahanKelurahan[kabupaten] &&
+            tambahanKelurahan[kabupaten][kecamatan]
+        ) {
+
+            tambahanKelurahan[kabupaten][kecamatan].forEach(nama => {
+
+                // jangan ditambah kalau ternyata sudah ada
+                const sudahAda = [...desaSelect.options].some(
+                    o => o.value.toUpperCase() === nama
+                );
+
+                if (!sudahAda) {
+
+                    const option = document.createElement('option');
+                    option.value = nama;
+                    option.textContent = nama;
+
+                    desaSelect.appendChild(option);
+                }
+
+            });
+
+        }
 
             } catch (error) {
                 resetSelect(desaSelect, 'Gagal memuat desa/kelurahan');
