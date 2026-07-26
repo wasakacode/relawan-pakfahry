@@ -1,9 +1,80 @@
 <?php
+
+$currentUser = current_user();
+
+$role = $currentUser['role'] ?? '';
+$currentUserId = (int)($currentUser['id'] ?? 0);
+
+$allowedProvinsi = [];
+$allowedKabKota  = [];
+
+if (in_array($role, ['admin', 'relawan'])) {
+
+    if ($role == 'admin') {
+
+        $stmt = $pdo->prepare("
+            SELECT
+                d.provinsi,
+                d.kab_kota
+            FROM profiles p
+            JOIN profile_dapil pd
+                ON pd.profile_id = p.id
+            JOIN dapil d
+                ON d.id = pd.dapil_id
+            WHERE p.user_id = ?
+            AND p.type = 'admin'
+        ");
+
+        $stmt->execute([$currentUserId]);
+
+    } else {
+
+        $stmt = $pdo->prepare("
+            SELECT
+                d.provinsi,
+                d.kab_kota
+            FROM profiles rel
+            JOIN profile_admin pa
+                ON pa.profile_id = rel.id
+            JOIN profile_dapil pd
+                ON pd.profile_id = pa.admin_profile_id
+            JOIN dapil d
+                ON d.id = pd.dapil_id
+            WHERE rel.user_id = ?
+            AND rel.type = 'relawan'
+        ");
+
+        $stmt->execute([$currentUserId]);
+    }
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+        // simpan provinsi
+        if (!empty($row['provinsi'])) {
+            $allowedProvinsi[] = trim($row['provinsi']);
+        }
+
+        // simpan semua kabupaten
+        $kab = json_decode($row['kab_kota'], true);
+
+        if (is_array($kab)) {
+
+            foreach ($kab as $k) {
+                $allowedKabKota[] = trim($k);
+            }
+
+        }
+
+    }
+
+    $allowedProvinsi = array_values(array_unique($allowedProvinsi));
+    $allowedKabKota  = array_values(array_unique($allowedKabKota));
+}
+
 function input_value($name)
 {
     return e($_POST[$name] ?? '');
 }
-
 ?>
 <div class="card shadow mb-4" style="border-radius: 18px; overflow:hidden;">
     <div class="card-header py-3" style="background: linear-gradient(135deg, #eaf9ff, #c8efff);">
@@ -303,6 +374,10 @@ function input_value($name)
     </div>
 </div>
 <script>
+    const ROLE = <?= json_encode($role) ?>;
+    const ALLOWED_PROVINSI = <?= json_encode($allowedProvinsi) ?>;
+    const ALLOWED_KABKOTA = <?= json_encode($allowedKabKota) ?>;
+    
     document.addEventListener('DOMContentLoaded', function() {
         const provinsiSelect = document.getElementById('provinsi');
         const kabKotaSelect = document.getElementById('kab_kota');
@@ -337,13 +412,26 @@ function input_value($name)
 
                 provinsiSelect.innerHTML = '<option value="">Pilih Provinsi</option>';
 
-                data.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.name;
-                    option.textContent = item.name;
-                    option.dataset.id = item.id;
-                    provinsiSelect.appendChild(option);
-                });
+                data
+                    .filter(item => {
+
+                        if (ROLE === 'superadmin') {
+                            return true;
+                        }
+
+                        return ALLOWED_PROVINSI.includes(item.name);
+
+                    })
+                    .forEach(item => {
+
+                        const option = document.createElement('option');
+                        option.value = item.name;
+                        option.textContent = item.name;
+                        option.dataset.id = item.id;
+
+                        provinsiSelect.appendChild(option);
+
+                    });
 
             } catch (error) {
                 resetSelect(provinsiSelect, 'Gagal memuat provinsi');
@@ -361,7 +449,17 @@ function input_value($name)
 
                 kabKotaSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
 
-                data.forEach(item => {
+                data
+                    .filter(item => {
+
+                        if (ROLE === 'superadmin') {
+                            return true;
+                        }
+
+                        return ALLOWED_KABKOTA.includes(item.name);
+
+                    })
+                    .forEach(item => {
                     const option = document.createElement('option');
                     option.value = item.name;
                     option.textContent = item.name;
