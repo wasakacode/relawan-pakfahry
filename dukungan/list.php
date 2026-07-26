@@ -33,45 +33,88 @@ $order  = $_GET['order'] ?? 'DESC';
 |--------------------------------------------------------------------------
 */
 
-$allowedColumns = [
-    'nik',
-    'nama_lengkap',
-    'kecamatan',
-    'desa_kelurahan',
-    'tps',
-    'created_at'
-];
-
-if (!in_array($sortBy, $allowedColumns)) {
-    $sortBy = 'created_at';
-}
-
-$allowedOrder = ['ASC', 'DESC'];
-
-if (!in_array($order, $allowedOrder)) {
-    $order = 'DESC';
-}
-
-/*
-|--------------------------------------------------------------------------
-| Query
-|--------------------------------------------------------------------------
-*/
-
 $where = "WHERE p.type = 'dukungan'";
 $params = [];
 
+$allowedKabKota = [];
+
 /*
 |--------------------------------------------------------------------------
-| Relawan hanya lihat datanya sendiri
+| Ambil wilayah yang boleh dilihat
 |--------------------------------------------------------------------------
 */
 
-if (current_user()['role'] === 'relawan') {
+if (current_user()['role'] == 'admin') {
 
-    $where .= " AND p.created_by = ?";
-    $params[] = current_user()['id'];
+    // profile admin
+    $stmt = $pdo->prepare("
+        SELECT id
+        FROM profiles
+        WHERE user_id = ?
+        AND type='admin'
+        LIMIT 1
+    ");
+    $stmt->execute([current_user()['id']]);
+
+    $adminProfileId = $stmt->fetchColumn();
+
+} elseif (current_user()['role'] == 'relawan') {
+
+    // cari admin yang menaungi relawan
+    $stmt = $pdo->prepare("
+        SELECT pa.admin_profile_id
+        FROM profile_admin pa
+        JOIN profiles p
+            ON p.id = pa.profile_id
+        WHERE p.user_id = ?
+        LIMIT 1
+    ");
+
+    $stmt->execute([current_user()['id']]);
+
+    $adminProfileId = $stmt->fetchColumn();
 }
+
+if (current_user()['role'] != 'superadmin') {
+
+    $stmt = $pdo->prepare("
+        SELECT d.kab_kota
+        FROM profile_dapil pd
+        JOIN dapil d
+            ON d.id = pd.dapil_id
+        WHERE pd.profile_id = ?
+    ");
+
+    $stmt->execute([$adminProfileId]);
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+        $kab = json_decode($row['kab_kota'], true);
+
+        if (is_array($kab)) {
+            foreach ($kab as $k) {
+                $allowedKabKota[] = trim($k);
+            }
+        }
+    }
+
+    $allowedKabKota = array_unique($allowedKabKota);
+
+    if (!empty($allowedKabKota)) {
+
+        $placeholders = implode(',', array_fill(0, count($allowedKabKota), '?'));
+
+        $where .= " AND p.kab_kota IN ($placeholders)";
+
+        $params = array_merge($params, $allowedKabKota);
+
+    } else {
+
+        // jika tidak punya dapil
+        $where .= " AND 1=0";
+    }
+}
+
 
 /*
 |--------------------------------------------------------------------------
@@ -141,14 +184,29 @@ $rows = $stmt->fetchAll();
 |--------------------------------------------------------------------------
 */
 
-$kecamatanStmt = $pdo->query("
-    SELECT DISTINCT kecamatan
-    FROM profiles
-    WHERE type = 'dukungan'
-    ORDER BY kecamatan ASC
-");
+$sql = "
+SELECT DISTINCT kecamatan
+FROM profiles
+WHERE type='dukungan'
+";
 
-$kecamatanList = $kecamatanStmt->fetchAll();
+$params = [];
+
+if (!empty($allowedKabKota)) {
+
+    $placeholders = implode(',', array_fill(0,count($allowedKabKota),'?'));
+
+    $sql .= " AND kab_kota IN ($placeholders)";
+
+    $params = $allowedKabKota;
+}
+
+$sql .= " ORDER BY kecamatan";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+
+$kecamatanList = $stmt->fetchAll();
 
 /*
 |--------------------------------------------------------------------------
@@ -156,14 +214,29 @@ $kecamatanList = $kecamatanStmt->fetchAll();
 |--------------------------------------------------------------------------
 */
 
-$desaStmt = $pdo->query("
-    SELECT DISTINCT desa_kelurahan
-    FROM profiles
-    WHERE type = 'dukungan'
-    ORDER BY desa_kelurahan ASC
-");
+$sql = "
+SELECT DISTINCT desa_kelurahan
+FROM profiles
+WHERE type='dukungan'
+";
 
-$desaList = $desaStmt->fetchAll();
+$params = [];
+
+if (!empty($allowedKabKota)) {
+
+    $placeholders = implode(',', array_fill(0,count($allowedKabKota),'?'));
+
+    $sql .= " AND kab_kota IN ($placeholders)";
+
+    $params = $allowedKabKota;
+}
+
+$sql .= " ORDER BY desa_kelurahan";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+
+$desaList = $stmt->fetchAll();
 
 /*
 |--------------------------------------------------------------------------
