@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../auth/auth.php';
 
 require_role([
@@ -13,7 +14,7 @@ require_once __DIR__ . '/../partials/topbar.php';
 
 /*
 |--------------------------------------------------------------------------
-| Login
+| LOGIN
 |--------------------------------------------------------------------------
 */
 
@@ -22,55 +23,87 @@ $role = $user['role'];
 
 /*
 |--------------------------------------------------------------------------
-| Parameter URL
+| PARAMETER
 |--------------------------------------------------------------------------
 */
 
-$dapil = $_GET['dapil'] ?? null;
-$kab   = $_GET['kab'] ?? null;
-$kec   = $_GET['kec'] ?? null;
-$desa  = $_GET['desa'] ?? null;
+$dapil = $_GET['dapil'] ?? '';
+$kab   = $_GET['kab'] ?? '';
+$kec   = $_GET['kec'] ?? '';
+$desa  = $_GET['desa'] ?? '';
 
 /*
 |--------------------------------------------------------------------------
-| Variabel
+| VARIABEL
 |--------------------------------------------------------------------------
 */
 
 $totalRelawan = 0;
+
+$dapilAdmin = null;
+$namaDapilAdmin = null;
+$kabupatenAdmin = [];
 
 $dataLevel1 = [];
 $dataLevel2 = [];
 $dataLevel3 = [];
 $dataLevel4 = [];
 
+$dataTampil = [];
+
 $breadcrumb = [];
+
 
 /*
 |--------------------------------------------------------------------------
-| Helper Function
+| WILAYAH ADMIN
 |--------------------------------------------------------------------------
 */
 
-function persen($total, $grandTotal)
-{
-    if ($grandTotal == 0) {
-        return 0;
+if ($role == 'admin') {
+
+    $stmt = $pdo->prepare("
+        SELECT
+            d.id,
+            d.daerah_pemilihan,
+            d.kab_kota
+        FROM profile_dapil pd
+
+        JOIN dapil d
+            ON d.id = pd.dapil_id
+
+        JOIN profiles p
+            ON p.id = pd.profile_id
+
+        WHERE
+            p.user_id = ?
+            AND p.type='admin'
+    ");
+
+    $stmt->execute([$user['id']]);
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+        $dapilAdmin = $row['id'];
+        $namaDapilAdmin = $row['daerah_pemilihan'];
+
+        $list = json_decode($row['kab_kota'] ?? '[]', true);
+
+        if (is_array($list)) {
+
+            $kabupatenAdmin = array_merge(
+                $kabupatenAdmin,
+                $list
+            );
+        }
     }
 
-    return round(($total / $grandTotal) * 100, 2);
+    $kabupatenAdmin = array_unique($kabupatenAdmin);
 }
 
 /*
 |--------------------------------------------------------------------------
 | TOTAL RELAWAN
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| SUPERADMIN
-| Menghitung seluruh relawan
 |--------------------------------------------------------------------------
 */
 
@@ -83,64 +116,14 @@ if ($role == 'superadmin') {
     ");
 
     $totalRelawan = $stmt->fetchColumn();
-}
+} else {
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN
-| Menghitung relawan sesuai dapil admin
-|--------------------------------------------------------------------------
-*/ elseif ($role == 'admin') {
+    if (!empty($kabupatenAdmin)) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Ambil semua kabupaten yang dimiliki admin
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt = $pdo->prepare("
-        SELECT d.kab_kota
-        FROM profile_dapil pd
-
-        INNER JOIN dapil d
-            ON d.id = pd.dapil_id
-
-        INNER JOIN profiles p
-            ON p.id = pd.profile_id
-
-        WHERE
-            p.user_id = ?
-            AND p.type='admin'
-    ");
-
-    $stmt->execute([$user['id']]);
-
-    $kabupaten = [];
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        $listKabupaten = json_decode($row['kab_kota'], true);
-
-        if (is_array($listKabupaten)) {
-
-            $kabupaten = array_merge(
-                $kabupaten,
-                $listKabupaten
-            );
-        }
-    }
-
-    $kabupaten = array_unique($kabupaten);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Hitung total relawan
-    |--------------------------------------------------------------------------
-    */
-
-    if (!empty($kabupaten)) {
-
-        $placeholder = implode(',', array_fill(0, count($kabupaten), '?'));
+        $placeholder = implode(
+            ',',
+            array_fill(0, count($kabupatenAdmin), '?')
+        );
 
         $stmt = $pdo->prepare("
             SELECT COUNT(*)
@@ -150,7 +133,7 @@ if ($role == 'superadmin') {
                 AND kab_kota IN ($placeholder)
         ");
 
-        $stmt->execute($kabupaten);
+        $stmt->execute($kabupatenAdmin);
 
         $totalRelawan = $stmt->fetchColumn();
     }
@@ -158,19 +141,7 @@ if ($role == 'superadmin') {
 
 /*
 |--------------------------------------------------------------------------
-| RELAWAN
-|--------------------------------------------------------------------------
-*/ else {
-
-    $totalRelawan = 0;
-}
-
-/*
-|--------------------------------------------------------------------------
 | LEVEL 1
-|--------------------------------------------------------------------------
-| Superadmin : Daftar Dapil
-| Admin      : Daftar Kabupaten sesuai Dapil
 |--------------------------------------------------------------------------
 */
 
@@ -182,16 +153,13 @@ if ($role == 'superadmin') {
             daerah_pemilihan,
             kab_kota
         FROM dapil
-        ORDER BY daerah_pemilihan
+        ORDER BY id
     ");
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
+        // Ambil daftar kabupaten dalam dapil
         $kabupaten = json_decode($row['kab_kota'], true);
-
-        if (!is_array($kabupaten)) {
-            $kabupaten = [];
-        }
 
         $total = 0;
 
@@ -199,96 +167,44 @@ if ($role == 'superadmin') {
 
             $placeholder = implode(',', array_fill(0, count($kabupaten), '?'));
 
-            $q = $pdo->prepare("
+            $stmtTotal = $pdo->prepare("
                 SELECT COUNT(*)
                 FROM profiles
                 WHERE
-                    type='relawan'
+                    type = 'relawan'
                     AND kab_kota IN ($placeholder)
             ");
 
-            $q->execute($kabupaten);
+            $stmtTotal->execute($kabupaten);
 
-            $total = $q->fetchColumn();
+            $total = $stmtTotal->fetchColumn();
         }
 
         $dataLevel1[] = [
-            'id'      => $row['id'],
-            'nama'    => $row['daerah_pemilihan'],
-            'total'   => $total,
-            'persen'  => persen($total, $totalRelawan),
-            'url'     => '?dapil=' . $row['id']
+            'nama'  => $row['daerah_pemilihan'],
+            'total' => $total,
+            'url'   => '?dapil=' . $row['id']
         ];
     }
-} elseif ($role == 'admin') {
+} else {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Ambil kabupaten yang menjadi wilayah admin
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt = $pdo->prepare("
-        SELECT d.kab_kota
-        FROM profile_dapil pd
-
-        INNER JOIN dapil d
-            ON d.id = pd.dapil_id
-
-        INNER JOIN profiles p
-            ON p.id = pd.profile_id
-
-        WHERE
-            p.user_id = ?
-            AND p.type='admin'
-    ");
-
-    $stmt->execute([$user['id']]);
-
-    $kabupaten = [];
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        $listKabupaten = json_decode($row['kab_kota'], true);
-
-        if (is_array($listKabupaten)) {
-
-            $kabupaten = array_merge(
-                $kabupaten,
-                $listKabupaten
-            );
-        }
-    }
-
-    $kabupaten = array_unique($kabupaten);
-
-    if (!empty($kabupaten)) {
-
-        $placeholder = implode(',', array_fill(0, count($kabupaten), '?'));
+    foreach ($kabupatenAdmin as $kabupaten) {
 
         $stmt = $pdo->prepare("
-            SELECT
-                kab_kota,
-                COUNT(*) AS total
+            SELECT COUNT(*)
             FROM profiles
             WHERE
-                type='relawan'
-                AND kab_kota IN ($placeholder)
-            GROUP BY kab_kota
-            ORDER BY kab_kota
+                type = 'relawan'
+                AND kab_kota = ?
         ");
 
-        $stmt->execute($kabupaten);
+        $stmt->execute([$kabupaten]);
 
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-            $dataLevel1[] = [
-                'nama'   => $row['kab_kota'],
-                'total'  => $row['total'],
-                'persen' => persen($row['total'], $totalRelawan),
-                'url'    => '?kab=' . urlencode($row['kab_kota'])
-            ];
-        }
+        $dataLevel1[] = [
+            'nama'  => $kabupaten,
+            'total' => $stmt->fetchColumn(),
+            'url'   => '?kab=' . urlencode($kabupaten)
+        ];
     }
 }
 
@@ -296,25 +212,14 @@ if ($role == 'superadmin') {
 |--------------------------------------------------------------------------
 | LEVEL 2
 |--------------------------------------------------------------------------
-| Superadmin : Setelah memilih Dapil -> tampilkan Kabupaten
-| Admin      : Setelah memilih Kabupaten -> tampilkan Kecamatan
-|--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin' && $dapil && !$kab) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ambil daftar kabupaten dalam dapil
-    |--------------------------------------------------------------------------
-    */
+if ($role == 'superadmin' && $dapil != '') {
 
     $stmt = $pdo->prepare("
-        SELECT
-            kab_kota
+        SELECT kab_kota
         FROM dapil
         WHERE id = ?
-        LIMIT 1
     ");
 
     $stmt->execute([$dapil]);
@@ -323,71 +228,60 @@ if ($role == 'superadmin' && $dapil && !$kab) {
 
     if ($row) {
 
-        $kabupaten = json_decode($row['kab_kota'], true);
+        $listKabupaten = json_decode($row['kab_kota'], true);
 
-        if (!is_array($kabupaten)) {
-            $kabupaten = [];
-        }
+        foreach ($listKabupaten as $kabupaten) {
 
-        if (!empty($kabupaten)) {
-
-            $placeholder = implode(',', array_fill(0, count($kabupaten), '?'));
-
-            $stmt = $pdo->prepare("
-                SELECT
-                    kab_kota,
-                    COUNT(*) AS total
+            $stmtJumlah = $pdo->prepare("
+                SELECT COUNT(*)
                 FROM profiles
                 WHERE
                     type='relawan'
-                    AND kab_kota IN ($placeholder)
-                GROUP BY kab_kota
-                ORDER BY kab_kota
+                    AND kab_kota=?
             ");
 
-            $stmt->execute($kabupaten);
+            $stmtJumlah->execute([$kabupaten]);
 
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-                $dataLevel2[] = [
-                    'nama'   => $row['kab_kota'],
-                    'total'  => $row['total'],
-                    'persen' => persen($row['total'], $totalRelawan),
-                    'url'    => '?dapil=' . $dapil .
-                        '&kab=' . urlencode($row['kab_kota'])
-                ];
-            }
+            $dataLevel2[] = [
+                'nama'  => $kabupaten,
+                'total' => $stmtJumlah->fetchColumn(),
+                'url'   => '?dapil=' . $dapil .
+                    '&kab=' . urlencode($kabupaten)
+            ];
         }
     }
-} elseif ($role == 'admin' && $kab && !$kec) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan Kecamatan
-    |--------------------------------------------------------------------------
-    */
+} elseif ($role == 'admin' && $kab != '') {
 
     $stmt = $pdo->prepare("
         SELECT
-            kecamatan,
-            COUNT(*) AS total
-        FROM profiles
-        WHERE
-            type='relawan'
-            AND kab_kota = ?
-        GROUP BY kecamatan
-        ORDER BY kecamatan
+            t.kecamatan,
+            COUNT(p.id) AS total
+        FROM (
+            SELECT DISTINCT kecamatan
+            FROM tps_kalsel
+            WHERE kabupaten = ?
+        ) t
+
+        LEFT JOIN profiles p
+            ON p.kab_kota = ?
+            AND p.kecamatan = t.kecamatan
+            AND p.type = 'relawan'
+
+        GROUP BY t.kecamatan
+        ORDER BY t.kecamatan
     ");
 
-    $stmt->execute([$kab]);
+    $stmt->execute([
+        $kab,
+        $kab
+    ]);
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
         $dataLevel2[] = [
-            'nama'   => $row['kecamatan'],
-            'total'  => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan),
-            'url'    => '?kab=' . urlencode($kab) .
+            'nama'  => $row['kecamatan'],
+            'total' => $row['total'],
+            'url'   => '?kab=' . urlencode($kab) .
                 '&kec=' . urlencode($row['kecamatan'])
         ];
     }
@@ -397,80 +291,67 @@ if ($role == 'superadmin' && $dapil && !$kab) {
 |--------------------------------------------------------------------------
 | LEVEL 3
 |--------------------------------------------------------------------------
-| Superadmin : Setelah memilih Kabupaten -> tampilkan Kecamatan
-| Admin      : Setelah memilih Kecamatan -> tampilkan Desa/Kelurahan
-|--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin' && $dapil && $kab && !$kec) {
+if ($kab != '' && $kec != '') {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan Kecamatan
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt = $pdo->prepare("
-        SELECT
-            kecamatan,
-            COUNT(*) AS total
-        FROM profiles
-        WHERE
-            type='relawan'
-            AND kab_kota = ?
-        GROUP BY kecamatan
-        ORDER BY kecamatan
-    ");
-
-    $stmt->execute([$kab]);
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        $dataLevel3[] = [
-            'nama'   => $row['kecamatan'],
-            'total'  => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan),
-            'url'    => '?dapil=' . $dapil .
-                '&kab=' . urlencode($kab) .
-                '&kec=' . urlencode($row['kecamatan'])
-        ];
+    // Batasi akses admin
+    if ($role == 'admin' && !in_array($kab, $kabupatenAdmin)) {
+        $kab = '';
     }
-} elseif ($role == 'admin' && $kab && $kec && !$desa) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan Desa / Kelurahan
-    |--------------------------------------------------------------------------
-    */
+    if ($kab != '') {
 
-    $stmt = $pdo->prepare("
-        SELECT
-            desa_kelurahan,
-            COUNT(*) AS total
-        FROM profiles
-        WHERE
-            type='relawan'
-            AND kab_kota = ?
-            AND kecamatan = ?
-        GROUP BY desa_kelurahan
-        ORDER BY desa_kelurahan
-    ");
+        $stmt = $pdo->prepare("
+            SELECT
+                t.kelurahan,
+                COUNT(p.id) AS total
+            FROM (
+                SELECT DISTINCT kelurahan
+                FROM tps_kalsel
+                WHERE
+                    kabupaten = ?
+                    AND kecamatan = ?
+            ) t
 
-    $stmt->execute([
-        $kab,
-        $kec
-    ]);
+            LEFT JOIN profiles p
+                ON p.kab_kota = ?
+                AND p.kecamatan = ?
+                AND p.desa_kelurahan = t.kelurahan
+                AND p.type = 'relawan'
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            GROUP BY t.kelurahan
+            ORDER BY t.kelurahan
+        ");
 
-        $dataLevel3[] = [
-            'nama'   => $row['desa_kelurahan'],
-            'total'  => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan),
-            'url'    => '?kab=' . urlencode($kab) .
-                '&kec=' . urlencode($kec) .
-                '&desa=' . urlencode($row['desa_kelurahan'])
-        ];
+        $stmt->execute([
+            $kab,
+            $kec,
+            $kab,
+            $kec
+        ]);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+            if ($role == 'superadmin') {
+
+                $url = '?dapil=' . $dapil .
+                    '&kab=' . urlencode($kab) .
+                    '&kec=' . urlencode($kec) .
+                    '&desa=' . urlencode($row['desa_kelurahan']);
+            } else {
+
+                $url = '?kab=' . urlencode($kab) .
+                    '&kec=' . urlencode($kec) .
+                    '&desa=' . urlencode($row['desa_kelurahan']);
+            }
+
+            $dataLevel3[] = [
+                'nama'  => $row['desa_kelurahan'],
+                'total' => $row['total'],
+                'url'   => $url
+            ];
+        }
     }
 }
 
@@ -478,180 +359,204 @@ if ($role == 'superadmin' && $dapil && $kab && !$kec) {
 |--------------------------------------------------------------------------
 | LEVEL 4
 |--------------------------------------------------------------------------
-| Menampilkan daftar TPS beserta jumlah relawan pada setiap TPS.
-|--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin' && $dapil && $kab && $kec && !$desa) {
+if ($kab != '' && $kec != '' && $desa != '') {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan Desa / Kelurahan
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt = $pdo->prepare("
-        SELECT
-            desa_kelurahan,
-            COUNT(*) AS total
-        FROM profiles
-        WHERE
-            type='relawan'
-            AND kab_kota = ?
-            AND kecamatan = ?
-        GROUP BY desa_kelurahan
-        ORDER BY desa_kelurahan
-    ");
-
-    $stmt->execute([
-        $kab,
-        $kec
-    ]);
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        $dataLevel4[] = [
-            'nama'   => $row['desa_kelurahan'],
-            'total'  => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan),
-            'url'    => '?dapil=' . $dapil .
-                '&kab=' . urlencode($kab) .
-                '&kec=' . urlencode($kec) .
-                '&desa=' . urlencode($row['desa_kelurahan'])
-        ];
+    // Batasi akses admin
+    if ($role == 'admin' && !in_array($kab, $kabupatenAdmin)) {
+        $kab = '';
     }
-} elseif ($role == 'admin' && $kab && $kec && $desa) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan TPS
-    |--------------------------------------------------------------------------
-    */
+    if ($kab != '') {
 
-    $stmt = $pdo->prepare("
-        SELECT
-            t.no_tps,
-            COUNT(p.id) AS total
-        FROM tps_kalsel t
+        $stmt = $pdo->prepare("
+            SELECT
+                t.no_tps,
+                COUNT(p.id) AS total
+            FROM tps_kalsel t
 
-        LEFT JOIN profiles p
-            ON p.type = 'relawan'
-            AND p.kab_kota = t.kabupaten
-            AND p.kecamatan = t.kecamatan
-            AND p.desa_kelurahan = t.kelurahan
-            AND p.tps = t.no_tps
+            LEFT JOIN profiles p
+                ON p.tps = t.no_tps
+                AND p.kab_kota = t.kabupaten
+                AND p.kecamatan = t.kecamatan
+                AND p.desa_kelurahan = t.kelurahan
+                AND p.type = 'relawan'
 
-        WHERE
-            t.kabupaten = ?
-            AND t.kecamatan = ?
-            AND t.kelurahan = ?
+            WHERE
+                t.kabupaten = ?
+                AND t.kecamatan = ?
+                AND t.kelurahan = ?
 
-        GROUP BY t.no_tps
+            GROUP BY t.no_tps
+            ORDER BY CAST(t.no_tps AS UNSIGNED)
+        ");
 
-        ORDER BY t.no_tps
-    ");
+        $stmt->execute([
+            $kab,
+            $kec,
+            $desa
+        ]);
 
-    $stmt->execute([
-        $kab,
-        $kec,
-        $desa
-    ]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-        $dataLevel4[] = [
-            'is_tps' => true,
-            'tps' => $row['no_tps'],
-            'total' => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan)
-        ];
+            $dataLevel4[] = [
+                'nama'  => 'TPS ' . str_pad($row['no_tps'], 3, '0', STR_PAD_LEFT),
+                'total' => $row['total']
+            ];
+        }
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| LEVEL 5
-|--------------------------------------------------------------------------
-| Superadmin : Setelah memilih Desa -> tampilkan TPS
+| DATA TAMPIL
 |--------------------------------------------------------------------------
 */
 
-if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
+$dataTampil = $dataLevel1;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tampilkan TPS
-    |--------------------------------------------------------------------------
-    */
+if ($role == 'superadmin') {
+
+    if ($dapil != '') {
+        $dataTampil = $dataLevel2;
+    }
+
+    if ($kab != '') {
+        $dataTampil = $dataLevel3;
+    }
+
+    if ($kec != '' && $desa != '') {
+        $dataTampil = $dataLevel4;
+    }
+} else {
+
+    if ($kab != '') {
+        $dataTampil = $dataLevel2;
+    }
+
+    if ($kec != '') {
+        $dataTampil = $dataLevel3;
+    }
+
+    if ($desa != '') {
+        $dataTampil = $dataLevel4;
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| BREADCRUMB
+|--------------------------------------------------------------------------
+*/
+
+$breadcrumb = [];
+
+$breadcrumb[] = [
+    'nama' => 'Kalimantan Selatan',
+    'url'  => '?'
+];
+
+if ($role == 'superadmin' && $dapil != '') {
 
     $stmt = $pdo->prepare("
-        SELECT
-            t.no_tps,
-            COUNT(p.id) AS total
-        FROM tps_kalsel t
-
-        LEFT JOIN profiles p
-            ON p.type = 'relawan'
-            AND p.kab_kota = t.kabupaten
-            AND p.kecamatan = t.kecamatan
-            AND p.desa_kelurahan = t.kelurahan
-            AND p.tps = t.no_tps
-
-        WHERE
-            t.kabupaten = ?
-            AND t.kecamatan = ?
-            AND t.kelurahan = ?
-
-        GROUP BY t.no_tps
-
-        ORDER BY t.no_tps
+        SELECT daerah_pemilihan
+        FROM dapil
+        WHERE id = ?
     ");
 
-    $stmt->execute([
-        $kab,
-        $kec,
-        $desa
-    ]);
+    $stmt->execute([$dapil]);
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-        $dataLevel4[] = [
-            'is_tps' => true,
-            'tps' => $row['no_tps'],
-            'total' => $row['total'],
-            'persen' => persen($row['total'], $totalRelawan)
+        $breadcrumb[] = [
+            'nama' => $row['daerah_pemilihan'],
+            'url'  => '?dapil=' . $dapil
         ];
     }
 }
 
+if ($role == 'admin' && $namaDapilAdmin != '') {
+
+    $breadcrumb[] = [
+        'nama' => $namaDapilAdmin,
+        'url'  => '#'
+    ];
+}
+
+if ($kab != '') {
+
+    if ($role == 'superadmin') {
+
+        $url = '?dapil=' . $dapil .
+            '&kab=' . urlencode($kab);
+    } else {
+
+        $url = '?kab=' . urlencode($kab);
+    }
+
+    $breadcrumb[] = [
+        'nama' => $kab,
+        'url'  => $url
+    ];
+}
+
+if ($kec != '') {
+
+    if ($role == 'superadmin') {
+
+        $url = '?dapil=' . $dapil .
+            '&kab=' . urlencode($kab) .
+            '&kec=' . urlencode($kec);
+    } else {
+
+        $url = '?kab=' . urlencode($kab) .
+            '&kec=' . urlencode($kec);
+    }
+
+    $breadcrumb[] = [
+        'nama' => $kec,
+        'url'  => $url
+    ];
+}
+
+if ($desa != '') {
+
+    $breadcrumb[] = [
+        'nama' => $desa,
+        'url'  => '#'
+    ];
+}
 ?>
 
+<!-- JUDUL -->
+<div class="text-center mb-4">
 
-<h1 class="h3 mb-4 text-gray-800">
-    <i class="fas fa-chart-pie"></i>
-    Statistik Wilayah Relawan
-</h1>
+    <h3 class="font-weight-bold">
+        Statistik Wilayah Relawan
+        <?php if ($role == 'superadmin'): ?>
+            (Role Superadmin)
+        <?php else: ?>
+            (Role Admin)
+        <?php endif; ?>
+    </h3>
 
+</div>
 
-<!-- ==========================================================
-     TOTAL RELAWAN
-=========================================================== -->
+<!-- TOTAL RELAWAN -->
+<div class="row justify-content-center mb-4">
 
-<div class="row mb-4">
+    <div class="col-md-3">
 
-    <div class="col-lg-4">
+        <div class="card border-primary shadow">
 
-        <div class="card border-left-primary shadow h-100">
+            <div class="card-body text-center">
 
-            <div class="card-body">
+                <h5 class="mb-2">TOTAL RELAWAN</h5>
 
-                <div class="text-xs font-weight-bold text-primary text-uppercase mb-2">
-                    Total Relawan
-                </div>
-
-                <div class="h3 mb-0 font-weight-bold text-gray-800">
+                <h2 class="font-weight-bold text-primary">
                     <?= number_format($totalRelawan) ?>
-                </div>
+                </h2>
 
             </div>
 
@@ -661,356 +566,119 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
 
 </div>
 
-<!-- ==========================================================
-     BREADCRUMB
-=========================================================== -->
+<!-- BREADCRUMB -->
+<nav aria-label="breadcrumb">
 
-<div class="mb-4">
+    <ol class="breadcrumb bg-white">
 
-    <?php if ($role == 'superadmin'): ?>
+        <?php foreach ($breadcrumb as $index => $item): ?>
 
-        <a href="statistik_wilayah.php"
-            class="badge badge-primary">
+            <?php if ($index == count($breadcrumb) - 1): ?>
 
-            Semua Dapil
+                <li class="breadcrumb-item active">
 
-        </a>
+                    <?= e($item['nama']) ?>
 
-    <?php endif; ?>
+                </li>
 
+            <?php else: ?>
 
-    <?php if ($dapil): ?>
+                <li class="breadcrumb-item">
 
-        <?php
+                    <?php if ($item['url'] != '#'): ?>
 
-        $stmt = $pdo->prepare("
-        SELECT daerah_pemilihan
-        FROM dapil
-        WHERE id=?
-    ");
+                        <a href="<?= $item['url'] ?>">
 
-        $stmt->execute([$dapil]);
-
-        ?>
-
-        <span class="mx-2">></span>
-
-        <span class="badge badge-info">
-
-            <?= e($stmt->fetchColumn()) ?>
-
-        </span>
-
-    <?php endif; ?>
-
-
-    <?php if ($kab): ?>
-
-        <span class="mx-2">></span>
-
-        <span class="badge badge-success">
-
-            <?= e($kab) ?>
-
-        </span>
-
-    <?php endif; ?>
-
-
-    <?php if ($kec): ?>
-
-        <span class="mx-2">></span>
-
-        <span class="badge badge-warning">
-
-            <?= e($kec) ?>
-
-        </span>
-
-    <?php endif; ?>
-
-
-    <?php if ($desa): ?>
-
-        <span class="mx-2">></span>
-
-        <span class="badge badge-dark">
-
-            <?= e($desa) ?>
-
-        </span>
-
-    <?php endif; ?>
-
-</div>
-
-<!-- ==========================================================
-     LEVEL 1
-=========================================================== -->
-
-<?php if (!empty($dataLevel1)): ?>
-
-    <div class="row">
-
-        <?php foreach ($dataLevel1 as $row): ?>
-
-            <div class="col-lg-4 mb-4">
-
-                <div class="card shadow h-100">
-
-                    <div class="card-body">
-
-                        <h5 class="font-weight-bold">
-                            <?= e($row['nama']) ?>
-                        </h5>
-
-                        <h3 class="text-primary">
-                            <?= number_format($row['total']) ?>
-                        </h3>
-
-                        <div class="progress mb-3">
-
-                            <div class="progress-bar"
-                                role="progressbar"
-                                style="width: <?= $row['persen'] ?>%">
-
-                            </div>
-
-                        </div>
-
-                        <small class="text-muted d-block mb-3">
-                            <?= $row['persen'] ?>%
-                            dari total relawan
-                        </small>
-
-                        <a href="<?= $row['url'] ?>"
-                            class="btn btn-primary btn-sm">
-
-                            <?= $role == 'superadmin'
-                                ? 'Lihat Kabupaten'
-                                : 'Lihat Kecamatan' ?>
+                            <?= e($item['nama']) ?>
 
                         </a>
 
-                    </div>
+                    <?php else: ?>
 
-                </div>
+                        <?= e($item['nama']) ?>
 
-            </div>
+                    <?php endif; ?>
 
-        <?php endforeach; ?>
+                </li>
 
-    </div>
-
-<?php endif; ?>
-
-<!-- ==========================================================
-     LEVEL 2
-=========================================================== -->
-
-<?php if (!empty($dataLevel2)): ?>
-
-    <div class="row">
-
-        <?php foreach ($dataLevel2 as $row): ?>
-
-            <div class="col-lg-4 mb-4">
-
-                <div class="card shadow h-100">
-
-                    <div class="card-body">
-
-                        <h5 class="font-weight-bold">
-                            <?= e($row['nama']) ?>
-                        </h5>
-
-                        <h3 class="text-info">
-                            <?= number_format($row['total']) ?>
-                        </h3>
-
-                        <div class="progress mb-3">
-
-                            <div class="progress-bar bg-info"
-                                role="progressbar"
-                                style="width: <?= $row['persen'] ?>%">
-
-                            </div>
-
-                        </div>
-
-                        <small class="text-muted d-block mb-3">
-                            <?= $row['persen'] ?>%
-                            dari total relawan
-                        </small>
-
-                        <a href="<?= $row['url'] ?>"
-                            class="btn btn-info btn-sm">
-
-                            <?= $role == 'superadmin'
-                                ? 'Lihat Kecamatan'
-                                : 'Lihat Kelurahan' ?>
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
+            <?php endif; ?>
 
         <?php endforeach; ?>
 
-    </div>
+    </ol>
 
-<?php endif; ?>
+</nav>
 
-<!-- ==========================================================
-     LEVEL 3
-=========================================================== -->
+<!-- LIST DATA -->
+<div class="card shadow">
 
-<?php if (!empty($dataLevel3)): ?>
+    <div class="list-group list-group-flush">
 
-    <div class="row">
+        <?php if (empty($dataTampil)): ?>
 
-        <?php foreach ($dataLevel3 as $row): ?>
+            <div class="list-group-item text-center text-muted py-5">
 
-            <div class="col-lg-4 mb-4">
-
-                <div class="card shadow h-100">
-
-                    <div class="card-body">
-
-                        <h5 class="font-weight-bold">
-                            <?= e($row['nama']) ?>
-                        </h5>
-
-                        <h3 class="text-success">
-                            <?= number_format($row['total']) ?>
-                        </h3>
-
-                        <div class="progress mb-3">
-
-                            <div class="progress-bar bg-success"
-                                role="progressbar"
-                                style="width: <?= $row['persen'] ?>%">
-
-                            </div>
-
-                        </div>
-
-                        <small class="text-muted d-block mb-3">
-                            <?= $row['persen'] ?>%
-                            dari total relawan
-                        </small>
-
-                        <a href="<?= $row['url'] ?>"
-                            class="btn btn-success btn-sm">
-
-                            <?= $role == 'superadmin'
-                                ? 'Lihat Kelurahan'
-                                : 'Lihat TPS' ?>
-
-                        </a>
-
-                    </div>
-
-                </div>
+                Tidak ada data.
 
             </div>
 
-        <?php endforeach; ?>
+        <?php else: ?>
 
-    </div>
+            <?php foreach ($dataTampil as $row): ?>
 
-<?php endif; ?>
+                <?php if (!empty($row['url'])): ?>
 
-<!-- ==========================================================
-     LEVEL 4
-=========================================================== -->
+                    <a href="<?= $row['url'] ?>"
+                        class="list-group-item list-group-item-action">
 
-<?php if (!empty($dataLevel4)): ?>
+                        <div class="d-flex justify-content-between align-items-center">
 
-    <div class="row">
-
-        <?php foreach ($dataLevel4 as $row): ?>
-
-            <div class="col-lg-4 mb-4">
-
-                <div class="card shadow h-100">
-
-                    <div class="card-body">
-
-                        <?php if (!isset($row['is_tps'])): ?>
-
-                            <h5 class="font-weight-bold">
+                            <strong>
 
                                 <?= e($row['nama']) ?>
 
-                            </h5>
+                            </strong>
 
-                            <h3 class="text-warning">
+                            <span class="badge badge-primary badge-pill">
 
                                 <?= number_format($row['total']) ?>
 
-                            </h3>
+                            </span>
 
-                            <div class="progress mb-3">
+                        </div>
 
-                                <div class="progress-bar bg-warning"
-                                    style="width:<?= $row['persen'] ?>%">
+                    </a>
 
-                                </div>
+                <?php else: ?>
 
-                            </div>
+                    <div class="list-group-item">
 
-                            <small class="text-muted d-block mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
 
-                                <?= $row['persen'] ?>%
-                                dari total relawan
+                            <strong>
 
-                            </small>
+                                <?= e($row['nama']) ?>
 
-                            <a href="<?= $row['url'] ?>"
-                                class="btn btn-warning btn-sm">
+                            </strong>
 
-                                Lihat TPS
+                            <span class="badge badge-secondary badge-pill">
 
-                            </a>
+                                <?= number_format($row['total']) ?>
 
-                        <?php else: ?>
+                            </span>
 
-                            <h5 class="font-weight-bold mb-3">
-
-                                TPS <?= e($row['tps']) ?>
-
-                            </h5>
-
-                            <div class="d-flex justify-content-between align-items-center">
-
-                                <span class="text-muted">
-                                    Jumlah Relawan
-                                </span>
-
-                                <span class="badge badge-primary px-3 py-2">
-
-                                    <?= number_format($row['total']) ?>
-
-                                </span>
-
-                            </div>
-
-                        <?php endif; ?>
+                        </div>
 
                     </div>
 
-                </div>
+                <?php endif; ?>
 
-            </div>
+            <?php endforeach; ?>
 
-        <?php endforeach; ?>
+        <?php endif; ?>
 
     </div>
 
-<?php endif; ?>
+</div>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
