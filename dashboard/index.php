@@ -406,7 +406,8 @@ foreach ($chartLabels as $label) {
 <?php endif; ?>
 
 <?php if ($role === 'admin' || $role === 'superadmin'): ?>
-    <div class="row">
+    <!-- BAR CHART & PIE CHART -->
+    <!-- <div class="row">
         <div class="col-lg-8 mb-4">
             <div class="card shadow">
                 <div class="card-header py-3">
@@ -434,7 +435,7 @@ foreach ($chartLabels as $label) {
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <div class="row">
 
