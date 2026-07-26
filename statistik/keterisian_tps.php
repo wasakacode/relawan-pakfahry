@@ -175,7 +175,7 @@ $persen = $totalTPS > 0
             labels: <?= json_encode($wilayah) ?>,
             datasets: [
                             {
-                                label: "TPS Terisi",
+                                label: "Pendukung",
                                 data: <?= json_encode($tpsTerisiData) ?>,
                                 backgroundColor: "#1cc88a"
                             },
