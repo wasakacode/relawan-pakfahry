@@ -767,7 +767,6 @@ $keteranganTotal = $role === 'superadmin'
             <p class="angka-total">
                 <?= number_format($totalRelawan, 0, ',', '.') ?>
             </p>
-
             <p class="keterangan-total">
                 <?= e($keteranganTotal) ?>
             </p>
@@ -783,29 +782,33 @@ $keteranganTotal = $role === 'superadmin'
 
     <!-- BREADCRUMB -->
     <div class="breadcrumb-wilayah">
-        <?php foreach ($breadcrumb as $index => $item): ?>
-
-            <?php if ($index > 0): ?>
-                <span class="pemisah">&gt;</span>
-            <?php endif; ?>
-
-            <?php
-            $itemTerakhir = $index === count($breadcrumb) - 1;
-            ?>
-
-            <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
-                <a href="<?= e($item['url']) ?>">
-                    <?= e($item['nama']) ?>
-                </a>
-            <?php else: ?>
-                <span class="aktif">
-                    <?= e($item['nama']) ?>
-                </span>
-            <?php endif; ?>
-
+    <?php foreach ($breadcrumb as $index => $item): ?>
+       <?php if ($index > 0): ?>
+            <span class="pemisah">&gt;</span>
+        <?php endif; ?>
+        <?php
+              $itemTerakhir = $index === count($breadcrumb) - 1;
+        $namaBreadcrumb = str_replace(
+            [
+                ' (sesuai dapil admin)',
+                '(sesuai dapil admin)'
+            ],
+            '',
+            $item['nama']
+        );
+        $namaBreadcrumb = trim($namaBreadcrumb);
+        ?>
+        <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
+            <a href="<?= e($item['url']) ?>">
+                <?= e($namaBreadcrumb) ?>
+            </a>
+        <?php else: ?>
+            <span class="aktif">
+                <?= e($namaBreadcrumb) ?>
+            </span>
+        <?php endif; ?>
         <?php endforeach; ?>
     </div>
-
     <div class="judul-level">
         Daftar <?= e($labelLevel[$levelAktif] ?? 'Wilayah') ?>
     </div>
