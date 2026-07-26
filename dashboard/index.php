@@ -226,12 +226,6 @@ if ($role === 'superadmin') {
 |--------------------------------------------------------------------------
 */
 
-/*
-|--------------------------------------------------------------------------
-| Ambil data chart
-|--------------------------------------------------------------------------
-*/
-
 if ($role === 'superadmin') {
 
     // Superadmin melihat statistik PER DAPIL
@@ -268,14 +262,12 @@ ORDER BY
     ");
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 } else {
 
     // Admin tetap berdasarkan kabupaten/kota
     if ($isStatLimited && empty($allowedKabKota)) {
 
         $rows = [];
-
     } elseif ($isStatLimited) {
 
         $placeholders = $makePlaceholders(count($allowedKabKota));
@@ -293,7 +285,6 @@ ORDER BY
         $stmt->execute($allowedKabKota);
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     } else {
 
         $stmt = $pdo->query("
@@ -320,11 +311,9 @@ foreach ($rows as $row) {
     if ($role === 'superadmin') {
 
         $label = trim($row['daerah_pemilihan']);
-
     } else {
 
         $label = trim($row['kab_kota']);
-
     }
 
     $dataMap[$label] = [
@@ -343,7 +332,6 @@ foreach ($rows as $row) {
 if ($role === 'superadmin') {
 
     $chartLabels = array_keys($dataMap);
-
 } else {
 
     if ($isStatLimited) {
@@ -356,7 +344,6 @@ if ($role === 'superadmin') {
                 $chartLabels[] = $kab;
             }
         }
-
     } else {
 
         $chartLabels = $allKabKota;
@@ -766,8 +753,101 @@ foreach ($chartLabels as $label) {
             </div>
 
         </div>
-        
-    </div>
+    <?php endif; ?>
+
+    <?php if ($role === 'relawan'): ?>
+        <div class="row">
+            <div class="col-lg-6">
+
+                <!-- KOTAK PROFIL PENGGUNA -->
+                <div class="card content-card mb-4">
+
+                    <div class="card-header">
+                        <h6 class="m-0">
+                            <i class="fas fa-user-circle mr-2" style="color:#3db7ee;"></i>
+                            Profil Pengguna
+                        </h6>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="profile-box">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+
+                            <div class="profile-name">
+                                <?= e($currentUser['name'] ?? '-') ?>
+                            </div>
+
+                            <div class="profile-role">
+                                <?= e(ucfirst($role)) ?>
+                            </div>
+
+                            <p style="color:#7890a6; font-size:14px; margin-bottom:20px;">
+                                Kecamatan:
+                                <b><?= e($currentUser['kecamatan'] ?? '-') ?></b>
+                            </p>
+
+                            <?php if ($role === 'admin' && !empty($allowedKabKota)): ?>
+                                <p style="color:#7890a6; font-size:13px; line-height:1.6; margin-bottom:20px;">
+                                    Wilayah Dapil:
+                                    <br>
+                                    <b><?= e(implode(', ', $allowedKabKota)) ?></b>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <a href="<?= url('logout.php') ?>" class="quick-action support-logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PUSAT BANTUAN: BERADA DI LUAR KOTAK PROFIL -->
+            <div class="col-lg-6">
+                <div class="support-box">
+                    <div class="support-title">
+                        <i class="fas fa-headset"></i>
+                        <span>Pusat Bantuan</span>
+                    </div>
+
+                    <p class="support-description">
+                        Mengalami kendala teknis atau membutuhkan panduan?
+                        Hubungi tim support kami:
+                    </p>
+
+                    <div class="support-contact">
+                        <a
+                            href="https://wa.me/628871278297"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Hubungi Faza melalui WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>+62 887-1278-297 (Faza)</span>
+                        </a>
+
+                        <a
+                            href="https://wa.me/628871278298"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Hubungi Besta melalui WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>+62 887-1278-298 (Besta)</span>
+                        </a>
+                    </div>
+
+                    <p class="support-note">
+                        <i class="fas fa-phone-alt mr-1"></i>
+                        WhatsApp/Telepon
+                    </p>
+                </div>
+            </div>
+
+        </div>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
