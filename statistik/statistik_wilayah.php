@@ -43,7 +43,6 @@ $dataLevel1 = [];
 $dataLevel2 = [];
 $dataLevel3 = [];
 $dataLevel4 = [];
-$dataLevel5 = [];
 
 $breadcrumb = [];
 
@@ -479,8 +478,7 @@ if ($role == 'superadmin' && $dapil && $kab && !$kec) {
 |--------------------------------------------------------------------------
 | LEVEL 4
 |--------------------------------------------------------------------------
-| Superadmin : Setelah memilih Kecamatan -> tampilkan Desa/Kelurahan
-| Admin      : Setelah memilih Desa -> tampilkan RT / RW
+| Menampilkan daftar TPS beserta jumlah relawan pada setiap TPS.
 |--------------------------------------------------------------------------
 */
 
@@ -526,23 +524,31 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && !$desa) {
 
     /*
     |--------------------------------------------------------------------------
-    | Tampilkan RT / RW
+    | Tampilkan TPS
     |--------------------------------------------------------------------------
     */
 
     $stmt = $pdo->prepare("
         SELECT
-            rt,
-            rw,
-            COUNT(*) AS total
-        FROM profiles
+            t.no_tps,
+            COUNT(p.id) AS total
+        FROM tps_kalsel t
+
+        LEFT JOIN profiles p
+            ON p.type = 'relawan'
+            AND p.kab_kota = t.kabupaten
+            AND p.kecamatan = t.kecamatan
+            AND p.desa_kelurahan = t.kelurahan
+            AND p.tps = t.no_tps
+
         WHERE
-            type='relawan'
-            AND kab_kota = ?
-            AND kecamatan = ?
-            AND desa_kelurahan = ?
-        GROUP BY rt, rw
-        ORDER BY rt, rw
+            t.kabupaten = ?
+            AND t.kecamatan = ?
+            AND t.kelurahan = ?
+
+        GROUP BY t.no_tps
+
+        ORDER BY t.no_tps
     ");
 
     $stmt->execute([
@@ -554,9 +560,9 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && !$desa) {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
         $dataLevel4[] = [
-            'rt'     => $row['rt'],
-            'rw'     => $row['rw'],
-            'total'  => $row['total'],
+            'is_tps' => true,
+            'tps' => $row['no_tps'],
+            'total' => $row['total'],
             'persen' => persen($row['total'], $totalRelawan)
         ];
     }
@@ -566,7 +572,7 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && !$desa) {
 |--------------------------------------------------------------------------
 | LEVEL 5
 |--------------------------------------------------------------------------
-| Superadmin : Setelah memilih Desa -> tampilkan RT / RW
+| Superadmin : Setelah memilih Desa -> tampilkan TPS
 |--------------------------------------------------------------------------
 */
 
@@ -574,23 +580,31 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
 
     /*
     |--------------------------------------------------------------------------
-    | Tampilkan RT / RW
+    | Tampilkan TPS
     |--------------------------------------------------------------------------
     */
 
     $stmt = $pdo->prepare("
         SELECT
-            rt,
-            rw,
-            COUNT(*) AS total
-        FROM profiles
+            t.no_tps,
+            COUNT(p.id) AS total
+        FROM tps_kalsel t
+
+        LEFT JOIN profiles p
+            ON p.type = 'relawan'
+            AND p.kab_kota = t.kabupaten
+            AND p.kecamatan = t.kecamatan
+            AND p.desa_kelurahan = t.kelurahan
+            AND p.tps = t.no_tps
+
         WHERE
-            type = 'relawan'
-            AND kab_kota = ?
-            AND kecamatan = ?
-            AND desa_kelurahan = ?
-        GROUP BY rt, rw
-        ORDER BY rt, rw
+            t.kabupaten = ?
+            AND t.kecamatan = ?
+            AND t.kelurahan = ?
+
+        GROUP BY t.no_tps
+
+        ORDER BY t.no_tps
     ");
 
     $stmt->execute([
@@ -601,10 +615,10 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-        $dataLevel5[] = [
-            'rt'     => $row['rt'],
-            'rw'     => $row['rw'],
-            'total'  => $row['total'],
+        $dataLevel4[] = [
+            'is_tps' => true,
+            'tps' => $row['no_tps'],
+            'total' => $row['total'],
             'persen' => persen($row['total'], $totalRelawan)
         ];
     }
@@ -894,7 +908,7 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
 
                             <?= $role == 'superadmin'
                                 ? 'Lihat Kelurahan'
-                                : 'Lihat RT / RW' ?>
+                                : 'Lihat TPS' ?>
 
                         </a>
 
@@ -926,7 +940,7 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
 
                     <div class="card-body">
 
-                        <?php if (isset($row['nama'])): ?>
+                        <?php if (!isset($row['is_tps'])): ?>
 
                             <h5 class="font-weight-bold">
 
@@ -959,83 +973,33 @@ if ($role == 'superadmin' && $dapil && $kab && $kec && $desa) {
                             <a href="<?= $row['url'] ?>"
                                 class="btn btn-warning btn-sm">
 
-                                Lihat RT / RW
+                                Lihat TPS
 
                             </a>
 
                         <?php else: ?>
 
-                            <h5 class="font-weight-bold">
+                            <h5 class="font-weight-bold mb-3">
 
-                                RT <?= e($row['rt']) ?>
-                                /
-                                RW <?= e($row['rw']) ?>
+                                TPS <?= e($row['tps']) ?>
 
                             </h5>
 
-                            <h2 class="text-success">
+                            <div class="d-flex justify-content-between align-items-center">
 
-                                <?= number_format($row['total']) ?>
+                                <span class="text-muted">
+                                    Jumlah Relawan
+                                </span>
 
-                            </h2>
+                                <span class="badge badge-primary px-3 py-2">
 
-                            <small class="text-muted">
+                                    <?= number_format($row['total']) ?>
 
-                                Relawan
+                                </span>
 
-                            </small>
+                            </div>
 
                         <?php endif; ?>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        <?php endforeach; ?>
-
-    </div>
-
-<?php endif; ?>
-
-<!-- ==========================================================
-     LEVEL 5
-=========================================================== -->
-
-<?php if (!empty($dataLevel5)): ?>
-
-    <div class="row">
-
-        <?php foreach ($dataLevel5 as $row): ?>
-
-            <div class="col-lg-3 mb-4">
-
-                <div class="card border-left-success shadow h-100">
-
-                    <div class="card-body text-center">
-
-                        <h5>
-
-                            RT <?= e($row['rt']) ?>
-
-                            /
-
-                            RW <?= e($row['rw']) ?>
-
-                        </h5>
-
-                        <h2 class="text-success">
-
-                            <?= number_format($row['total']) ?>
-
-                        </h2>
-
-                        <small>
-
-                            Relawan
-
-                        </small>
 
                     </div>
 
