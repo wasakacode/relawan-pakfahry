@@ -14,6 +14,11 @@ require_once __DIR__ . '/../partials/topbar.php';
 $user = current_user();
 $role = $user['role'];
 
+/*
+|--------------------------------------------------------------------------
+| HELPER
+|--------------------------------------------------------------------------
+*/
 
 function buat_url(array $parameter = []): string
 {
@@ -137,7 +142,9 @@ if ($role === 'admin') {
 }
 
 /*
-Total Rerlawan 
+|--------------------------------------------------------------------------
+| TOTAL RELAWAN
+|--------------------------------------------------------------------------
 */
 
 if ($role === 'superadmin') {
@@ -156,8 +163,11 @@ if ($role === 'superadmin') {
 }
 
 /*
+|--------------------------------------------------------------------------
 | VALIDASI DAPIL SUPERADMIN
+|--------------------------------------------------------------------------
 */
+
 $namaDapil = '';
 $kabupatenDapil = [];
 
@@ -243,10 +253,12 @@ if ($role === 'superadmin' && $dapil === 0) {
         FROM dapil
         ORDER BY id
     ");
+
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $daftarKabupaten = normalisasi_daftar_wilayah(
             $row['kab_kota']
         );
+
         $dataTampil[] = [
             'nama'  => $row['daerah_pemilihan'],
             'total' => hitung_relawan_kabupaten(
@@ -259,17 +271,20 @@ if ($role === 'superadmin' && $dapil === 0) {
         ];
     }
 }
+
 /*
 |--------------------------------------------------------------------------
 | LEVEL KABUPATEN/KOTA
 |--------------------------------------------------------------------------
 */
+
 elseif ($kab === '') {
     $levelAktif = 'kabupaten';
 
     $daftarKabupaten = $role === 'superadmin'
         ? $kabupatenDapil
         : $kabupatenAdmin;
+
     foreach ($daftarKabupaten as $namaKabupaten) {
         $stmt = $pdo->prepare("
             SELECT COUNT(*)
@@ -279,15 +294,18 @@ elseif ($kab === '') {
                 AND kab_kota = ?
         ");
         $stmt->execute([$namaKabupaten]);
+
         $parameterUrl = [
             'kab' => $namaKabupaten
         ];
+
         if ($role === 'superadmin') {
             $parameterUrl = [
                 'dapil' => $dapil,
                 'kab'   => $namaKabupaten
             ];
         }
+
         $dataTampil[] = [
             'nama'  => $namaKabupaten,
             'total' => (int) $stmt->fetchColumn(),
@@ -323,10 +341,12 @@ elseif ($kec === '') {
         GROUP BY t.kecamatan
         ORDER BY t.kecamatan
     ");
+
     $stmt->execute([
         $kab,
         $kab
     ]);
+
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $parameterUrl = [
             'kab' => $kab,
@@ -341,6 +361,7 @@ elseif ($kec === '') {
                 'kec'   => $row['kecamatan']
             ];
         }
+
         $dataTampil[] = [
             'nama'  => $row['kecamatan'],
             'total' => (int) $row['total'],
@@ -355,100 +376,8 @@ elseif ($kec === '') {
 |--------------------------------------------------------------------------
 */
 
-<<<<<<< HEAD
 elseif ($desa === '') {
     $levelAktif = 'kelurahan';
-=======
-if ($kab != '' && $kec != '') {
-
-    // Batasi akses admin
-    if ($role == 'admin' && !in_array($kab, $kabupatenAdmin)) {
-        $kab = '';
-    }
-
-    if ($kab != '') {
-
-        $stmt = $pdo->prepare("
-            SELECT
-                t.kelurahan,
-                COUNT(p.id) AS total
-            FROM (
-                SELECT DISTINCT kelurahan
-                FROM tps_kalsel
-                WHERE
-                    kabupaten = ?
-                    AND kecamatan = ?
-            ) t
-
-            LEFT JOIN profiles p
-                ON p.kab_kota = ?
-                AND p.kecamatan = ?
-                AND p.desa_kelurahan = t.kelurahan
-                AND p.type = 'relawan'
-
-            GROUP BY t.kelurahan
-            ORDER BY t.kelurahan
-        ");
-
-        $stmt->execute([
-            $kab,
-            $kec,
-            $kab,
-            $kec
-        ]);
-
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-            if ($role == 'superadmin') {
-
-                $url = '?dapil=' . $dapil .
-                    '&kab=' . urlencode($kab) .
-                    '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['kelurahan']);
-            } else {
-
-                $url = '?kab=' . urlencode($kab) .
-                    '&kec=' . urlencode($kec) .
-                    '&desa=' . urlencode($row['kelurahan']);
-            }
-
-            $dataLevel3[] = [
-                'nama'  => $row['kelurahan'],
-                'total' => $row['total'],
-                'url'   => $url
-            ];
-        }
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| LEVEL 4
-|--------------------------------------------------------------------------
-*/
-
-if ($kab != '' && $kec != '' && $desa != '') {
-
-    // Batasi akses admin
-    if ($role == 'admin' && !in_array($kab, $kabupatenAdmin)) {
-        $kab = '';
-    }
-
-    if ($kab != '') {
-
-        $stmt = $pdo->prepare("
-            SELECT
-                t.no_tps,
-                COUNT(p.id) AS total
-            FROM tps_kalsel t
-
-            LEFT JOIN profiles p
-                ON p.tps = t.no_tps
-                AND p.kab_kota = t.kabupaten
-                AND p.kecamatan = t.kecamatan
-                AND p.desa_kelurahan = t.kelurahan
-                AND p.type = 'relawan'
->>>>>>> 07082fb0f0f149e15e14eab831cf90f2366bb849
 
     $stmt = $pdo->prepare("
         SELECT
@@ -826,7 +755,7 @@ $keteranganTotal = $role === 'superadmin'
     <div class="text-center mb-4">
         <h3 class="font-weight-bold mb-0">
             Statistik Wilayah Relawan
-            <!-- (Role <?= e($judulRole) ?>) -->
+            (Role <?= e($judulRole) ?>)
         </h3>
     </div>
 
@@ -853,35 +782,27 @@ $keteranganTotal = $role === 'superadmin'
     <?php endif; ?>
 
     <!-- BREADCRUMB -->
-   <div class="breadcrumb-wilayah">
-    <?php foreach ($breadcrumb as $index => $item): ?>
+    <div class="breadcrumb-wilayah">
+        <?php foreach ($breadcrumb as $index => $item): ?>
 
-        <?php if ($index > 0): ?>
-            <span class="pemisah">&gt;</span>
-        <?php endif; ?>
+            <?php if ($index > 0): ?>
+                <span class="pemisah">&gt;</span>
+            <?php endif; ?>
 
-        <?php
-        $itemTerakhir = $index === count($breadcrumb) - 1;
-        $namaBreadcrumb = str_replace(
-            [
-                ' (sesuai dapil admin)',
-                '(sesuai dapil admin)'
-            ],
-            '',
-            $item['nama']
-        );
-        
-        $namaBreadcrumb = trim($namaBreadcrumb);
-        ?>
-        <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
-            <a href="<?= e($item['url']) ?>">
-                <?= e($namaBreadcrumb) ?>
-            </a>
-        <?php else: ?>
-            <span class="aktif">
-                <?= e($namaBreadcrumb) ?>
-            </span>
-        <?php endif; ?>
+            <?php
+            $itemTerakhir = $index === count($breadcrumb) - 1;
+            ?>
+
+            <?php if (!$itemTerakhir && $item['url'] !== ''): ?>
+                <a href="<?= e($item['url']) ?>">
+                    <?= e($item['nama']) ?>
+                </a>
+            <?php else: ?>
+                <span class="aktif">
+                    <?= e($item['nama']) ?>
+                </span>
+            <?php endif; ?>
+
         <?php endforeach; ?>
     </div>
 
@@ -901,20 +822,28 @@ $keteranganTotal = $role === 'superadmin'
         </div>
 
     <?php else: ?>
+
         <div class="grid-wilayah">
+
             <?php foreach ($dataTampil as $row): ?>
+
                 <?php
                 $totalKosong = (int) $row['total'] === 0;
                 $punyaUrl = !empty($row['url']);
+
                 $classKartu = 'kartu-wilayah';
+
                 if ($totalKosong) {
                     $classKartu .= ' kosong';
                 }
+
                 if (!$punyaUrl) {
                     $classKartu .= ' tidak-aktif';
                 }
                 ?>
+
                 <?php if ($punyaUrl): ?>
+
                     <a
                         href="<?= e($row['url']) ?>"
                         class="<?= e($classKartu) ?>"
@@ -923,6 +852,7 @@ $keteranganTotal = $role === 'superadmin'
                             <h5 class="nama-wilayah">
                                 <?= e($row['nama']) ?>
                             </h5>
+
                             <p class="jumlah-relawan">
                                 <?= number_format(
                                     (int) $row['total'],
@@ -931,17 +861,21 @@ $keteranganTotal = $role === 'superadmin'
                                     '.'
                                 ) ?>
                             </p>
+
                             <p class="label-relawan">
                                 Relawan
                             </p>
                         </div>
                     </a>
+
                 <?php else: ?>
+
                     <div class="<?= e($classKartu) ?>">
                         <div class="isi-kartu">
                             <h5 class="nama-wilayah">
                                 <?= e($row['nama']) ?>
                             </h5>
+
                             <p class="jumlah-relawan">
                                 <?= number_format(
                                     (int) $row['total'],
@@ -950,14 +884,21 @@ $keteranganTotal = $role === 'superadmin'
                                     '.'
                                 ) ?>
                             </p>
+
                             <p class="label-relawan">
                                 Relawan
                             </p>
                         </div>
                     </div>
+
                 <?php endif; ?>
+
             <?php endforeach; ?>
+
         </div>
+
     <?php endif; ?>
+
 </div>
+
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
