@@ -381,6 +381,91 @@ foreach ($chartLabels as $label) {
 
 ?>
 
+
+<style>
+    .support-box {
+        margin-top: 6px;
+        padding: 20px;
+        background: linear-gradient(135deg, #eef7ff, #f7fbff);
+        border: 1.5px solid #b9dcff;
+        border-radius: 18px;
+        color: #1f3550;
+    }
+
+    .support-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-size: 18px;
+        font-weight: 800;
+        color: #17283f;
+    }
+
+    .support-title i {
+        color: #2faee5;
+        font-size: 22px;
+    }
+
+    .support-description {
+        margin: 0 0 14px;
+        color: #526b82;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .support-contact {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .support-contact a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #17283f;
+        font-size: 15px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: 0.2s ease;
+    }
+
+    .support-contact a i {
+        width: 20px;
+        color: #25a66a;
+        font-size: 18px;
+        text-align: center;
+    }
+
+    .support-contact a:hover {
+        color: #168ed0;
+        transform: translateX(3px);
+        text-decoration: none;
+    }
+
+    .support-note {
+        margin: 12px 0 0;
+        color: #71869b;
+        font-size: 13px;
+    }
+
+    .support-logout {
+        margin-top: 14px;
+    }
+
+    @media (max-width: 576px) {
+        .support-box {
+            padding: 16px;
+        }
+
+        .support-contact a {
+            align-items: flex-start;
+            font-size: 14px;
+        }
+    }
+</style>
+
 <div class="dashboard-hero">
     <div class="hero-content">
         <span class="hero-badge">
@@ -594,7 +679,9 @@ foreach ($chartLabels as $label) {
         </div>
 
         <div class="col-lg-4 mb-4">
-            <div class="card content-card h-100">
+
+            <!-- KOTAK PROFIL PENGGUNA -->
+            <div class="card content-card mb-4">
 
                 <div class="card-header">
                     <h6 class="m-0">
@@ -632,29 +719,52 @@ foreach ($chartLabels as $label) {
                         <?php endif; ?>
                     </div>
 
-                    <a href="<?= url('dashboard/index.php') ?>" class="quick-action">
-                        <i class="fas fa-home"></i> Dashboard
-                    </a>
-
-                    <?php if (in_array($role, ['superadmin', 'admin'])): ?>
-                        <a href="<?= url('admin/create-relawan.php') ?>" class="quick-action">
-                            <i class="fas fa-user-plus"></i> Tambah Relawan
-                        </a>
-                    <?php endif; ?>
-
-                    <?php if (in_array($role, ['superadmin', 'admin', 'relawan'])): ?>
-                        <a href="<?= url('dukungan/create.php') ?>" class="quick-action">
-                            <i class="fas fa-hand-holding-heart"></i> Tambah Dukungan
-                        </a>
-                    <?php endif; ?>
-
-                    <a href="<?= url('logout.php') ?>" class="quick-action">
+                    <a href="<?= url('logout.php') ?>" class="quick-action support-logout">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
 
                 </div>
 
             </div>
+
+            <!-- PUSAT BANTUAN: BERADA DI LUAR KOTAK PROFIL -->
+            <div class="support-box">
+                <div class="support-title">
+                    <i class="fas fa-headset"></i>
+                    <span>Pusat Bantuan SimPAN</span>
+                </div>
+
+                <p class="support-description">
+                    Mengalami kendala teknis atau membutuhkan panduan?
+                    Hubungi tim support kami:
+                </p>
+
+                <div class="support-contact">
+                    <a
+                        href="https://wa.me/628871278297"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Hubungi Faza melalui WhatsApp">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>+62 887-1278-297 (Faza)</span>
+                    </a>
+
+                    <a
+                        href="https://wa.me/628871278298"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Hubungi Besta melalui WhatsApp">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>+62 887-1278-298 (Besta)</span>
+                    </a>
+                </div>
+
+                <p class="support-note">
+                    <i class="fas fa-phone-alt mr-1"></i>
+                    WhatsApp/Telepon
+                </p>
+            </div>
+
         </div>
         
     </div>
