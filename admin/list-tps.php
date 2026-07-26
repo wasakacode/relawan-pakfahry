@@ -31,7 +31,6 @@ if (!in_array($order, $allowedOrder, true)) {
     $order = 'ASC';
 }
 
-
 $sql = "
     SELECT 
         id,
@@ -43,9 +42,7 @@ $sql = "
     FROM tps_kalsel
     WHERE 1=1
 ";
-
 $params = [];
-
 if (!empty($search)) {
 
     $sql .= "
@@ -68,7 +65,6 @@ if (!empty($kabupaten)) {
     $params['kabupaten'] = $kabupaten;
 }
 
-
 if (!empty($kecamatan)) {
 
     $sql .= " AND kecamatan = :kecamatan";
@@ -76,13 +72,13 @@ if (!empty($kecamatan)) {
     $params['kecamatan'] = $kecamatan;
 }
 
-
 if (!empty($kelurahan)) {
 
     $sql .= " AND kelurahan = :kelurahan";
 
     $params['kelurahan'] = $kelurahan;
 }
+
 $sortMap = [
     'provinsi'         => 'provinsi',
     'kabupaten'       => 'kabupaten',
@@ -186,7 +182,6 @@ if ($totalPages > 0 && $page > $totalPages) {
     $no = $offset + 1;
 }
 
-// Pagination Query String
 $queryParams = $_GET;
 unset($queryParams['page']);
 
