@@ -88,6 +88,16 @@ function create_profile($pdo, $type, $userId = null)
 
     // Relawan dibuat oleh admin/superadmin
     if (
+        $type === 'admin' &&
+        current_user() &&
+        in_array(current_user()['role'], ['superadmin'])
+    ) {
+        $statusVerifikasi = 'terdaftar';
+        $profileActive    = 1;
+        $profileComplete  = 1;
+    }
+
+    if (
         $type === 'relawan' &&
         current_user() &&
         in_array(current_user()['role'], ['superadmin', 'admin'])
