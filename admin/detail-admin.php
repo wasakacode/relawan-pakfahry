@@ -209,7 +209,7 @@ require_once __DIR__ . '/../partials/topbar.php';
                 </p>
 
                 <span class="badge badge-primary px-3 py-2">
-                    Admin / Koordinator Kecamatan
+                    Admin
                 </span>
 
                 <hr>
