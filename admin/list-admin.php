@@ -189,7 +189,7 @@ function sortLink($column, $label)
 }
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Data Admin</h1>
+<h1 class="h3 mb-4 text-gray-800">Data Admin (Koordinator Kecamatan)</h1>
 
 <div class="card content-card shadow mb-4">
 
@@ -310,6 +310,10 @@ function sortLink($column, $label)
                         <th>Detail</th>
 
                         <th>
+                            List Relawan
+                        </th>
+
+                        <th>
                             <?= sortLink('is_active', 'Status') ?>
                         </th>
 
@@ -340,6 +344,14 @@ function sortLink($column, $label)
                                         <i class="fas fa-eye"></i> Lihat Data
 
                                     </a>
+                                </td>
+
+                                <td>
+                                    <a href="<?= url('admin/relawan_list.php?admin=' . $r['id']) ?>"
+                                        class="btn btn-secondary btn-sm">
+                                            <i class="fas fa-users"></i>
+                                            List Relawan
+                                        </a>
                                 </td>
 
                                 <td>
