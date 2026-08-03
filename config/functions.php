@@ -1,29 +1,63 @@
 <?php
 function upload_file($field, $folder)
 {
-    if (!isset($_FILES[$field]) || $_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
+    if (!isset($_FILES[$field])) {
         return null;
     }
 
-    $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-
-    if (!in_array($_FILES[$field]['type'], $allowed)) {
+    if ($_FILES[$field]['error'] === UPLOAD_ERR_NO_FILE) {
         return null;
     }
 
-    $ext = pathinfo($_FILES[$field]['name'], PATHINFO_EXTENSION);
-    $name = uniqid($field . '_') . '.' . $ext;
+    if ($_FILES[$field]['error'] !== UPLOAD_ERR_OK) {
+        throw new Exception("Terjadi kesalahan saat mengunggah file {$field}.");
+    }
 
-    $targetDir = __DIR__ . '/../uploads/' . $folder;
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+
+    $originalName = $_FILES[$field]['name'];
+    $tmpFile      = $_FILES[$field]['tmp_name'];
+    $extension    = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+    if (!in_array($extension, $allowedExtensions, true)) {
+        throw new Exception(
+            "File {$field} harus berupa JPG, JPEG, PNG, atau PDF."
+        );
+    }
+
+    // Maksimal 5 MB
+    if ($_FILES[$field]['size'] > 5 * 1024 * 1024) {
+        throw new Exception(
+            "Ukuran file {$field} maksimal 5 MB."
+        );
+    }
+
+    $targetDir = dirname(__DIR__) . '/uploads/' . $folder;
 
     if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0777, true);
+        if (!mkdir($targetDir, 0777, true)) {
+            throw new Exception(
+                "Folder upload {$folder} gagal dibuat."
+            );
+        }
     }
 
-    $target = $targetDir . '/' . $name;
-    move_uploaded_file($_FILES[$field]['tmp_name'], $target);
+    if (!is_writable($targetDir)) {
+        throw new Exception(
+            "Folder uploads/{$folder} tidak dapat ditulisi."
+        );
+    }
 
-    return 'uploads/' . $folder . '/' . $name;
+    $fileName = uniqid($field . '_', true) . '.' . $extension;
+    $targetFile = $targetDir . '/' . $fileName;
+
+    if (!move_uploaded_file($tmpFile, $targetFile)) {
+        throw new Exception(
+            "File {$field} gagal disimpan ke folder upload."
+        );
+    }
+
+    return 'uploads/' . $folder . '/' . $fileName;
 }
 
 function create_profile($pdo, $type, $userId = null)
