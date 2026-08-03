@@ -8,11 +8,7 @@ require_role([
     'relawan'
 ]);
 
-/*
-|--------------------------------------------------------------------------
-| Ambil Data Relawan
-|--------------------------------------------------------------------------
-*/
+
 
 if (current_user()['role'] === 'relawan') {
 
@@ -105,11 +101,6 @@ if (current_user()['role'] === 'relawan') {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| Data Relawan
-|--------------------------------------------------------------------------
-*/
 
 $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -129,12 +120,6 @@ if (!$data) {
 
 $id = $data['id'];
 
-/*
-|--------------------------------------------------------------------------
-| Data Anggota Keluarga
-|--------------------------------------------------------------------------
-*/
-
 $familyStmt = $pdo->prepare("
     SELECT *
     FROM family_members
@@ -145,12 +130,6 @@ $familyStmt = $pdo->prepare("
 $familyStmt->execute([$id]);
 
 $familyMembers = $familyStmt->fetchAll(PDO::FETCH_ASSOC);
-
-/*
-|--------------------------------------------------------------------------
-| Daftar Admin
-|--------------------------------------------------------------------------
-*/
 
 $stmtAdmin = $pdo->query("
     SELECT
@@ -178,12 +157,6 @@ $stmtAdmin = $pdo->query("
 
 $adminList = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
 
-/*
-|--------------------------------------------------------------------------
-| Admin Yang Dipilih
-|--------------------------------------------------------------------------
-*/
-
 $stmtAdmin = $pdo->prepare("
     SELECT admin_profile_id
     FROM profile_admin
@@ -201,12 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $errors = [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validasi
-        |--------------------------------------------------------------------------
-        */
 
         if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
             $errors[] = 'NIK harus terdiri dari 16 digit angka';
@@ -260,12 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirect('admin/edit-relawan.php?id=' . $data['id']);
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Update Akun
-        |--------------------------------------------------------------------------
-        */
 
         $username      = trim($_POST['username'] ?? '');
         $passwordBaru  = trim($_POST['password'] ?? '');
@@ -356,12 +317,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Status Verifikasi
-        |--------------------------------------------------------------------------
-        */
-
         $profileComplete = $data['profile_complete'];
         $statusVerifikasi = $data['status_verifikasi'];
         $catatanVerifikasi = $data['catatan_verifikasi'];
@@ -373,12 +328,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Hapus alasan verifikasi lama
             $catatanVerifikasi = null;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Update Profile
-        |--------------------------------------------------------------------------
-        */
 
         $stmtProfile = $pdo->prepare("
             UPDATE profiles SET
@@ -435,12 +384,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['id']
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update Anggota Keluarga
-        |--------------------------------------------------------------------------
-        */
-
         $deleteFamily = $pdo->prepare("
             DELETE FROM family_members
             WHERE profile_id = ?
@@ -485,12 +428,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Upload Dokumen (jika diganti)
-        |--------------------------------------------------------------------------
-        */
 
         $foto_ktp = $data['foto_ktp'];
 
@@ -554,12 +491,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Admin Penanggung Jawab
-        |--------------------------------------------------------------------------
-        */
-
         if (current_user()['role'] !== 'relawan') {
 
             $stmtAdmin = $pdo->prepare("
@@ -591,13 +522,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Commit
-        |--------------------------------------------------------------------------
-        */
-
         $pdo->commit();
 
         if (current_user()['role'] === 'relawan') {
@@ -655,7 +579,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </a>
 </div>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
