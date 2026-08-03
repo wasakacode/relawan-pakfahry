@@ -47,6 +47,7 @@ if (!$data) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // VALIDASI FORMAT
+        $pdo->beginTransaction();
         $errors = [];
 
         if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
@@ -250,6 +251,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id
         ]);
 
+        $pdo->commit();
+
         flash('success', 'Data dukungan berhasil diperbarui.');
         redirect('dukungan/detail.php?id=' . $data['id']);
     } catch (Exception $e) {
@@ -270,7 +273,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </a>
 </div>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
@@ -789,15 +792,18 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>Foto KTP <span class="text-danger">*</span></label>
+
                 <?php if (!empty($data['foto_ktp'])): ?>
                     <img src="../<?= e($data['foto_ktp']) ?>"
                         class="img-thumbnail"
                         style="max-height:180px;">
                 <?php endif; ?>
+
                 <input type="file"
                     name="foto_ktp"
                     class="form-control-file"
                     accept=".pdf,image/*">
+
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -805,21 +811,24 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>Foto Diri <span class="text-danger">*</span></label>
+
                 <?php if (!empty($data['foto_diri'])): ?>
                     <img src="../<?= e($data['foto_diri']) ?>"
                         class="img-thumbnail"
                         style="max-height:180px;">
                 <?php endif; ?>
+
                 <input type="file"
                     name="foto_diri"
                     class="form-control-file"
                     accept=".pdf,image/*">
+
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 
-            <!-- Role Relawan -->
+            <!-- Role Dukungan -->
             <div class="form-group col-md-4">
                 <label>Foto Kartu Keluarga <span class="text-danger">*</span></label>
                 <?php if (!empty($data['foto_kartu_keluarga'])): ?>
