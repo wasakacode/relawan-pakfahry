@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         $pdo->commit();
-        
+
         redirect('login.php');
         exit;
     } catch (Exception $e) {
@@ -193,45 +193,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         /* ===========================
-        WRAPPER
-        =========================== */
+       WRAPPER
+    =========================== */
 
         .signup-wrapper {
-            width: 1000px;
+            width: 1100px;
             max-width: 95%;
-            min-height: 720px;
-
+            min-height: 750px;
             position: relative;
-
             display: flex;
             justify-content: center;
             align-items: center;
-
             padding: 50px 0;
-
             background: rgba(255, 255, 255, .18);
             backdrop-filter: blur(10px);
-
             border-radius: 30px;
             overflow: hidden;
-
             box-shadow: 0 30px 80px rgba(20, 80, 120, .25);
         }
 
         /* ===========================
-   BACKGROUND SHAPE
-=========================== */
+       BACKGROUND SHAPE
+    =========================== */
 
         .shape-left {
             position: absolute;
             left: -60px;
             bottom: -70px;
-
             width: 340px;
             height: 260px;
-
             background: #77ccef;
-
             border-radius: 0 180px 0 0;
         }
 
@@ -239,14 +230,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             left: 170px;
             bottom: 105px;
-
             width: 370px;
             height: 90px;
-
             background: #fff;
-
             border-radius: 22px;
-
             transform: skewY(-8deg);
         }
 
@@ -254,16 +241,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             right: -110px;
             top: 120px;
-
             width: 410px;
             height: 320px;
-
-            background: linear-gradient(135deg,
-                    #ffffff 0%,
-                    #ffffff 45%,
-                    #4eb7e7 46%,
-                    #229cda 100%);
-
+            background: linear-gradient(135deg, #fff 0%, #fff 45%, #4eb7e7 46%, #229cda 100%);
             border-radius: 180px 0 0 180px;
         }
 
@@ -271,339 +251,378 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             top: -70px;
             left: 330px;
-
             width: 240px;
             height: 150px;
-
             background: #fff;
-
             border-radius: 0 0 120px 120px;
-
             transform: rotate(-8deg);
         }
 
         /* ===========================
-   CARD
-=========================== */
+       CARD
+    =========================== */
 
         .signup-card {
-
             position: relative;
-
-            width: 430px;
-            max-width: 90%;
-
+            width: 700px;
+            max-width: 95%;
+            min-height: 760px;
             background: #fff;
-
             padding: 40px;
-
             border-radius: 25px;
-
             box-shadow: 0 22px 55px rgba(18, 83, 130, .20);
-
             z-index: 5;
-
         }
 
         .signup-card h2 {
-
             text-align: center;
-
             color: #1f3b57;
-
             font-size: 32px;
-
             font-weight: 800;
-
             margin-bottom: 8px;
         }
 
         .signup-card p {
-
             text-align: center;
-
             color: #8a9bad;
-
             font-size: 14px;
-
             line-height: 1.5;
-
             margin-bottom: 28px;
         }
 
         /* ===========================
-   FORM
-=========================== */
+       PROGRESS BAR
+    =========================== */
 
-        .form-group {
-
-            margin-bottom: 18px;
+        .progress {
+            height: 8px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #e9ecef;
+            margin-bottom: 25px;
         }
 
-        .form-group label {
-
-            display: block;
-
-            font-size: 14px;
-
-            font-weight: 600;
-
-            color: #324a5f;
-
-            margin-bottom: 8px;
-        }
-
-        .form-group {
-
-            position: relative;
-        }
-
-        .form-control {
-
-            width: 100%;
-
-            height: 50px;
-
-            border: none;
-
-            outline: none;
-
-            border-radius: 12px;
-
-            background: #f3f8fc;
-
-            padding: 0 50px 0 16px;
-
-            font-size: 14px;
-
-            color: #2b3f52;
-
-            transition: .2s;
-        }
-
-        .form-control:focus {
-
-            background: #eef8ff;
-
-            box-shadow: 0 0 0 3px rgba(95, 190, 235, .22);
+        .progress-bar {
+            width: 25%;
+            height: 100%;
+            background: linear-gradient(90deg, #3db7ee, #118dd0);
+            transition: .35s;
         }
 
         /* ===========================
-   PASSWORD BUTTON
-=========================== */
+       STEP INDICATOR
+    =========================== */
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 35px;
+        }
+
+        .step-circle {
+            flex: 1;
+            position: relative;
+            text-align: center;
+        }
+
+        .step-circle:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 60%;
+            width: 80%;
+            height: 3px;
+            background: #dfe6ec;
+            z-index: 0;
+        }
+
+        .step-circle span {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background: #dfe6ec;
+            color: #6c757d;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: .3s;
+        }
+
+        .step-circle.active span {
+            background: #118dd0;
+            color: #fff;
+        }
+
+        .step-circle.done span {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        .step-circle small {
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        /* ===========================
+       STEP CONTENT
+    =========================== */
+
+        .step {
+            display: none;
+            animation: fade .35s ease;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateX(25px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ===========================
+       FORM
+    =========================== */
+
+        .form-group {
+            margin-bottom: 18px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #324a5f;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            height: 50px;
+            border: none;
+            outline: none;
+            border-radius: 12px;
+            background: #f3f8fc;
+            padding: 0 16px;
+            font-size: 14px;
+            transition: .25s;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            padding-top: 12px;
+            resize: vertical;
+        }
+
+        .form-control:focus {
+            background: #eef8ff;
+            box-shadow: 0 0 0 3px rgba(95, 190, 235, .25);
+        }
+
+        /* ===========================
+       PASSWORD BUTTON
+    =========================== */
 
         .toggle-password {
-
             position: absolute;
-
             right: 15px;
-
             top: 40px;
-
             border: none;
-
             background: none;
-
-            color: #9fb4c7;
-
             cursor: pointer;
-
+            color: #9fb4c7;
             font-size: 16px;
         }
 
         .toggle-password:hover {
-
             color: #118dd0;
         }
 
         /* ===========================
-   VALIDATION
-=========================== */
+       VALIDATION
+    =========================== */
 
         .text-danger {
-
             display: block;
-
             margin-top: 6px;
-
             color: #e74c3c;
-
             font-size: 12px;
         }
 
         .is-valid {
-
-            border: 2px solid #2ecc71;
+            border: 2px solid #2ecc71 !important;
         }
 
         .is-invalid {
-
-            border: 2px solid #e74c3c;
+            border: 2px solid #e74c3c !important;
         }
 
         /* ===========================
-   ALERT
-=========================== */
+       ALERT
+    =========================== */
 
         .alert {
-
             background: #ffe8e8;
-
             color: #c0392b;
-
             border-radius: 12px;
-
             padding: 12px;
-
             font-size: 13px;
-
-            margin-bottom: 18px;
-
+            margin-bottom: 20px;
             text-align: center;
         }
 
         /* ===========================
-   BUTTON
-=========================== */
+       BUTTON WIZARD
+    =========================== */
 
-        .btn-login {
-
-            width: 100%;
-
-            height: 50px;
-
-            border: none;
-
-            border-radius: 12px;
-
-            background: linear-gradient(135deg,
-                    #3db7ee,
-                    #118dd0);
-
-            color: #fff;
-
-            font-weight: 700;
-
-            font-size: 15px;
-
-            cursor: pointer;
-
-            transition: .25s;
-
-            box-shadow: 0 12px 24px rgba(17, 141, 208, .28);
+        .wizard-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 35px;
         }
 
-        .btn-login:hover {
+        #prevBtn,
+        #nextBtn,
+        #submitBtn {
+            height: 50px;
+            border: none;
+            border-radius: 12px;
+            padding: 0 28px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .25s;
+        }
 
+        #prevBtn {
+            background: #e9ecef;
+            color: #555;
+        }
+
+        #prevBtn:hover {
+            background: #d6d8db;
+        }
+
+        #nextBtn,
+        #submitBtn {
+            background: linear-gradient(135deg, #3db7ee, #118dd0);
+            color: white;
+            box-shadow: 0 12px 24px rgba(17, 141, 208, .25);
+        }
+
+        #nextBtn:hover,
+        #submitBtn:hover {
             transform: translateY(-2px);
+        }
 
-            box-shadow: 0 16px 28px rgba(17, 141, 208, .34);
+        #submitBtn {
+            display: none;
         }
 
         /* ===========================
-   LOGIN LINK
-=========================== */
+       LOGIN LINK
+    =========================== */
 
         .signup-text {
-
-            margin: 22px 0 12px;
-
+            margin: 25px 0 12px;
             text-align: center;
-
             color: #8a9bad;
-
             font-size: 13px;
         }
 
         .btn-secondary {
-
             display: flex;
-
             justify-content: center;
-
             align-items: center;
-
             gap: 8px;
-
             width: 100%;
-
             height: 48px;
-
             border: 2px solid #118dd0;
-
             border-radius: 12px;
-
             color: #118dd0;
-
             background: #fff;
-
             text-decoration: none;
-
             font-weight: 700;
-
             transition: .25s;
         }
 
         .btn-secondary:hover {
-
             background: #118dd0;
-
             color: #fff;
-
             text-decoration: none;
         }
 
         /* ===========================
-   MOBILE
-=========================== */
+       RESPONSIVE
+    =========================== */
 
-        @media(max-width:768px) {
+        @media (max-width:768px) {
 
             body {
                 padding: 20px;
             }
 
-
             .signup-wrapper {
-
+                width: 100%;
                 min-height: 100vh;
-
-                padding: 40px 0;
-
                 border-radius: 20px;
             }
 
             .signup-card {
-
-                width: 92%;
-                padding: 28px;
-
+                width: 100%;
+                min-height: auto;
+                padding: 25px;
             }
 
-            .signup-card h2 {
+            .step-indicator small {
+                font-size: 10px;
+            }
 
-                font-size: 28px;
+            .step-circle span {
+                width: 34px;
+                height: 34px;
+            }
+
+            .wizard-buttons {
+                flex-direction: column;
+            }
+
+            #prevBtn,
+            #nextBtn,
+            #submitBtn {
+                width: 100%;
+            }
+
+            .shape-bottom {
+                display: none;
             }
 
             .shape-left {
-
                 width: 250px;
                 height: 180px;
             }
 
             .shape-right {
-
                 width: 250px;
                 height: 220px;
             }
-
-            .shape-bottom {
-
-                display: none;
-            }
-
         }
     </style>
+
 </head>
 
 <body>
@@ -629,151 +648,538 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form method="POST">
+            <form method="POST" id="registerForm">
 
-                <div class="form-group">
-                    <label>NIK</label>
-                    <input
-                        type="text"
-                        id="nik"
-                        name="nik"
-                        class="form-control"
-                        value="<?= htmlspecialchars($_POST['nik'] ?? '') ?>"
-                        placeholder="Masukkan NIK"
-                        maxlength="16"
-                        required>
+                <!-- =========================
+                    WIZARD HEADER
+                ========================== -->
 
-                    <small id="errorNIK" class="text-danger"></small>
-                </div>
-                <script>
-                    function validasiNIK() {
+                <div class="wizard-header">
 
-                        let input = document.getElementById("nik");
-                        let error = document.getElementById("errorNIK");
+                    <div class="progress">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
 
-                        // Hanya boleh angka
-                        input.value = input.value.replace(/[^0-9]/g, '');
+                    <div class="step-indicator">
 
-                        if (input.value === "") {
-                            error.innerHTML = "";
-                            input.classList.remove("is-valid");
-                            input.classList.remove("is-invalid");
-                        } else if (input.value.length === 16) {
-                            error.innerHTML = "";
-                            input.classList.remove("is-invalid");
-                            input.classList.add("is-valid");
-                        } else {
-                            error.innerHTML = "NIK harus terdiri dari 16 digit angka";
-                            input.classList.remove("is-valid");
-                            input.classList.add("is-invalid");
-                        }
-                    }
-                </script>
+                        <div class="step-circle active">
+                            <span>1</span>
+                            <small>Data</small>
+                        </div>
 
-                <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input
-                        name="nama_lengkap"
-                        class="form-control"
-                        placeholder="Masukkan Nama Lengkap"
-                        value="<?= htmlspecialchars($_POST['nama_lengkap'] ?? '') ?>"
-                        required>
+                        <div class="step-circle">
+                            <span>2</span>
+                            <small>Wilayah</small>
+                        </div>
+
+                        <div class="step-circle">
+                            <span>3</span>
+                            <small>Kontak</small>
+                        </div>
+
+                        <div class="step-circle">
+                            <span>4</span>
+                            <small>Akun</small>
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="form-group">
-                    <label>Username</label>
-                    <input
-                        name="username"
-                        class="form-control"
-                        placeholder="Masukkan Username"
-                        value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                        required>
+                <!-- =========================
+                        STEP 1
+                ========================== -->
+
+                <div class="step active">
+
+                    <h4 class="step-title">
+                        Data Kependudukan
+                    </h4>
+
+                    <div class="row">
+
+                        <div class="form-group col-md-4">
+                            <label>NIK</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="nik"
+                                maxlength="16"
+                                placeholder="Masukkan NIK">
+
+                        </div>
+
+                        <div class="form-group col-md-8">
+                            <label>Nama Lengkap</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="nama_lengkap"
+                                placeholder="Nama Lengkap">
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label>Tempat Lahir</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="tempat_lahir">
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label>Tanggal Lahir</label>
+
+                            <input
+                                type="date"
+                                class="form-control"
+                                name="tanggal_lahir">
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+
+                            <label>Jenis Kelamin</label>
+
+                            <select
+                                class="form-control"
+                                name="jenis_kelamin">
+
+                                <option value="">Pilih</option>
+                                <option>Laki-laki</option>
+                                <option>Perempuan</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-3">
+
+                            <label>Golongan Darah</label>
+
+                            <select class="form-control">
+
+                                <option>Pilih</option>
+                                <option>A</option>
+                                <option>B</option>
+                                <option>AB</option>
+                                <option>O</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-3">
+
+                            <label>Status Pernikahan</label>
+
+                            <select class="form-control">
+
+                                <option>Pilih</option>
+                                <option>Belum Menikah</option>
+                                <option>Sudah Menikah</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-3">
+
+                            <label>Agama</label>
+
+                            <select class="form-control">
+
+                                <option>Pilih</option>
+                                <option>Islam</option>
+                                <option>Kristen</option>
+                                <option>Katolik</option>
+                                <option>Hindu</option>
+                                <option>Budha</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-3">
+
+                            <label>Pekerjaan</label>
+
+                            <input
+                                class="form-control"
+                                name="pekerjaan">
+
+                        </div>
+
+                        <div class="form-group col-md-12">
+
+                            <label>Alamat</label>
+
+                            <textarea
+                                class="form-control"
+                                name="alamat"></textarea>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="form-group">
-                    <label>Password</label>
+                <!-- =========================
+        STEP 2
+========================== -->
 
-                    <input
-                        type="password"
-                        name="password"
-                        id="password"
-                        class="form-control"
-                        placeholder="Minimal 6 karakter"
-                        oninput="validasiPassword()"
-                        required>
+                <div class="step">
+
+                    <h4 class="step-title">
+                        Pemetaan Wilayah
+                    </h4>
+
+                    <div class="row">
+
+                        <div class="form-group col-md-6">
+
+                            <label>Provinsi</label>
+
+                            <select
+                                name="provinsi"
+                                id="provinsi"
+                                class="form-control">
+
+                                <option value="">Pilih Provinsi</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Kabupaten / Kota</label>
+
+                            <select
+                                name="kab_kota"
+                                id="kab_kota"
+                                class="form-control">
+
+                                <option value="">
+                                    Pilih Kabupaten / Kota
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Kecamatan</label>
+
+                            <select
+                                name="kecamatan"
+                                id="kecamatan"
+                                class="form-control">
+
+                                <option value="">
+                                    Pilih Kecamatan
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Desa / Kelurahan</label>
+
+                            <select
+                                name="desa_kelurahan"
+                                id="desa_kelurahan"
+                                class="form-control">
+
+                                <option value="">
+                                    Pilih Desa / Kelurahan
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+
+                            <label>RT</label>
+
+                            <input
+                                type="text"
+                                name="rt"
+                                maxlength="3"
+                                class="form-control"
+                                placeholder="001">
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+
+                            <label>RW</label>
+
+                            <input
+                                type="text"
+                                name="rw"
+                                maxlength="3"
+                                class="form-control"
+                                placeholder="001">
+
+                        </div>
+
+                        <div class="form-group col-md-4">
+
+                            <label>TPS</label>
+
+                            <input
+                                type="text"
+                                name="tps"
+                                maxlength="3"
+                                class="form-control"
+                                placeholder="001">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- =========================
+        STEP 3
+========================== -->
+
+                <div class="step">
+
+                    <h4 class="step-title">
+                        Kontak & Dokumen
+                    </h4>
+
+                    <div class="row">
+
+                        <div class="form-group col-md-6">
+
+                            <label>Nomor KK</label>
+
+                            <input
+                                type="text"
+                                name="nomor_kk"
+                                maxlength="16"
+                                class="form-control"
+                                placeholder="Masukkan Nomor KK">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Nomor Handphone</label>
+
+                            <input
+                                type="text"
+                                name="nomor_hp"
+                                class="form-control"
+                                placeholder="08xxxxxxxxxx">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Nomor WhatsApp</label>
+
+                            <input
+                                type="text"
+                                name="nomor_wa"
+                                class="form-control"
+                                placeholder="08xxxxxxxxxx">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Upload Foto KTP</label>
+
+                            <input
+                                type="file"
+                                name="foto_ktp"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Upload Foto Diri</label>
+
+                            <input
+                                type="file"
+                                name="foto_diri"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Upload Foto KK</label>
+
+                            <input
+                                type="file"
+                                name="foto_kk"
+                                class="form-control">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- =========================
+                        STEP 4
+                ========================== -->
+
+                <div class="step">
+
+                    <h4 class="step-title">
+                        Akun Relawan
+                    </h4>
+
+                    <div class="row">
+
+                        <div class="form-group col-md-12">
+
+                            <label>Username</label>
+
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                class="form-control"
+                                placeholder="Minimal 4 karakter">
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Password</label>
+
+                            <div class="password-wrapper">
+
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    class="form-control"
+                                    placeholder="Minimal 6 karakter">
+
+                                <button
+                                    type="button"
+                                    class="toggle-password"
+                                    data-target="password">
+
+                                    <i class="fas fa-eye"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-group col-md-6">
+
+                            <label>Konfirmasi Password</label>
+
+                            <div class="password-wrapper">
+
+                                <input
+                                    type="password"
+                                    id="konfirmasi_password"
+                                    name="konfirmasi_password"
+                                    class="form-control"
+                                    placeholder="Ulangi Password">
+
+                                <button
+                                    type="button"
+                                    class="toggle-password"
+                                    data-target="konfirmasi_password">
+
+                                    <i class="fas fa-eye"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-group col-md-12">
+
+                            <label class="checkbox-container">
+
+                                <input
+                                    type="checkbox"
+                                    id="setuju">
+
+                                <span>
+                                    Saya menyatakan bahwa seluruh data yang saya isi adalah benar.
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="wizard-buttons">
 
                     <button
                         type="button"
-                        class="toggle-password"
-                        id="togglePassword">
-                        <i class="fas fa-eye"></i>
+                        id="prevBtn"
+                        class="btn-secondary">
+
+                        <i class="fas fa-arrow-left"></i>
+                        Kembali
+
                     </button>
-
-                    <small id="errorPassword" class="text-danger"></small>
-                </div>
-
-                <script>
-                    function validasiPassword() {
-
-                        let input = document.getElementById("password");
-                        let error = document.getElementById("errorPassword");
-
-                        if (input.value === "") {
-
-                            error.innerHTML = "";
-                            input.classList.remove("is-valid");
-                            input.classList.remove("is-invalid");
-
-                        } else if (input.value.length >= 6) {
-
-                            error.innerHTML = "";
-                            input.classList.remove("is-invalid");
-                            input.classList.add("is-valid");
-
-                        } else {
-
-                            error.innerHTML = "Password minimal 6 karakter";
-                            input.classList.remove("is-valid");
-                            input.classList.add("is-invalid");
-
-                        }
-                    }
-                </script>
-
-                <div class="form-group">
-                    <label>Konfirmasi Password</label>
-
-                    <input
-                        type="password"
-                        name="konfirmasi_password"
-                        id="konfirmasi_password"
-                        class="form-control"
-                        placeholder="Ulangi Password"
-                        oninput="validasiKonfirmasi()"
-                        required>
 
                     <button
                         type="button"
-                        class="toggle-password"
-                        id="toggleKonfirmasi">
-                        <i class="fas fa-eye"></i>
+                        id="nextBtn"
+                        class="btn-login">
+
+                        Selanjutnya
+                        <i class="fas fa-arrow-right"></i>
+
                     </button>
 
-                    <small id="errorKonfirmasi" class="text-danger"></small>
+                    <button
+                        type="submit"
+                        id="submitBtn"
+                        class="btn-login">
+
+                        <i class="fas fa-user-plus"></i>
+                        Daftar Relawan
+
+                    </button>
+
                 </div>
 
-                <button type="submit" class="btn-login">
-                    <i class="fas fa-user-plus"></i>
-                    Daftar Relawan
-                </button>
+                <div class="signup-text">
 
-                <p class="signup-text">
-                    Sudah memiliki akun?
-                </p>
+                    Sudah mempunyai akun?
 
-                <a href="login.php" class="btn-secondary">
+                </div>
+
+                <a
+                    href="login.php"
+                    class="btn-secondary">
+
                     <i class="fas fa-sign-in-alt"></i>
+
                     Masuk
+
                 </a>
 
             </form>
@@ -783,6 +1189,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
 </body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        let currentStep = 0;
+
+        const steps = document.querySelectorAll(".step");
+        const circles = document.querySelectorAll(".step-circle");
+
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        const submitBtn = document.getElementById("submitBtn");
+        const progressBar = document.getElementById("progressBar");
+
+        function showStep(index) {
+
+            // Tampilkan step aktif
+            steps.forEach(step => step.classList.remove("active"));
+            steps[index].classList.add("active");
+
+            // Update lingkaran step
+            circles.forEach((circle, i) => {
+
+                circle.classList.remove("active", "done");
+
+                if (i < index) {
+                    circle.classList.add("done");
+                } else if (i === index) {
+                    circle.classList.add("active");
+                }
+
+            });
+
+            // Update progress bar
+            let percent = ((index + 1) / steps.length) * 100;
+            progressBar.style.width = percent + "%";
+
+            // Tombol
+            prevBtn.style.display = index === 0 ? "none" : "inline-block";
+            nextBtn.style.display = index === steps.length - 1 ? "none" : "inline-block";
+            submitBtn.style.display = index === steps.length - 1 ? "inline-block" : "none";
+
+        }
+
+        // Tampilkan step pertama
+        showStep(currentStep);
+
+        nextBtn.addEventListener("click", function() {
+
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                showStep(currentStep);
+            }
+
+        });
+
+        prevBtn.addEventListener("click", function() {
+
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+            }
+
+        });
+
+    });
+</script>
 
 <script>
     const btn = document.getElementById('togglePassword');
