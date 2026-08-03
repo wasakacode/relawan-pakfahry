@@ -291,4 +291,61 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     });
 </script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const nomorTelepon =
+        document.getElementById('nomor_telepon');
+
+    const nomorWhatsApp =
+        document.getElementById('nomor_whatsapp');
+
+    const waSamaTelepon =
+        document.getElementById('wa_sama_telepon');
+
+    if (
+        !nomorTelepon ||
+        !nomorWhatsApp ||
+        !waSamaTelepon
+    ) {
+        return;
+    }
+
+    function aturNomorWhatsApp() {
+
+        if (waSamaTelepon.checked) {
+            nomorWhatsApp.value = nomorTelepon.value;
+            nomorWhatsApp.readOnly = true;
+            nomorWhatsApp.classList.add('bg-light');
+        } else {
+            nomorWhatsApp.readOnly = false;
+            nomorWhatsApp.classList.remove('bg-light');
+        }
+    }
+
+    waSamaTelepon.addEventListener(
+        'change',
+        aturNomorWhatsApp
+    );
+
+    nomorTelepon.addEventListener('input', function () {
+
+        nomorTelepon.value =
+            nomorTelepon.value.replace(/[^0-9]/g, '');
+
+        if (waSamaTelepon.checked) {
+            nomorWhatsApp.value = nomorTelepon.value;
+        }
+    });
+
+    nomorWhatsApp.addEventListener('input', function () {
+        nomorWhatsApp.value =
+            nomorWhatsApp.value.replace(/[^0-9]/g, '');
+    });
+
+    aturNomorWhatsApp();
+});
+</script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

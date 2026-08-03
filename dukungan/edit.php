@@ -270,7 +270,7 @@ require_once __DIR__ . '/../partials/topbar.php';
     </a>
 </div>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
