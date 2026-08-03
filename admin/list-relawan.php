@@ -327,9 +327,6 @@ function sortLink($column, $label)
 
                         <th>No</th>
 
-                        <th>
-                            <?= sortLink('nik', 'NIK') ?>
-                        </th>
 
                         <th>
                             <?= sortLink('nama_lengkap', 'Nama') ?>
@@ -361,11 +358,6 @@ function sortLink($column, $label)
                             <tr>
                                 <!-- No -->
                                 <td><?= $i + 1 ?></td>
-
-                                <!-- NIK -->
-                                <td>
-                                    <b><?= e($r['nik']) ?></b>
-                                </td>
 
                                 <!-- Nama -->
                                 <td><?= e($r['nama_lengkap']) ?></td>

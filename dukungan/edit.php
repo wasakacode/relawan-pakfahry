@@ -598,13 +598,36 @@ require_once __DIR__ . '/../partials/topbar.php';
         <div class="card-header">
             <h6 class="m-0 font-weight-bold">
                 <i class="fas fa-phone mr-2" style="color:#3db7ee;"></i>
-                Kontak dan KK
+                Kontak
             </h6>
         </div>
 
         <div class="card-body row">
 
             <div class="form-group col-md-4">
+                <label>Nomor Telepon</label>
+                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
+            </div>
+
+            <div class="form-group col-md-4">
+                <label>Nomor WhatsApp</label>
+                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card content-card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
+                Data Anggota Keluarga
+            </h6>
+        </div>
+
+        <div class="card-body">
+
+        <div class="form-group col-md-4">
                 <label>Nomor KK</label>
                 <input
                     type="text"
@@ -644,29 +667,6 @@ require_once __DIR__ . '/../partials/topbar.php';
                     }
                 }
             </script>
-
-            <div class="form-group col-md-4">
-                <label>Nomor Telepon</label>
-                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
-            </div>
-
-            <div class="form-group col-md-4">
-                <label>Nomor WhatsApp</label>
-                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
-            </div>
-
-        </div>
-    </div>
-
-    <div class="card content-card shadow mb-4">
-        <div class="card-header">
-            <h6 class="m-0 font-weight-bold">
-                <i class="fas fa-users mr-2" style="color:#3db7ee;"></i>
-                Data Anggota Keluarga
-            </h6>
-        </div>
-
-        <div class="card-body">
 
             <div id="anggotaKeluargaContainer">
 
