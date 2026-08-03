@@ -44,10 +44,15 @@ if (!$data) {
     redirect('dukungan/list.php');
 }
 
+$nomorTeleponSaatIni = $data['nomor_telepon'] ?? '';
+$nomorWhatsAppSaatIni = $data['nomor_whatsapp'] ?? '';
+$waSamaTelepon = ($nomorTeleponSaatIni !== '' && $nomorTeleponSaatIni === $nomorWhatsAppSaatIni);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // VALIDASI FORMAT
         $pdo->beginTransaction();
+        
         $errors = [];
 
         if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
@@ -592,30 +597,140 @@ require_once __DIR__ . '/../partials/topbar.php';
 
         </div>
     </div>
-
-
+    
     <div class="card content-card shadow mb-4">
         <div class="card-header">
             <h6 class="m-0 font-weight-bold">
-                <i class="fas fa-phone mr-2" style="color:#3db7ee;"></i>
-                Kontak
+                <i 
+                class="fas fa-phone mr-2"
+                style="color:#3db7ee;"> </i> Kontak 
             </h6>
         </div>
+        <div class="card-body"> 
+            <div class="row">
+            <!-- Nomor Telepon -->
+            <div class="form-group col-md-6">
+                 <label for="nomor_telepon"> 
+                    Nomor Telepon 
+                </label>
+                <input
+                    type="tel"
+                    name="nomor_telepon"
+                    id="nomor_telepon"
+                    class="form-control"
+                    value="<?= e($nomorTeleponSaatIni) ?>"
+                    placeholder="Contoh: 081234567890"
+                    inputmode="numeric"
+                    maxlength="15">
+                    <div class="custom-control custom-checkbox mt-3">
+                    <input
+                        type="checkbox"
+                        name="wa_sama_telepon"
+                        id="wa_sama_telepon"
+                        class="custom-control-input"
+                        value="1"
+                        <?= $waSamaTelepon ? 'checked' : '' ?>>
+                        <label
+                        class="custom-control-label"
+                        for="wa_sama_telepon">
 
-        <div class="card-body row">
+                        Nomor WhatsApp sama dengan nomor telepon
 
-            <div class="form-group col-md-4">
-                <label>Nomor Telepon</label>
-                <input name="nomor_telepon" class="form-control" value="<?= e($data['nomor_telepon']) ?>">
+                    </label>
+
+                </div>
             </div>
 
-            <div class="form-group col-md-4">
-                <label>Nomor WhatsApp</label>
-                <input name="nomor_whatsapp" class="form-control" value="<?= e($data['nomor_whatsapp']) ?>">
+            <!-- Nomor WhatsApp -->
+            <div class="form-group col-md-6">
+
+                <label for="nomor_whatsapp">
+                    Nomor WhatsApp
+                </label>
+
+                <input
+                    type="tel"
+                    name="nomor_whatsapp"
+                    id="nomor_whatsapp"
+                    class="form-control"
+                    value="<?= e($nomorWhatsAppSaatIni) ?>"
+                    placeholder="Contoh: 081234567890"
+                    inputmode="numeric"
+                    maxlength="15">
+
+                <small class="form-text text-muted mt-2">
+                    Centang pilihan di sebelah kiri jika nomor WhatsApp sama.
+                </small>
+
             </div>
 
         </div>
+
     </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const nomorTelepon =
+        document.getElementById('nomor_telepon');
+
+    const nomorWhatsApp =
+        document.getElementById('nomor_whatsapp');
+
+    const waSamaTelepon =
+        document.getElementById('wa_sama_telepon');
+
+    if (
+        !nomorTelepon ||
+        !nomorWhatsApp ||
+        !waSamaTelepon
+    ) {
+        return;
+    }
+
+    function hanyaAngka(input) {
+        input.value = input.value.replace(/[^0-9]/g, '');
+    }
+
+    function sinkronkanWhatsApp() {
+
+        if (waSamaTelepon.checked) {
+
+            nomorWhatsApp.value = nomorTelepon.value;
+            nomorWhatsApp.readOnly = true;
+            nomorWhatsApp.classList.add('bg-light');
+
+        } else {
+
+            nomorWhatsApp.readOnly = false;
+            nomorWhatsApp.classList.remove('bg-light');
+        }
+    }
+
+    nomorTelepon.addEventListener('input', function () {
+
+        hanyaAngka(nomorTelepon);
+
+        if (waSamaTelepon.checked) {
+            nomorWhatsApp.value = nomorTelepon.value;
+        }
+    });
+
+    nomorWhatsApp.addEventListener('input', function () {
+        hanyaAngka(nomorWhatsApp);
+    });
+
+    waSamaTelepon.addEventListener('change', function () {
+        sinkronkanWhatsApp();
+    });
+
+    sinkronkanWhatsApp(); 
+    });
+    </script>
+
+
 
     <div class="card content-card shadow mb-4">
         <div class="card-header">
