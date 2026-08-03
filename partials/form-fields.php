@@ -824,23 +824,100 @@ function input_value($name)
 
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Langkah 4 - Informasi Kontak</h6>
+        <h6 class="m-0 font-weight-bold text-primary">
+            Langkah 4 - Informasi Kontak
+        </h6>
     </div>
 
     <div class="card-body row">
 
+        <!-- Nomor Telepon -->
         <div class="form-group col-md-6">
-            <label>Nomor Telepon</label>
-            <input name="nomor_telepon" class="form-control" value="<?= input_value('nomor_telepon') ?>">
+            <label for="nomor_telepon">Nomor Telepon</label>
+
+            <input
+                type="tel"
+                name="nomor_telepon"
+                id="nomor_telepon"
+                class="form-control"
+                value="<?= input_value('nomor_telepon') ?>"
+                placeholder="Contoh: 081234567890"
+                inputmode="numeric"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+            <!-- Checkbox di bawah nomor telepon -->
+            <div class="form-check mt-3">
+                <input
+                    type="checkbox"
+                    name="wa_sama_telepon"
+                    id="wa_sama_telepon"
+                    class="form-check-input"
+                    value="1"
+                    <?= !empty($_POST['wa_sama_telepon']) ? 'checked' : '' ?>>
+
+                <label
+                    class="form-check-label"
+                    for="wa_sama_telepon">
+                    Nomor WhatsApp sama dengan nomor telepon
+                </label>
+            </div>
         </div>
 
+        <!-- Nomor WhatsApp -->
         <div class="form-group col-md-6">
-            <label>Nomor WhatsApp</label>
-            <input name="nomor_whatsapp" class="form-control" value="<?= input_value('nomor_whatsapp') ?>">
+            <label for="nomor_whatsapp">Nomor WhatsApp</label>
+
+            <input
+                type="tel"
+                name="nomor_whatsapp"
+                id="nomor_whatsapp"
+                class="form-control"
+                value="<?= input_value('nomor_whatsapp') ?>"
+                placeholder="Contoh: 081234567890"
+                inputmode="numeric"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+            <small class="form-text text-muted mt-2">
+                Centang pilihan di sebelah kiri jika nomor WhatsApp sama.
+            </small>
         </div>
 
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const nomorTelepon = document.getElementById('nomor_telepon');
+    const nomorWhatsApp = document.getElementById('nomor_whatsapp');
+    const checkboxWa = document.getElementById('wa_sama_telepon');
+
+    if (!nomorTelepon || !nomorWhatsApp || !checkboxWa) {
+        return;
+    }
+
+    function sinkronkanNomorWhatsApp() {
+        if (checkboxWa.checked) {
+            nomorWhatsApp.value = nomorTelepon.value;
+            nomorWhatsApp.readOnly = true;
+        } else {
+            nomorWhatsApp.readOnly = false;
+        }
+    }
+
+    checkboxWa.addEventListener('change', function () {
+        sinkronkanNomorWhatsApp();
+    });
+
+    nomorTelepon.addEventListener('input', function () {
+        if (checkboxWa.checked) {
+            nomorWhatsApp.value = nomorTelepon.value;
+        }
+    });
+
+    sinkronkanNomorWhatsApp();
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
