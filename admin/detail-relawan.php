@@ -37,11 +37,24 @@ if (current_user()['role'] === 'relawan') {
 } else {
 
     // Admin & Superadmin menggunakan parameter id
-    $id = $_GET['id'] ?? null;
+    $id = (int)($_GET['id'] ?? 0);
+    $relawanId = (int)($_GET['relawan'] ?? 0);
 
-    if (!$id) {
+    // Jika dari superadmin
+    if ($relawanId > 0) {
+        $id = $relawanId;
+    }
+
+    // Jika tidak ada id sama sekali
+    if ($id <= 0) {
+
         flash('error', 'Data relawan tidak ditemukan.');
-        redirect('admin/list-relawan.php');
+
+        if ($relawanId > 0) {
+            redirect('admin/relawan_list.php');
+        } else {
+            redirect('admin/list-relawan.php');
+        }
     }
 
     if (current_user()['role'] === 'admin') {

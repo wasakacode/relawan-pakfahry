@@ -47,6 +47,7 @@ if (!$data) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // VALIDASI FORMAT
+        $pdo->beginTransaction();
         $errors = [];
 
         if (!empty($_POST['nik']) && !preg_match('/^[0-9]{16}$/', $_POST['nik'])) {
@@ -250,6 +251,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id
         ]);
 
+        $pdo->commit();
+
         flash('success', 'Data dukungan berhasil diperbarui.');
         redirect('dukungan/detail.php?id=' . $data['id']);
     } catch (Exception $e) {
@@ -407,22 +410,58 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-6">
                 <label>Provinsi</label>
-                <input name="provinsi" class="form-control" value="<?= e($data['provinsi']) ?>">
+                <select
+                    id="provinsi"
+                    name="provinsi"
+                    class="form-control"
+
+                    data-selected="<?= e($data['provinsi']) ?>">
+
+                    <option value="">Memuat Provinsi...</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kabupaten/Kota</label>
-                <input name="kab_kota" class="form-control" value="<?= e($data['kab_kota']) ?>">
+                <select
+                    id="kab_kota"
+                    name="kab_kota"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kab_kota']) ?>">
+
+                    <option value="">Pilih Provinsi dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Kecamatan</label>
-                <input name="kecamatan" class="form-control" value="<?= e($data['kecamatan']) ?>">
+                <select
+                    id="kecamatan"
+                    name="kecamatan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['kecamatan']) ?>">
+
+                    <option value="">Pilih Kabupaten dahulu</option>
+
+                </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Desa/Kelurahan</label>
-                <input name="desa_kelurahan" class="form-control" value="<?= e($data['desa_kelurahan']) ?>">
+                <select
+                    id="desa_kelurahan"
+                    name="desa_kelurahan"
+                    class="form-control"
+
+                    data-selected="<?= e($data['desa_kelurahan']) ?>">
+
+                    <option value="">Pilih Kecamatan dahulu</option>
+
+                </select>
             </div>
 
             <!-- RT -->
@@ -789,15 +828,18 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>Foto KTP <span class="text-danger">*</span></label>
+
                 <?php if (!empty($data['foto_ktp'])): ?>
                     <img src="../<?= e($data['foto_ktp']) ?>"
                         class="img-thumbnail"
                         style="max-height:180px;">
                 <?php endif; ?>
+
                 <input type="file"
                     name="foto_ktp"
                     class="form-control-file"
                     accept=".pdf,image/*">
+
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
@@ -805,21 +847,24 @@ require_once __DIR__ . '/../partials/topbar.php';
 
             <div class="form-group col-md-4">
                 <label>Foto Diri <span class="text-danger">*</span></label>
+
                 <?php if (!empty($data['foto_diri'])): ?>
                     <img src="../<?= e($data['foto_diri']) ?>"
                         class="img-thumbnail"
                         style="max-height:180px;">
                 <?php endif; ?>
+
                 <input type="file"
                     name="foto_diri"
                     class="form-control-file"
                     accept=".pdf,image/*">
+
                 <small class="text-muted">
                     note : Kosongkan jika tidak ingin mengganti.
                 </small>
             </div>
 
-            <!-- Role Relawan -->
+            <!-- Role Dukungan -->
             <div class="form-group col-md-4">
                 <label>Foto Kartu Keluarga <span class="text-danger">*</span></label>
                 <?php if (!empty($data['foto_kartu_keluarga'])): ?>
@@ -943,6 +988,216 @@ require_once __DIR__ . '/../partials/topbar.php';
         if (e.target.classList.contains('btnHapus')) {
             e.target.closest('.anggota-item').remove();
         }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const provinsiSelect = document.getElementById('provinsi');
+        const kabKotaSelect = document.getElementById('kab_kota');
+        const kecamatanSelect = document.getElementById('kecamatan');
+        const desaSelect = document.getElementById('desa_kelurahan');
+
+        const API_URL = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+        function resetSelect(select, text) {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        function setLoading(select, text = 'Memuat data...') {
+            select.innerHTML = `<option value="">${text}</option>`;
+        }
+
+        async function fetchWilayah(url) {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil data wilayah');
+            }
+
+            return await response.json();
+        }
+
+        async function loadProvinsi() {
+            try {
+                setLoading(provinsiSelect, 'Memuat data provinsi...');
+
+                const data = await fetchWilayah(`${API_URL}/provinces.json`);
+
+                provinsiSelect.innerHTML = '<option value="">Pilih Provinsi</option>';
+
+                const selectedProvinsi = provinsiSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedProvinsi) {
+
+                        option.selected = true;
+
+                        loadKabKota(item.id);
+
+                    }
+
+                    provinsiSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(provinsiSelect, 'Gagal memuat provinsi');
+                console.error(error);
+            }
+        }
+
+        async function loadKabKota(provinsiId) {
+            try {
+                setLoading(kabKotaSelect, 'Memuat kabupaten/kota...');
+                resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/regencies/${provinsiId}.json`);
+
+                kabKotaSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+
+                const selectedKab = kabKotaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKab) {
+
+                        option.selected = true;
+
+                        loadKecamatan(item.id);
+
+                    }
+
+                    kabKotaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kabKotaSelect, 'Gagal memuat kabupaten/kota');
+                console.error(error);
+            }
+        }
+
+        async function loadKecamatan(kabKotaId) {
+            try {
+                setLoading(kecamatanSelect, 'Memuat kecamatan...');
+                resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+                const data = await fetchWilayah(`${API_URL}/districts/${kabKotaId}.json`);
+
+                kecamatanSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+
+                const selectedKecamatan = kecamatanSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+                    option.dataset.id = item.id;
+
+                    if (item.name === selectedKecamatan) {
+
+                        option.selected = true;
+
+                        loadDesa(item.id);
+
+                    }
+
+                    kecamatanSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(kecamatanSelect, 'Gagal memuat kecamatan');
+                console.error(error);
+            }
+        }
+
+        async function loadDesa(kecamatanId) {
+            try {
+                setLoading(desaSelect, 'Memuat desa/kelurahan...');
+
+                const data = await fetchWilayah(`${API_URL}/villages/${kecamatanId}.json`);
+
+                desaSelect.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+
+                const selectedDesa = desaSelect.dataset.selected;
+
+                data.forEach(item => {
+
+                    const option = document.createElement('option');
+
+                    option.value = item.name;
+                    option.textContent = item.name;
+
+                    if (item.name === selectedDesa) {
+
+                        option.selected = true;
+
+                    }
+
+                    desaSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+                resetSelect(desaSelect, 'Gagal memuat desa/kelurahan');
+                console.error(error);
+            }
+        }
+
+        provinsiSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const provinsiId = selected.dataset.id;
+
+            resetSelect(kabKotaSelect, 'Pilih provinsi terlebih dahulu');
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (provinsiId) {
+                loadKabKota(provinsiId);
+            }
+        });
+
+        kabKotaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kabKotaId = selected.dataset.id;
+
+            resetSelect(kecamatanSelect, 'Pilih kabupaten/kota terlebih dahulu');
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kabKotaId) {
+                loadKecamatan(kabKotaId);
+            }
+        });
+
+        kecamatanSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const kecamatanId = selected.dataset.id;
+
+            resetSelect(desaSelect, 'Pilih kecamatan terlebih dahulu');
+
+            if (kecamatanId) {
+                loadDesa(kecamatanId);
+            }
+        });
+
+        loadProvinsi();
     });
 </script>
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

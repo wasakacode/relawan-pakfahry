@@ -216,13 +216,6 @@ require_once __DIR__ . '/../partials/topbar.php';
                     <b>Username Penginput:</b> <?= e($data['username_pembuat'] ?? '-') ?>
                 </p>
 
-                <p class="mb-1">
-                    <b>Status:</b>
-                    <span class="badge badge-success">
-                        <?= e($data['status_verifikasi']) ?>
-                    </span>
-                </p>
-
                 <hr>
 
                 <a href="<?= url('dukungan/edit.php?id=' . $data['id']) ?>" class="btn btn-warning btn-sm btn-block mb-2">
