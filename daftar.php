@@ -4,151 +4,166 @@ require_once __DIR__ . '/config/app.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/functions.php';
 
-/*
-|--------------------------------------------------------------------------
-| JIKA SUDAH LOGIN
-|--------------------------------------------------------------------------
-*/
+
 
 if (isset($_SESSION['user'])) {
-
     redirect('dashboard/index.php');
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| HELPER
-|--------------------------------------------------------------------------
-*/
 
-function input_value($name)
+function input_value($name, $default = '')
 {
-    return e($_POST[$name] ?? '');
+    return e($_POST[$name] ?? $default);
 }
 
-/*
-|--------------------------------------------------------------------------
-| VARIABEL
-|--------------------------------------------------------------------------
-*/
-
-$error = '';
-$success = '';
-
-/*
-|--------------------------------------------------------------------------
-| HELPER UPLOAD FILE
-|--------------------------------------------------------------------------
-*/
-
-function uploadFile($inputName, $folder)
+function selected_value($name, $value, $default = '')
 {
+    $current = $_POST[$name] ?? $default;
+    return (string)$current === (string)$value ? 'selected' : '';
+}
 
-    if (
-        !isset($_FILES[$inputName]) ||
-        $_FILES[$inputName]['error'] == UPLOAD_ERR_NO_FILE
-    ) {
-
-        throw new Exception("{$inputName} wajib diupload");
-    }
-
-    if ($_FILES[$inputName]['error'] != UPLOAD_ERR_OK) {
-
-        throw new Exception("Gagal upload file {$inputName}");
-    }
-
-    $ext = strtolower(
-        pathinfo(
-            $_FILES[$inputName]['name'],
-            PATHINFO_EXTENSION
-        )
-    );
-
-    $allowed = [
-        'jpg',
-        'jpeg',
-        'png',
-        'pdf'
+function upload_error_message($code)
+{
+    $messages = [
+        UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas server.',
+        UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas formulir.',
+        UPLOAD_ERR_PARTIAL    => 'File hanya terunggah sebagian. Silakan pilih ulang.',
+        UPLOAD_ERR_NO_FILE    => 'File belum dipilih.',
+        UPLOAD_ERR_NO_TMP_DIR => 'Folder sementara server tidak tersedia.',
+        UPLOAD_ERR_CANT_WRITE => 'Server gagal menulis file ke penyimpanan.',
+        UPLOAD_ERR_EXTENSION  => 'Upload dihentikan oleh ekstensi PHP.'
     ];
 
-    if (!in_array($ext, $allowed)) {
-
-        throw new Exception(
-            "Format file {$inputName} tidak didukung."
-        );
-    }
-
-    $filename = uniqid() . "." . $ext;
-
-    $destination =
-        __DIR__ .
-        "/uploads/{$folder}/" .
-        $filename;
-
-    if (
-        !move_uploaded_file(
-            $_FILES[$inputName]['tmp_name'],
-            $destination
-        )
-    ) {
-
-        throw new Exception(
-            "Gagal menyimpan file {$inputName}"
-        );
-    }
-
-    return $filename;
+    return $messages[$code] ?? 'Terjadi kesalahan upload yang tidak diketahui.';
 }
+
+function uploadFile($inputName, $folder, $label, $allowPdf, &$storedFiles)
+{
+    if (!isset($_FILES[$inputName])) {
+        throw new Exception("{$label} belum dipilih.");
+    }
+
+    $file = $_FILES[$inputName];
+
+    if ((int)$file['error'] !== UPLOAD_ERR_OK) {
+        throw new Exception($label . ': ' . upload_error_message((int)$file['error']));
+    }
+
+    if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        throw new Exception("{$label} tidak valid atau proses upload terputus.");
+    }
+
+    $maxSize = 5 * 1024 * 1024; // 5 MB
+    if ((int)$file['size'] <= 0 || (int)$file['size'] > $maxSize) {
+        throw new Exception("{$label} maksimal 5 MB.");
+    }
+
+    $allowedMimes = [
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/webp' => 'webp'
+    ];
+
+    if ($allowPdf) {
+        $allowedMimes['application/pdf'] = 'pdf';
+    }
+
+    $mime = '';
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = (string)finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+        }
+    }
+
+    if ($mime === '' && function_exists('mime_content_type')) {
+        $mime = (string)mime_content_type($file['tmp_name']);
+    }
+
+    if (!isset($allowedMimes[$mime])) {
+        $formatText = $allowPdf ? 'JPG, PNG, WEBP, atau PDF' : 'JPG, PNG, atau WEBP';
+        throw new Exception("Format {$label} tidak didukung. Gunakan {$formatText}.");
+    }
+
+    $uploadRoot = __DIR__ . '/uploads';
+    $folder = trim($folder, '/\\');
+    $targetDirectory = $uploadRoot . '/' . $folder;
+
+    if (!is_dir($targetDirectory)) {
+        if (!mkdir($targetDirectory, 0775, true) && !is_dir($targetDirectory)) {
+            throw new Exception("Folder penyimpanan {$label} tidak dapat dibuat: uploads/{$folder}.");
+        }
+    }
+
+    if (!is_writable($targetDirectory)) {
+        throw new Exception("Folder uploads/{$folder} tidak memiliki izin tulis. Atur permission folder agar dapat ditulis oleh PHP/XAMPP.");
+    }
+
+    try {
+        $randomName = bin2hex(random_bytes(16));
+    } catch (Exception $e) {
+        $randomName = uniqid('file_', true);
+    }
+
+    $filename = $randomName . '.' . $allowedMimes[$mime];
+    $absolutePath = $targetDirectory . '/' . $filename;
+    $relativePath = 'uploads/' . $folder . '/' . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $absolutePath)) {
+        throw new Exception("Gagal menyimpan {$label}. Pastikan folder uploads/{$folder} tersedia dan dapat ditulis.");
+    }
+
+    $storedFiles[] = $absolutePath;
+    return $relativePath;
+}
+
+
+$error = '';
+$errorStep = 0;
+$storedFiles = [];
 
 /*
 |--------------------------------------------------------------------------
-| AMBIL DATA DAPIL
+| NOTIFIKASI PENDAFTARAN BERHASIL
 |--------------------------------------------------------------------------
+| Menggunakan session agar setelah POST berhasil halaman dimuat ulang sebagai
+| GET. Hal ini mencegah data tersimpan dua kali saat halaman di-refresh.
 */
+$registrationSuccess = !empty($_SESSION['registration_success']);
+$registrationSuccessMessage = $_SESSION['registration_success_message'] ?? '';
+
+unset(
+    $_SESSION['registration_success'],
+    $_SESSION['registration_success_message']
+);
 
 $stmt = $pdo->query("
-    SELECT
-        provinsi,
-        kab_kota
+    SELECT provinsi, kab_kota
     FROM dapil
 ");
 
 $dapilData = [];
 
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-    $provinsi = trim($row['provinsi']);
+    $provinsi = trim((string)$row['provinsi']);
 
     if (!isset($dapilData[$provinsi])) {
-
         $dapilData[$provinsi] = [];
     }
 
-    $kabupaten = json_decode(
-        $row['kab_kota'],
-        true
-    );
+    $kabupaten = json_decode($row['kab_kota'], true);
 
     if (is_array($kabupaten)) {
-
         foreach ($kabupaten as $kab) {
-
-            $kab = trim($kab);
-
-            if (!in_array($kab, $dapilData[$provinsi])) {
-
+            $kab = trim((string)$kab);
+            if ($kab !== '' && !in_array($kab, $dapilData[$provinsi], true)) {
                 $dapilData[$provinsi][] = $kab;
             }
         }
     }
 }
-
-/*
-|--------------------------------------------------------------------------
-| AMBIL DATA ADMIN DAPIL
-|--------------------------------------------------------------------------
-*/
 
 $stmt = $pdo->query("
     SELECT
@@ -157,32 +172,19 @@ $stmt = $pdo->query("
         d.provinsi,
         d.kab_kota,
         d.daerah_pemilihan
-
     FROM profiles p
-
-    JOIN profile_dapil pd
-        ON pd.profile_id = p.id
-
-    JOIN dapil d
-        ON d.id = pd.dapil_id
-
-    WHERE
-        p.type = 'admin'
-        AND p.profile_active = 1
-
-    ORDER BY
-        p.nama_lengkap
+    JOIN profile_dapil pd ON pd.profile_id = p.id
+    JOIN dapil d ON d.id = pd.dapil_id
+    WHERE p.type = 'admin'
+      AND p.profile_active = 1
+    ORDER BY p.nama_lengkap
 ");
 
 $adminList = [];
 
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-
-    $row['kab_kota'] = json_decode(
-        $row['kab_kota'],
-        true
-    );
-
+    $decodedKab = json_decode($row['kab_kota'], true);
+    $row['kab_kota'] = is_array($decodedKab) ? $decodedKab : [];
     $adminList[] = $row;
 }
 
@@ -193,453 +195,369 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
     try {
-
-        $pdo->beginTransaction();
-
-        /*
-|--------------------------------------------------------------------------
-| AMBIL DATA FORM
-|--------------------------------------------------------------------------
-*/
-
         $nik                = trim($_POST['nik'] ?? '');
         $namaLengkap        = trim($_POST['nama_lengkap'] ?? '');
-
         $tempatLahir        = trim($_POST['tempat_lahir'] ?? '');
         $tanggalLahir       = trim($_POST['tanggal_lahir'] ?? '');
-
         $jenisKelamin       = trim($_POST['jenis_kelamin'] ?? '');
         $golonganDarah      = trim($_POST['golongan_darah'] ?? '');
-
         $agama              = trim($_POST['agama'] ?? '');
         $statusPernikahan   = trim($_POST['status_pernikahan'] ?? '');
-
         $pekerjaan          = trim($_POST['pekerjaan'] ?? '');
         $alamat             = trim($_POST['alamat'] ?? '');
-
         $provinsi           = trim($_POST['provinsi'] ?? '');
         $kabKota            = trim($_POST['kab_kota'] ?? '');
         $kecamatan          = trim($_POST['kecamatan'] ?? '');
         $desaKelurahan      = trim($_POST['desa_kelurahan'] ?? '');
-
         $rt                 = trim($_POST['rt'] ?? '');
         $rw                 = trim($_POST['rw'] ?? '');
         $tps                = trim($_POST['tps'] ?? '');
-
         $nomorKK            = trim($_POST['nomor_kk'] ?? '');
-
         $nomorHP            = trim($_POST['nomor_telepon'] ?? '');
-        $nomorWA            = trim($_POST['nomor_whatsapp'] ?? '');
-
+        $nomorWA            = !empty($_POST['wa_sama_telepon'])
+            ? $nomorHP
+            : trim($_POST['nomor_whatsapp'] ?? '');
         $username           = trim($_POST['username'] ?? '');
-
         $password           = $_POST['password'] ?? '';
         $konfirmasiPassword = $_POST['konfirmasi_password'] ?? '';
+        $adminIds           = array_values(array_unique(array_filter(array_map('intval', $_POST['admin_id'] ?? []))));
 
-        $adminId            = $_POST['admin_id'] ?? [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDASI
-        |--------------------------------------------------------------------------
-        */
-
+        // STEP 1 — Identitas
         if (!preg_match('/^[0-9]{16}$/', $nik)) {
-            throw new Exception('NIK harus terdiri dari 16 digit.');
+            throw new Exception('NIK harus terdiri dari 16 digit angka.');
         }
-
         if (strlen($namaLengkap) < 3) {
             throw new Exception('Nama lengkap minimal 3 karakter.');
         }
-
-        if (empty($tempatLahir)) {
-            throw new Exception('Tempat lahir wajib diisi.');
+        if ($tempatLahir === '' || $tanggalLahir === '') {
+            throw new Exception('Tempat dan tanggal lahir wajib diisi.');
         }
-
-        if (empty($tanggalLahir)) {
-            throw new Exception('Tanggal lahir wajib diisi.');
-        }
-
-        if (empty($jenisKelamin)) {
+        if (!in_array($jenisKelamin, ['Laki-laki', 'Perempuan'], true)) {
             throw new Exception('Jenis kelamin wajib dipilih.');
         }
-
-        if (empty($agama)) {
-            throw new Exception('Agama wajib dipilih.');
+        if ($golonganDarah === '') {
+            throw new Exception('Golongan darah wajib dipilih.');
+        }
+        if ($agama === '' || $statusPernikahan === '' || $pekerjaan === '' || $alamat === '') {
+            throw new Exception('Data kependudukan belum lengkap.');
         }
 
-        if (empty($statusPernikahan)) {
-            throw new Exception('Status pernikahan wajib dipilih.');
+        // STEP 2 — Wilayah
+        if ($provinsi === '' || $kabKota === '' || $kecamatan === '' || $desaKelurahan === '') {
+            throw new Exception('Data wilayah belum lengkap.');
         }
-
-        if (empty($alamat)) {
-            throw new Exception('Alamat wajib diisi.');
-        }
-
-        if (empty($provinsi)) {
-            throw new Exception('Provinsi wajib dipilih.');
-        }
-
-        if (empty($kabKota)) {
-            throw new Exception('Kabupaten/Kota wajib dipilih.');
-        }
-
-        if (empty($kecamatan)) {
-            throw new Exception('Kecamatan wajib dipilih.');
-        }
-
-        if (empty($desaKelurahan)) {
-            throw new Exception('Desa/Kelurahan wajib dipilih.');
-        }
-
         if (!preg_match('/^[0-9]{3}$/', $rt)) {
-            throw new Exception('RT harus terdiri dari 3 digit.');
+            throw new Exception('RT harus terdiri dari 3 digit, contoh 001.');
         }
-
         if (!preg_match('/^[0-9]{3}$/', $rw)) {
-            throw new Exception('RW harus terdiri dari 3 digit.');
+            throw new Exception('RW harus terdiri dari 3 digit, contoh 001.');
         }
-
         if (!preg_match('/^[0-9]{3}$/', $tps)) {
-            throw new Exception('TPS harus terdiri dari 3 digit.');
+            throw new Exception('TPS harus terdiri dari 3 digit, contoh 001.');
         }
-
-        if (!preg_match('/^[0-9]{16}$/', $nomorKK)) {
-            throw new Exception('Nomor KK harus terdiri dari 16 digit.');
-        }
-
-        if (!preg_match('/^[0-9]{10,15}$/', $nomorHP)) {
-            throw new Exception('Nomor Handphone tidak valid.');
-        }
-
-        if (!preg_match('/^[0-9]{10,15}$/', $nomorWA)) {
-            throw new Exception('Nomor WhatsApp tidak valid.');
-        }
-
-        if (strlen($username) < 4) {
-            throw new Exception('Username minimal 4 karakter.');
-        }
-
-        if (!preg_match('/^[A-Za-z0-9._]+$/', $username)) {
-            throw new Exception('Username hanya boleh huruf, angka, titik (.) dan underscore (_).');
-        }
-
-        if (strlen($password) < 6) {
-            throw new Exception('Password minimal 6 karakter.');
-        }
-
-        if ($password !== $konfirmasiPassword) {
-            throw new Exception('Konfirmasi password tidak sesuai.');
-        }
-
-        if (empty($adminId)) {
+        if (empty($adminIds)) {
             throw new Exception('Pilih minimal satu Admin Dapil.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CEK NIK
-        |--------------------------------------------------------------------------
-        */
-
+        // Pastikan ID admin benar-benar admin aktif.
+        $adminPlaceholders = implode(',', array_fill(0, count($adminIds), '?'));
         $stmt = $pdo->prepare("
-            SELECT COUNT(*)
+            SELECT COUNT(DISTINCT id)
             FROM profiles
-            WHERE nik = ?
+            WHERE type = 'admin'
+              AND profile_active = 1
+              AND id IN ($adminPlaceholders)
         ");
-
-        $stmt->execute([$nik]);
-
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception('NIK sudah terdaftar.');
+        $stmt->execute($adminIds);
+        if ((int)$stmt->fetchColumn() !== count($adminIds)) {
+            throw new Exception('Pilihan Admin Dapil tidak valid. Silakan pilih ulang.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CEK USERNAME
-        |--------------------------------------------------------------------------
-        */
-
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*)
-            FROM users
-            WHERE username = ?
-        ");
-
-        $stmt->execute([$username]);
-
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception('Username sudah digunakan.');
+        // STEP 3 — Keluarga
+        if (!preg_match('/^[0-9]{16}$/', $nomorKK)) {
+            throw new Exception('Nomor KK harus terdiri dari 16 digit angka.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | PASSWORD
-        |--------------------------------------------------------------------------
-        */
+        // STEP 4 — Kontak
+        if (!preg_match('/^[0-9]{10,15}$/', $nomorHP)) {
+            throw new Exception('Nomor handphone harus terdiri dari 10–15 digit angka.');
+        }
+        if (!preg_match('/^[0-9]{10,15}$/', $nomorWA)) {
+            throw new Exception('Nomor WhatsApp harus terdiri dari 10–15 digit angka.');
+        }
 
+        // STEP 6 — Akun
+        if (strlen($username) < 4) {
+            throw new Exception('Username minimal 4 karakter.');
+        }
+        if (!preg_match('/^[A-Za-z0-9._]+$/', $username)) {
+            throw new Exception('Username hanya boleh berisi huruf, angka, titik, dan underscore.');
+        }
         if (strlen($password) < 6) {
             throw new Exception('Password minimal 6 karakter.');
         }
-
         if ($password !== $konfirmasiPassword) {
             throw new Exception('Konfirmasi password tidak sesuai.');
         }
+        if (empty($_POST['setuju'])) {
+            throw new Exception('Anda harus menyetujui pernyataan kebenaran data.');
+        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CEK NIK
-        |--------------------------------------------------------------------------
-        */
-
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*)
-            FROM profiles
-            WHERE nik = ?
-        ");
-
+        // Cek data unik.
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM profiles WHERE nik = ?");
         $stmt->execute([$nik]);
-
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception('NIK sudah terdaftar.');
+        if ((int)$stmt->fetchColumn() > 0) {
+            throw new Exception('NIK sudah terdaftar. Silakan gunakan menu cek status relawan.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CEK USERNAME
-        |--------------------------------------------------------------------------
-        */
-
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*)
-            FROM users
-            WHERE username = ?
-        ");
-
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
         $stmt->execute([$username]);
-
-        if ($stmt->fetchColumn() > 0) {
-            throw new Exception('Username sudah digunakan.');
+        if ((int)$stmt->fetchColumn() > 0) {
+            throw new Exception('Username sudah digunakan. Silakan pilih username lain.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPLOAD FILE
-        |--------------------------------------------------------------------------
-        */
+        // STEP 5 — Upload dokumen.
+        $fotoKTP  = uploadFile('foto_ktp', 'ktp', 'Foto KTP', true, $storedFiles);
+        $fotoKK   = uploadFile('foto_kk', 'kk', 'Foto Kartu Keluarga', true, $storedFiles);
+        $fotoDiri = uploadFile('foto_diri', 'foto_diri', 'Foto Diri', false, $storedFiles);
 
-        $fotoKTP  = uploadFile('foto_ktp', 'ktp');
-        $fotoKK   = uploadFile('foto_kartu_keluarga', 'kk');
-        $fotoDiri = uploadFile('foto_diri', 'diri');
+        $pdo->beginTransaction();
 
-        /*
-        |--------------------------------------------------------------------------
-        | SIMPAN USER
-        |--------------------------------------------------------------------------
-        */
-
-        $passwordHash = password_hash(
-            $password,
-            PASSWORD_DEFAULT
-        );
-
+        // Simpan akun.
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("
-            INSERT INTO users
-            (
-                name,
-                username,
-                password,
-                role,
-                is_active
-            )
-            VALUES
-            (
-                ?, ?, ?, 'relawan', 0
-            )
+            INSERT INTO users (name, username, password, role, is_active)
+            VALUES (?, ?, ?, 'relawan', 1)
         ");
+        $stmt->execute([$namaLengkap, $username, $passwordHash]);
+        $userId = (int)$pdo->lastInsertId();
 
-        $stmt->execute([
-            $namaLengkap,
-            $username,
-            $passwordHash
-        ]);
-
-        $userId = $pdo->lastInsertId();
-
-        /*
-        |--------------------------------------------------------------------------
-        | SIMPAN PROFILE
-        |--------------------------------------------------------------------------
-        */
-
+        // Simpan profil. Path file disimpan lengkap, contoh uploads/foto_diri/namafile.jpg.
         $stmt = $pdo->prepare("
-            INSERT INTO profiles
-            (
-                user_id,
-                type,
-                created_by,
+    INSERT INTO profiles
+    (
+        user_id,
+        type,
+        created_by,
 
-                nik,
-                nama_lengkap,
+        nik,
+        nama_lengkap,
 
-                tempat_lahir,
-                tanggal_lahir,
+        tempat_lahir,
+        tanggal_lahir,
 
-                jenis_kelamin,
-                golongan_darah,
+        jenis_kelamin,
+        golongan_darah,
 
-                agama,
-                status_pernikahan,
+        agama,
+        status_pernikahan,
 
-                pekerjaan,
-                alamat,
+        pekerjaan,
+        alamat,
 
-                provinsi,
-                kab_kota,
-                kecamatan,
-                desa_kelurahan,
+        provinsi,
+        kab_kota,
+        kecamatan,
+        desa_kelurahan,
 
-                rt,
-                rw,
-                tps,
+        rt,
+        rw,
+        tps,
 
-                nomor_kk,
-                nomor_telepon,
-                nomor_whatsapp,
+        nomor_kk,
+        nomor_telepon,
+        nomor_whatsapp,
 
-                foto_ktp,
-                foto_kartu_keluarga,
-                foto_diri,
+        foto_ktp,
+        foto_kartu_keluarga,
+        foto_diri,
 
-                status_verifikasi,
-                profile_active,
-                profile_complete
-            )
-            VALUES
-            (
-                ?, ?, ?,
+        status_verifikasi,
+        profile_active,
+        profile_complete
+    )
+    VALUES
+    (
+        ?, ?, ?,
 
-                ?, ?,
+        ?, ?,
 
-                ?, ?,
+        ?, ?,
 
-                ?, ?,
+        ?, ?,
 
-                ?, ?,
+        ?, ?,
 
-                ?, ?,
+        ?, ?,
 
-                ?, ?, ?, ?,
+        ?, ?, ?, ?,
 
-                ?, ?, ?,
+        ?, ?, ?,
 
-                ?, ?, ?,
+        ?, ?, ?,
 
-                ?, ?, ?,
+        ?, ?, ?,
 
-                'pending',
-                1,
-                1
-            )
-        ");
+        'pending',
+        1,
+        1
+    )
+");
 
-        $stmt->execute([
-            $userId,
-            'relawan',
-            $userId,
+$stmt->execute([
+    $userId,
+    'relawan',
+    $userId,
 
-            $nik,
-            $namaLengkap,
+    $nik,
+    $namaLengkap,
 
-            $tempatLahir,
-            $tanggalLahir,
+    $tempatLahir,
+    $tanggalLahir,
 
-            $jenisKelamin,
-            $golonganDarah,
+    $jenisKelamin,
+    $golonganDarah,
 
-            $agama,
-            $statusPernikahan,
+    $agama,
+    $statusPernikahan,
 
-            $pekerjaan,
-            $alamat,
+    $pekerjaan,
+    $alamat,
 
-            $provinsi,
-            $kabKota,
-            $kecamatan,
-            $desaKelurahan,
+    $provinsi,
+    $kabKota,
+    $kecamatan,
+    $desaKelurahan,
 
-            $rt,
-            $rw,
-            $tps,
+    $rt,
+    $rw,
+    $tps,
 
-            $nomorKK,
-            $nomorHP,
-            $nomorWA,
+    $nomorKK,
+    $nomorHP,
+    $nomorWA,
 
-            $fotoKTP,
-            $fotoKK,
-            $fotoDiri
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SIMPAN ADMIN YANG DIPILIH
-        |--------------------------------------------------------------------------
-        */
+    $fotoKTP,
+    $fotoKK,
+    $fotoDiri
+]);
         $profileId = (int)$pdo->lastInsertId();
 
-        $stmt = $pdo->prepare("
-            INSERT INTO profile_admin
-            (
-                profile_id,
-                admin_profile_id
-            )
-            VALUES
-            (?, ?)
+        // Hubungkan relawan dengan Admin Dapil yang dipilih.
+        $stmtProfileAdmin = $pdo->prepare("
+            INSERT INTO profile_admin (admin_profile_id, profile_id)
+            VALUES (?, ?)
         ");
-
-        foreach ($adminId as $admin) {
-
-            $stmt->execute([
-                $profileId,
-                $admin
-            ]);
+        foreach ($adminIds as $adminId) {
+            $stmtProfileAdmin->execute([$adminId, $profileId]);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | COMMIT
-        |--------------------------------------------------------------------------
-        */
+        // Simpan anggota keluarga yang benar-benar diisi.
+        $familyFields = [
+            'hubungan'     => $_POST['keluarga_hubungan_keluarga'] ?? [],
+            'nik'          => $_POST['keluarga_nik'] ?? [],
+            'nama'         => $_POST['keluarga_nama'] ?? [],
+            'tempat_lahir' => $_POST['keluarga_tempat_lahir'] ?? [],
+            'tanggal_lahir'=> $_POST['keluarga_tanggal_lahir'] ?? [],
+            'jenis_kelamin'=> $_POST['keluarga_jenis_kelamin'] ?? [],
+            'agama'        => $_POST['keluarga_agama'] ?? [],
+            'pekerjaan'    => $_POST['keluarga_pekerjaan'] ?? []
+        ];
+
+        $familyCount = max(array_map('count', $familyFields));
+        if ($familyCount > 0) {
+            $stmtFamily = $pdo->prepare("
+                INSERT INTO family_members
+                (
+                    profile_id, hubungan_keluarga, nik, nama_lengkap,
+                    tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pekerjaan
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            for ($i = 0; $i < $familyCount; $i++) {
+                $family = [
+                    'hubungan'      => trim($familyFields['hubungan'][$i] ?? ''),
+                    'nik'           => trim($familyFields['nik'][$i] ?? ''),
+                    'nama'          => trim($familyFields['nama'][$i] ?? ''),
+                    'tempat_lahir'  => trim($familyFields['tempat_lahir'][$i] ?? ''),
+                    'tanggal_lahir' => trim($familyFields['tanggal_lahir'][$i] ?? ''),
+                    'jenis_kelamin' => trim($familyFields['jenis_kelamin'][$i] ?? ''),
+                    'agama'         => trim($familyFields['agama'][$i] ?? ''),
+                    'pekerjaan'     => trim($familyFields['pekerjaan'][$i] ?? '')
+                ];
+
+                $hasAnyValue = implode('', $family) !== '';
+                if (!$hasAnyValue) {
+                    continue;
+                }
+
+                if (in_array('', $family, true)) {
+                    throw new Exception('Data anggota keluarga yang ditambahkan harus diisi lengkap.');
+                }
+
+                if (!preg_match('/^[0-9]{16}$/', $family['nik'])) {
+                    throw new Exception('NIK anggota keluarga harus terdiri dari 16 digit angka.');
+                }
+
+                $stmtFamily->execute([
+                    $profileId,
+                    $family['hubungan'],
+                    $family['nik'],
+                    $family['nama'],
+                    $family['tempat_lahir'],
+                    $family['tanggal_lahir'],
+                    $family['jenis_kelamin'],
+                    $family['agama'],
+                    $family['pekerjaan']
+                ]);
+            }
+        }
 
         $pdo->commit();
 
         /*
-        |--------------------------------------------------------------------------
-        | REDIRECT
-        |--------------------------------------------------------------------------
+        |------------------------------------------------------------------
+        | SIMPAN NOTIFIKASI BERHASIL DAN MUAT ULANG HALAMAN
+        |------------------------------------------------------------------
+        | Setelah halaman dimuat ulang, modal sukses akan ditampilkan.
+        | Pengguna akan diarahkan ke login setelah menekan tombol OK.
         */
+        $_SESSION['registration_success'] = true;
+        $_SESSION['registration_success_message'] =
+            'Data relawan berhasil disimpan. Silakan klik OK untuk kembali ke halaman login. Akun dapat digunakan setelah diverifikasi oleh Admin Dapil.';
 
-        $_SESSION['success'] =
-            "Pendaftaran berhasil. Akun Anda sedang menunggu verifikasi Admin Dapil.";
-
-        redirect('login.php');
-
+        $currentPath = strtok($_SERVER['REQUEST_URI'], '?');
+        header('Location: ' . $currentPath . '?registration=success');
         exit;
-    } catch (Exception $e) {
 
+    } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
 
+        // Hapus file yang sudah sempat tersimpan bila proses database gagal.
+        foreach ($storedFiles as $storedFile) {
+            if (is_file($storedFile)) {
+                @unlink($storedFile);
+            }
+        }
+
         $error = $e->getMessage();
+        $message = strtolower($error);
 
-        // sementara untuk debugging
-        // echo "<pre>".$e->getMessage()."</pre>";
-
+        if (strpos($message, 'wilayah') !== false || strpos($message, 'admin dapil') !== false || strpos($message, 'rt ') !== false || strpos($message, 'rw ') !== false || strpos($message, 'tps ') !== false) {
+            $errorStep = 1;
+        } elseif (strpos($message, 'kk') !== false || strpos($message, 'keluarga') !== false) {
+            $errorStep = 2;
+        } elseif (strpos($message, 'handphone') !== false || strpos($message, 'whatsapp') !== false) {
+            $errorStep = 3;
+        } elseif (strpos($message, 'foto') !== false || strpos($message, 'file') !== false || strpos($message, 'upload') !== false || strpos($message, 'folder') !== false) {
+            $errorStep = 4;
+        } elseif (strpos($message, 'username') !== false || strpos($message, 'password') !== false || strpos($message, 'menyetujui') !== false) {
+            $errorStep = 5;
+        }
     }
 }
 
@@ -875,9 +793,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        /* ===========================
-        FORM
-        =========================== */
 
         .form-group {
             margin-bottom: 18px;
@@ -1481,6 +1396,301 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 height: 220px;
             }
         }
+
+
+        /* ===========================
+        NOTIFIKASI & UPLOAD PREVIEW
+        =========================== */
+
+        .form-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px 16px;
+            margin-bottom: 22px;
+            border-radius: 14px;
+            text-align: left;
+            border: 1px solid transparent;
+        }
+
+        .form-alert-error {
+            background: #fff1f1;
+            border-color: #ffd0d0;
+            color: #a53030;
+        }
+
+        .form-alert-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffe0e0;
+            font-size: 17px;
+        }
+
+        .form-alert strong,
+        .form-alert span,
+        .form-alert small {
+            display: block;
+        }
+
+        .form-alert strong {
+            margin-bottom: 3px;
+        }
+
+        .form-alert span {
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .form-alert small {
+            margin-top: 5px;
+            opacity: .8;
+        }
+
+        .document-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 0 0 22px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #eef9ff;
+            border: 1px solid #cfeeff;
+            color: #31536c;
+        }
+
+        .document-note > i {
+            margin-top: 2px;
+            color: #1595d2;
+            font-size: 19px;
+        }
+
+        .document-note strong,
+        .document-note span {
+            display: block;
+        }
+
+        .document-note strong {
+            margin-bottom: 3px;
+            color: #1f425b;
+        }
+
+        .document-note span {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .upload-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upload-card.has-file {
+            border-color: #5ecf96;
+            background: #f7fffb;
+            box-shadow: 0 10px 24px rgba(46, 204, 113, .12);
+        }
+
+        .file-preview {
+            width: 100%;
+            height: 180px;
+            margin: 4px 0 15px;
+            border: 1px dashed #bcd7e7;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-preview-portrait {
+            height: 210px;
+        }
+
+        .file-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #f7fbfe;
+        }
+
+        .file-preview-empty,
+        .pdf-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #91a8ba;
+            font-size: 13px;
+        }
+
+        .file-preview-empty i,
+        .pdf-preview i {
+            font-size: 38px;
+        }
+
+        .pdf-preview i {
+            color: #e34d59;
+        }
+
+        .file-meta {
+            min-height: 38px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #60798e;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .file-meta .file-success {
+            color: #248c58;
+            font-weight: 700;
+        }
+
+        .file-meta .file-size {
+            display: block;
+            margin-top: 2px;
+            color: #8ba0b1;
+            font-weight: 400;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 22px;
+            right: 22px;
+            z-index: 9999;
+            width: min(360px, calc(100vw - 32px));
+        }
+
+        .app-toast {
+            display: flex;
+            gap: 11px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding: 14px 15px;
+            border-radius: 13px;
+            background: #fff;
+            color: #2c4255;
+            box-shadow: 0 14px 38px rgba(31, 74, 105, .18);
+            border-left: 4px solid #118dd0;
+            animation: toastIn .25s ease;
+        }
+
+        .app-toast.error { border-left-color: #e74c3c; }
+        .app-toast.success { border-left-color: #2ecc71; }
+        .app-toast.warning { border-left-color: #f0ad4e; }
+
+        .app-toast i { margin-top: 2px; }
+        .app-toast strong { display: block; margin-bottom: 2px; font-size: 13px; }
+        .app-toast span { display: block; font-size: 12px; line-height: 1.45; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-loading {
+            pointer-events: none;
+            opacity: .8;
+        }
+
+
+        /* ===========================
+        MODAL PENDAFTARAN BERHASIL
+        =========================== */
+
+        .success-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            background: rgba(18, 45, 68, .58);
+            backdrop-filter: blur(6px);
+            animation: successOverlayIn .22s ease;
+        }
+
+        .success-modal-card {
+            width: min(460px, 100%);
+            padding: 34px 30px 28px;
+            border-radius: 24px;
+            background: #ffffff;
+            text-align: center;
+            box-shadow: 0 28px 80px rgba(17, 65, 99, .30);
+            animation: successCardIn .28s ease;
+        }
+
+        .success-modal-icon {
+            width: 86px;
+            height: 86px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            background: linear-gradient(135deg, #38d487, #1eaf69);
+            box-shadow: 0 14px 30px rgba(46, 204, 113, .28);
+            font-size: 38px;
+        }
+
+        .success-modal-card h3 {
+            margin: 0 0 10px;
+            color: #1f3b57;
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .success-modal-card p {
+            margin: 0 0 24px;
+            color: #6f8497;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .success-modal-button {
+            width: 100%;
+            min-height: 50px;
+            padding: 12px 18px;
+            border: 0;
+            border-radius: 13px;
+            cursor: pointer;
+            color: #ffffff;
+            background: linear-gradient(135deg, #3db7ee, #118dd0);
+            box-shadow: 0 12px 24px rgba(17, 141, 208, .24);
+            font-size: 15px;
+            font-weight: 800;
+            transition: .2s ease;
+        }
+
+        .success-modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 28px rgba(17, 141, 208, .30);
+        }
+
+        .success-modal-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(61, 183, 238, .22);
+        }
+
+        @keyframes successOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes successCardIn {
+            from { opacity: 0; transform: translateY(16px) scale(.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
     </style>
 
 </head>
@@ -1503,10 +1713,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </p>
 
             <?php if ($error): ?>
-                <div class="alert">
-                    <?= htmlspecialchars($error) ?>
+                <div class="form-alert form-alert-error" role="alert">
+                    <div class="form-alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <strong>Pendaftaran belum berhasil</strong>
+                        <span><?= e($error) ?></span>
+                        <?php if ($errorStep === 4): ?>
+                            <small>Untuk keamanan browser, file perlu dipilih ulang setelah terjadi kegagalan.</small>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
+
+            <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
             <form method="POST" id="registerForm" enctype="multipart/form-data">
 
@@ -1578,6 +1799,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 id="nik"
                                 maxlength="16"
                                 placeholder="Masukkan NIK"
+                                value="<?= input_value('nik') ?>"
                                 oninput="validasiNIK()"
                                 required>
 
@@ -1593,6 +1815,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 name="nama_lengkap"
                                 id="nama_lengkap"
                                 placeholder="Masukkan Nama Lengkap"
+                                value="<?= input_value('nama_lengkap') ?>"
                                 required>
 
                         </div>
@@ -1606,6 +1829,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 name="tempat_lahir"
                                 id="tempat_lahir"
                                 placeholder="Masukkan Tempat Lahir"
+                                value="<?= input_value('tempat_lahir') ?>"
                                 required>
 
                         </div>
@@ -1618,6 +1842,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 class="form-control"
                                 name="tanggal_lahir"
                                 id="tanggal_lahir"
+                                value="<?= input_value('tanggal_lahir') ?>"
                                 required>
 
                         </div>
@@ -1633,8 +1858,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 required>
 
                                 <option value="">Pilih</option>
-                                <option value="Laki-laki">Laki-laki</option>
-                                <option value="Perempuan">Perempuan</option>
+                                <option value="Laki-laki" <?= selected_value('jenis_kelamin', 'Laki-laki') ?>>Laki-laki</option>
+                                <option value="Perempuan" <?= selected_value('jenis_kelamin', 'Perempuan') ?>>Perempuan</option>
 
                             </select>
 
@@ -1647,10 +1872,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <select class="form-control" name="golongan_darah" id="golongan_darah" required>
 
                                 <option value="">Pilih</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="AB">AB</option>
-                                <option value="O">O</option>
+                                <option value="A" <?= selected_value('golongan_darah', 'A') ?>>A</option>
+                                <option value="B" <?= selected_value('golongan_darah', 'B') ?>>B</option>
+                                <option value="AB" <?= selected_value('golongan_darah', 'AB') ?>>AB</option>
+                                <option value="O" <?= selected_value('golongan_darah', 'O') ?>>O</option>
 
                             </select>
 
@@ -1662,9 +1887,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <select class="form-control" name="status_pernikahan" id="status_pernikahan" required>
 
-                                <option value="Belum Menikah">Belum Menikah</option>
-                                <option value="Sudah Menikah">Sudah Menikah</option>
-                                <option value="Pernah Menikah">Pernah Menikah</option>
+                                <option value="Belum Menikah" <?= selected_value('status_pernikahan', 'Belum Menikah', 'Belum Menikah') ?>>Belum Menikah</option>
+                                <option value="Sudah Menikah" <?= selected_value('status_pernikahan', 'Sudah Menikah', 'Belum Menikah') ?>>Sudah Menikah</option>
+                                <option value="Pernah Menikah" <?= selected_value('status_pernikahan', 'Pernah Menikah', 'Belum Menikah') ?>>Pernah Menikah</option>
 
                             </select>
 
@@ -1677,12 +1902,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <select class="form-control" name="agama" id="agama" required>
 
                                 <option value="">Pilih</option>
-                                <option value="Islam">Islam</option>
-                                <option value="Kristen Protestan">Kristen Protestan</option>
-                                <option value="Katolik">Katolik</option>
-                                <option value="Hindu">Hindu</option>
-                                <option value="Budha">Budha</option>
-                                <option value="Konghuchu">Konghuchu</option>
+                                <option value="Islam" <?= selected_value('agama', 'Islam') ?>>Islam</option>
+                                <option value="Kristen Protestan" <?= selected_value('agama', 'Kristen Protestan') ?>>Kristen Protestan</option>
+                                <option value="Katolik" <?= selected_value('agama', 'Katolik') ?>>Katolik</option>
+                                <option value="Hindu" <?= selected_value('agama', 'Hindu') ?>>Hindu</option>
+                                <option value="Budha" <?= selected_value('agama', 'Budha') ?>>Budha</option>
+                                <option value="Konghuchu" <?= selected_value('agama', 'Konghuchu') ?>>Konghuchu</option>
 
                             </select>
 
@@ -1697,6 +1922,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 name="pekerjaan"
                                 id="pekerjaan"
                                 placeholder="Masukkan Pekerjaan"
+                                value="<?= input_value('pekerjaan') ?>"
                                 required>
 
                         </div>
@@ -1710,8 +1936,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 name="alamat"
                                 id="alamat"
                                 placeholder="Masukkan Alamat"
-                                required>
-                            </textarea>
+                                required><?= input_value('alamat') ?></textarea>
 
                         </div>
 
@@ -1812,6 +2037,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 maxlength="3"
                                 class="form-control"
                                 placeholder="Contoh: 001, 015, 100"
+                                value="<?= input_value('rt') ?>"
                                 oninput="validasiRT()"
                                 required>
 
@@ -1829,6 +2055,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 maxlength="3"
                                 class="form-control"
                                 placeholder="Contoh: 001, 015, 100"
+                                value="<?= input_value('rw') ?>"
                                 oninput="validasiRW()"
                                 required>
 
@@ -1846,6 +2073,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 maxlength="3"
                                 class="form-control"
                                 placeholder="Contoh: 001, 015, 100"
+                                value="<?= input_value('tps') ?>"
                                 oninput="validasiTPS()"
                                 required>
 
@@ -1896,6 +2124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     maxlength="16"
                                     class="form-control"
                                     placeholder="Masukkan Nomor KK"
+                                    value="<?= input_value('nomor_kk') ?>"
                                     oninput="validasiKK()"
                                     required>
 
@@ -1950,6 +2179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 id="nomor_telepon"
                                 class="form-control"
                                 placeholder="08xxxxxxxxxx"
+                                value="<?= input_value('nomor_telepon') ?>"
                                 inputmode="numeric"
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                 required>
@@ -1987,8 +2217,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 id="nomor_whatsapp"
                                 class="form-control"
                                 placeholder="08xxxxxxxxxx"
+                                value="<?= input_value('nomor_whatsapp') ?>"
                                 inputmode="numeric"
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                required>
 
                             <small class="form-text text-muted mt-2">
                                 Centang pilihan di atas jika nomor WhatsApp sama.
@@ -2136,7 +2368,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 id="username"
                                 name="username"
                                 class="form-control"
-                                placeholder="Minimal 4 karakter">
+                                placeholder="Minimal 4 karakter"
+                                value="<?= input_value('username') ?>"
+                                required>
 
                         </div>
 
@@ -2151,7 +2385,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     id="password"
                                     name="password"
                                     class="form-control"
-                                    placeholder="Minimal 6 karakter">
+                                    placeholder="Minimal 6 karakter"
+                                    minlength="6"
+                                    required>
 
                                 <button
                                     type="button"
@@ -2177,7 +2413,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     id="konfirmasi_password"
                                     name="konfirmasi_password"
                                     class="form-control"
-                                    placeholder="Ulangi Password">
+                                    placeholder="Ulangi Password"
+                                    minlength="6"
+                                    required>
 
                                 <button
                                     type="button"
@@ -2198,7 +2436,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                                 <input
                                     type="checkbox"
-                                    id="setuju">
+                                    id="setuju"
+                                    name="setuju"
+                                    value="1"
+                                    <?= !empty($_POST['setuju']) ? 'checked' : '' ?>
+                                    required>
 
                                 <span>
                                     Saya menyatakan bahwa seluruh data yang saya isi adalah benar.
@@ -2235,7 +2477,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
 
                     <button
-                        href="login.php"
                         type="submit"
                         id="submitBtn"
                         class="btn-login">
@@ -2269,6 +2510,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div>
 
+
+    <?php if ($registrationSuccess): ?>
+        <div
+            class="success-modal-overlay"
+            id="registrationSuccessModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="registrationSuccessTitle">
+
+            <div class="success-modal-card">
+                <div class="success-modal-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <h3 id="registrationSuccessTitle">Pendaftaran Berhasil</h3>
+
+                <p>
+                    <?= e($registrationSuccessMessage) ?>
+                </p>
+
+                <button
+                    type="button"
+                    class="success-modal-button"
+                    id="registrationSuccessOk">
+                    <i class="fas fa-sign-in-alt"></i>
+                    OK, ke Halaman Login
+                </button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+
 </body>
 
 
@@ -2276,7 +2549,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // WIZARD
     document.addEventListener("DOMContentLoaded", function() {
 
-        let currentStep = 0;
+        let currentStep = <?= (int)$errorStep ?>;
 
         const steps = document.querySelectorAll(".step");
         const circles = document.querySelectorAll(".step-circle");
@@ -2319,22 +2592,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Tampilkan step pertama
         showStep(currentStep);
 
+        function showToast(type, title, message) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const iconMap = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-info-circle'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `app-toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${iconMap[type] || iconMap.warning}"></i>
+                <div><strong>${title}</strong><span>${message}</span></div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4200);
+        }
+
+        function validateStep(index) {
+            const step = steps[index];
+            const requiredFields = [...step.querySelectorAll('[required]')]
+                .filter(field => !field.disabled);
+
+            for (const field of requiredFields) {
+                if (!field.checkValidity()) {
+                    field.classList.add('is-invalid');
+                    field.reportValidity();
+                    field.focus({preventScroll: true});
+                    field.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    showToast('error', 'Data belum lengkap', 'Lengkapi kolom yang ditandai sebelum melanjutkan.');
+                    return false;
+                }
+                field.classList.remove('is-invalid');
+            }
+
+            if (index === 1 && !step.querySelector('input[name="admin_id[]"]:checked')) {
+                showToast('error', 'Admin Dapil belum dipilih', 'Pilih minimal satu Admin Dapil yang tersedia.');
+                document.getElementById('adminContainer')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                return false;
+            }
+
+            if (index === 4) {
+                const files = ['foto_ktp', 'foto_diri', 'foto_kk'];
+                const missing = files.find(id => !document.getElementById(id)?.files?.length);
+                if (missing) {
+                    showToast('error', 'Dokumen belum lengkap', 'Pilih Foto KTP, Foto Diri, dan Kartu Keluarga.');
+                    document.getElementById(missing)?.closest('.upload-card')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         nextBtn.addEventListener("click", function() {
+            if (!validateStep(currentStep)) return;
 
             if (currentStep < steps.length - 1) {
                 currentStep++;
                 showStep(currentStep);
+                window.scrollTo({top: 0, behavior: 'smooth'});
             }
-
         });
 
         prevBtn.addEventListener("click", function() {
-
             if (currentStep > 0) {
                 currentStep--;
                 showStep(currentStep);
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+        });
+
+        const registerForm = document.getElementById('registerForm');
+        registerForm.addEventListener('submit', function(event) {
+            if (!validateStep(steps.length - 1)) {
+                event.preventDefault();
+                return;
             }
 
+            submitBtn.classList.add('btn-loading');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Data...';
+        });
+
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', () => field.classList.remove('is-invalid'));
+            field.addEventListener('change', () => field.classList.remove('is-invalid'));
         });
 
     });
@@ -2513,7 +2859,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Data dari database (PHP)
         const DAPIL = <?= json_encode($dapilData) ?>;
 
-        const ADMIN_LIST = <?= json_encode($adminList) ?>;
+        const ADMIN_LIST = <?= json_encode($adminList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+
+        const OLD_VALUE = {
+            provinsi: <?= json_encode($_POST['provinsi'] ?? '') ?>,
+            kab_kota: <?= json_encode($_POST['kab_kota'] ?? '') ?>,
+            kecamatan: <?= json_encode($_POST['kecamatan'] ?? '') ?>,
+            desa_kelurahan: <?= json_encode($_POST['desa_kelurahan'] ?? '') ?>,
+            admin_ids: <?= json_encode(array_values(array_map('intval', $_POST['admin_id'] ?? []))) ?>
+        };
 
         // Cache supaya API tidak dipanggil berkali-kali
         let cacheProvinsi = [];
@@ -2975,6 +3329,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ==================================================*/
         await loadProvinsi();
 
+        // Pulihkan pilihan wilayah setelah validasi server gagal.
+        if (OLD_VALUE.provinsi) {
+            provinsiSelect.value = OLD_VALUE.provinsi;
+            loadKabKota();
+
+            if (OLD_VALUE.kab_kota) {
+                kabKotaSelect.value = OLD_VALUE.kab_kota;
+                await loadKecamatan();
+                loadAdmin();
+
+                if (OLD_VALUE.kecamatan) {
+                    kecamatanSelect.value = OLD_VALUE.kecamatan;
+                    const selected = kecamatanSelect.options[kecamatanSelect.selectedIndex];
+                    if (selected && selected.dataset.id) {
+                        await loadDesa(selected.dataset.id);
+                        desaSelect.value = OLD_VALUE.desa_kelurahan;
+                    }
+                }
+
+                OLD_VALUE.admin_ids.forEach(id => {
+                    const checkbox = document.querySelector(`input[name="admin_id[]"][value="${id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+        }
+
     });
     // ------------------------------------------------------------------------------------------------
 
@@ -3182,9 +3562,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         sinkronkanNomorWhatsApp();
     });
-    // ------------------------------------------------------------------------------------------------
 
-    
+
+    // PREVIEW FILE UPLOAD
     document.addEventListener('DOMContentLoaded', function() {
         const maxSize = 5 * 1024 * 1024;
 
@@ -3198,11 +3578,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function toast(type, title, message) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
-            const icons = {
-                success: 'fa-check-circle',
-                error: 'fa-exclamation-circle',
-                warning: 'fa-info-circle'
-            };
+            const icons = {success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-info-circle'};
             const el = document.createElement('div');
             el.className = `app-toast ${type}`;
             el.innerHTML = `<i class="fas ${icons[type] || icons.warning}"></i><div><strong>${title}</strong><span>${message}</span></div>`;
@@ -3242,6 +3618,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     toast('error', `${label} ditolak`, 'Format file tidak didukung.');
                     return;
                 }
+
                 if (this.id === 'foto_diri' && !isImage) {
                     this.value = '';
                     toast('error', 'Foto Diri ditolak', 'Foto diri harus berupa JPG, PNG, atau WEBP.');
@@ -3268,6 +3645,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
     });
+
+
+
+    // NOTIFIKASI PENDAFTARAN BERHASIL
+    document.addEventListener('DOMContentLoaded', function() {
+        const successButton = document.getElementById('registrationSuccessOk');
+
+        if (!successButton) {
+            return;
+        }
+
+        successButton.focus();
+
+        successButton.addEventListener('click', function() {
+            window.location.replace(<?= json_encode(url('login.php')) ?>);
+        });
+    });
+
 </script>
 
 </html>
