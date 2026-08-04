@@ -11,6 +11,7 @@ require_once __DIR__ . '/config/functions.php';
 */
 
 if (isset($_SESSION['user'])) {
+
     redirect('dashboard/index.php');
     exit;
 }
@@ -35,33 +36,66 @@ function input_value($name)
 $error = '';
 $success = '';
 
+/*
+|--------------------------------------------------------------------------
+| HELPER UPLOAD FILE
+|--------------------------------------------------------------------------
+*/
+
 function uploadFile($inputName, $folder)
 {
+
     if (
         !isset($_FILES[$inputName]) ||
         $_FILES[$inputName]['error'] == UPLOAD_ERR_NO_FILE
     ) {
+
         throw new Exception("{$inputName} wajib diupload");
     }
 
     if ($_FILES[$inputName]['error'] != UPLOAD_ERR_OK) {
+
         throw new Exception("Gagal upload file {$inputName}");
     }
 
-    $ext = strtolower(pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION));
+    $ext = strtolower(
+        pathinfo(
+            $_FILES[$inputName]['name'],
+            PATHINFO_EXTENSION
+        )
+    );
 
-    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    $allowed = [
+        'jpg',
+        'jpeg',
+        'png',
+        'pdf'
+    ];
 
     if (!in_array($ext, $allowed)) {
-        throw new Exception("Format file {$inputName} tidak didukung.");
+
+        throw new Exception(
+            "Format file {$inputName} tidak didukung."
+        );
     }
 
     $filename = uniqid() . "." . $ext;
 
-    $destination = __DIR__ . "/uploads/{$folder}/" . $filename;
+    $destination =
+        __DIR__ .
+        "/uploads/{$folder}/" .
+        $filename;
 
-    if (!move_uploaded_file($_FILES[$inputName]['tmp_name'], $destination)) {
-        throw new Exception("Gagal menyimpan file {$inputName}");
+    if (
+        !move_uploaded_file(
+            $_FILES[$inputName]['tmp_name'],
+            $destination
+        )
+    ) {
+
+        throw new Exception(
+            "Gagal menyimpan file {$inputName}"
+        );
     }
 
     return $filename;
@@ -69,9 +103,10 @@ function uploadFile($inputName, $folder)
 
 /*
 |--------------------------------------------------------------------------
-| Ambil Data Dapil
+| AMBIL DATA DAPIL
 |--------------------------------------------------------------------------
 */
+
 $stmt = $pdo->query("
     SELECT
         provinsi,
@@ -86,10 +121,14 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $provinsi = trim($row['provinsi']);
 
     if (!isset($dapilData[$provinsi])) {
+
         $dapilData[$provinsi] = [];
     }
 
-    $kabupaten = json_decode($row['kab_kota'], true);
+    $kabupaten = json_decode(
+        $row['kab_kota'],
+        true
+    );
 
     if (is_array($kabupaten)) {
 
@@ -98,6 +137,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $kab = trim($kab);
 
             if (!in_array($kab, $dapilData[$provinsi])) {
+
                 $dapilData[$provinsi][] = $kab;
             }
         }
@@ -106,7 +146,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
 /*
 |--------------------------------------------------------------------------
-| Ambil Data Admin Dapil
+| AMBIL DATA ADMIN DAPIL
 |--------------------------------------------------------------------------
 */
 
@@ -138,8 +178,10 @@ $adminList = [];
 
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-    // ubah JSON kabupaten menjadi array
-    $row['kab_kota'] = json_decode($row['kab_kota'], true);
+    $row['kab_kota'] = json_decode(
+        $row['kab_kota'],
+        true
+    );
 
     $adminList[] = $row;
 }
@@ -157,52 +199,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         /*
-        |--------------------------------------------------------------------------
-        | AMBIL DATA FORM
-        |--------------------------------------------------------------------------
-        */
+|--------------------------------------------------------------------------
+| AMBIL DATA FORM
+|--------------------------------------------------------------------------
+*/
 
-        $nik                 = trim($_POST['nik'] ?? '');
-        $namaLengkap         = trim($_POST['nama_lengkap'] ?? '');
+        $nik                = trim($_POST['nik'] ?? '');
+        $namaLengkap        = trim($_POST['nama_lengkap'] ?? '');
 
-        $tempatLahir         = trim($_POST['tempat_lahir'] ?? '');
-        $tanggalLahir        = trim($_POST['tanggal_lahir'] ?? '');
+        $tempatLahir        = trim($_POST['tempat_lahir'] ?? '');
+        $tanggalLahir       = trim($_POST['tanggal_lahir'] ?? '');
 
-        $jenisKelamin        = trim($_POST['jenis_kelamin'] ?? '');
-        $golonganDarah       = trim($_POST['golongan_darah'] ?? '');
+        $jenisKelamin       = trim($_POST['jenis_kelamin'] ?? '');
+        $golonganDarah      = trim($_POST['golongan_darah'] ?? '');
 
-        $agama               = trim($_POST['agama'] ?? '');
-        $statusPernikahan    = trim($_POST['status_pernikahan'] ?? '');
+        $agama              = trim($_POST['agama'] ?? '');
+        $statusPernikahan   = trim($_POST['status_pernikahan'] ?? '');
 
-        $pekerjaan           = trim($_POST['pekerjaan'] ?? '');
-        $alamat              = trim($_POST['alamat'] ?? '');
+        $pekerjaan          = trim($_POST['pekerjaan'] ?? '');
+        $alamat             = trim($_POST['alamat'] ?? '');
 
-        $provinsi            = trim($_POST['provinsi'] ?? '');
-        $kabKota             = trim($_POST['kab_kota'] ?? '');
-        $kecamatan           = trim($_POST['kecamatan'] ?? '');
-        $desaKelurahan       = trim($_POST['desa_kelurahan'] ?? '');
+        $provinsi           = trim($_POST['provinsi'] ?? '');
+        $kabKota            = trim($_POST['kab_kota'] ?? '');
+        $kecamatan          = trim($_POST['kecamatan'] ?? '');
+        $desaKelurahan      = trim($_POST['desa_kelurahan'] ?? '');
 
-        $rt                  = trim($_POST['rt'] ?? '');
-        $rw                  = trim($_POST['rw'] ?? '');
-        $tps                 = trim($_POST['tps'] ?? '');
+        $rt                 = trim($_POST['rt'] ?? '');
+        $rw                 = trim($_POST['rw'] ?? '');
+        $tps                = trim($_POST['tps'] ?? '');
 
-        $nomorKK             = trim($_POST['nomor_kk'] ?? '');
-        $nomorHP             = trim($_POST['nomor_telepon'] ?? '');
-        $nomorWA             = trim($_POST['nomor_whatsapp'] ?? '');
+        $nomorKK            = trim($_POST['nomor_kk'] ?? '');
 
-        $username            = trim($_POST['username'] ?? '');
+        $nomorHP            = trim($_POST['nomor_telepon'] ?? '');
+        $nomorWA            = trim($_POST['nomor_whatsapp'] ?? '');
 
-        $password            = $_POST['password'] ?? '';
-        $konfirmasiPassword  = $_POST['konfirmasi_password'] ?? '';
+        $username           = trim($_POST['username'] ?? '');
+
+        $password           = $_POST['password'] ?? '';
+        $konfirmasiPassword = $_POST['konfirmasi_password'] ?? '';
+
+        $adminId            = $_POST['admin_id'] ?? [];
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDASI DATA
+        | VALIDASI
         |--------------------------------------------------------------------------
         */
 
         if (!preg_match('/^[0-9]{16}$/', $nik)) {
-            throw new Exception('NIK harus terdiri dari 16 digit angka.');
+            throw new Exception('NIK harus terdiri dari 16 digit.');
         }
 
         if (strlen($namaLengkap) < 3) {
@@ -249,12 +294,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Desa/Kelurahan wajib dipilih.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDASI RT RW TPS
-        |--------------------------------------------------------------------------
-        */
-
         if (!preg_match('/^[0-9]{3}$/', $rt)) {
             throw new Exception('RT harus terdiri dari 3 digit.');
         }
@@ -267,41 +306,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('TPS harus terdiri dari 3 digit.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | NOMOR KK
-        |--------------------------------------------------------------------------
-        */
-
         if (!preg_match('/^[0-9]{16}$/', $nomorKK)) {
-            throw new Exception('Nomor KK harus terdiri dari 16 digit angka.');
+            throw new Exception('Nomor KK harus terdiri dari 16 digit.');
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | NOMOR HP
-        |--------------------------------------------------------------------------
-        */
 
         if (!preg_match('/^[0-9]{10,15}$/', $nomorHP)) {
-            throw new Exception('Nomor HP tidak valid.');
+            throw new Exception('Nomor Handphone tidak valid.');
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | NOMOR WA
-        |--------------------------------------------------------------------------
-        */
 
         if (!preg_match('/^[0-9]{10,15}$/', $nomorWA)) {
             throw new Exception('Nomor WhatsApp tidak valid.');
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | USERNAME
-        |--------------------------------------------------------------------------
-        */
 
         if (strlen($username) < 4) {
             throw new Exception('Username minimal 4 karakter.');
@@ -309,6 +324,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!preg_match('/^[A-Za-z0-9._]+$/', $username)) {
             throw new Exception('Username hanya boleh huruf, angka, titik (.) dan underscore (_).');
+        }
+
+        if (strlen($password) < 6) {
+            throw new Exception('Password minimal 6 karakter.');
+        }
+
+        if ($password !== $konfirmasiPassword) {
+            throw new Exception('Konfirmasi password tidak sesuai.');
+        }
+
+        if (empty($adminId)) {
+            throw new Exception('Pilih minimal satu Admin Dapil.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CEK NIK
+        |--------------------------------------------------------------------------
+        */
+
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM profiles
+            WHERE nik = ?
+        ");
+
+        $stmt->execute([$nik]);
+
+        if ($stmt->fetchColumn() > 0) {
+            throw new Exception('NIK sudah terdaftar.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CEK USERNAME
+        |--------------------------------------------------------------------------
+        */
+
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM users
+            WHERE username = ?
+        ");
+
+        $stmt->execute([$username]);
+
+        if ($stmt->fetchColumn() > 0) {
+            throw new Exception('Username sudah digunakan.');
         }
 
         /*
@@ -367,11 +430,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        $fotoKTP = uploadFile('foto_ktp', 'ktp');
-
-        $fotoKK = uploadFile('foto_kk', 'kk');
-
-        $fotoDiri = uploadFile('foto_diri', 'foto_diri');
+        $fotoKTP  = uploadFile('foto_ktp', 'ktp');
+        $fotoKK   = uploadFile('foto_kartu_keluarga', 'kk');
+        $fotoDiri = uploadFile('foto_diri', 'diri');
 
         /*
         |--------------------------------------------------------------------------
@@ -395,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             )
             VALUES
             (
-                ?, ?, ?, 'relawan', 1
+                ?, ?, ?, 'relawan', 0
             )
         ");
 
@@ -414,80 +475,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         */
 
         $stmt = $pdo->prepare("
-        INSERT INTO profiles
-        (
-            user_id,
-            type,
+            INSERT INTO profiles
+            (
+                user_id,
+                type,
+                created_by,
 
-            nik,
-            nama_lengkap,
+                nik,
+                nama_lengkap,
 
-            tempat_lahir,
-            tanggal_lahir,
+                tempat_lahir,
+                tanggal_lahir,
 
-            jenis_kelamin,
-            golongan_darah,
+                jenis_kelamin,
+                golongan_darah,
 
-            agama,
-            status_pernikahan,
+                agama,
+                status_pernikahan,
 
-            pekerjaan,
-            alamat,
+                pekerjaan,
+                alamat,
 
-            provinsi,
-            kab_kota,
-            kecamatan,
-            desa_kelurahan,
+                provinsi,
+                kab_kota,
+                kecamatan,
+                desa_kelurahan,
 
-            rt,
-            rw,
-            tps,
+                rt,
+                rw,
+                tps,
 
-            nomor_kk,
-            nomor_telepon,
-            nomor_whatsapp,
+                nomor_kk,
+                nomor_telepon,
+                nomor_whatsapp,
 
-            foto_ktp,
-            foto_kk,
-            foto_diri,
-            surat_persetujuan,
+                foto_ktp,
+                foto_kartu_keluarga,
+                foto_diri,
 
-            status_verifikasi,
-            profile_active,
-            profile_complete
-        )
-        VALUES
-        (
-            ?, ?,
+                status_verifikasi,
+                profile_active,
+                profile_complete
+            )
+            VALUES
+            (
+                ?, ?, ?,
 
-            ?, ?,
+                ?, ?,
 
-            ?, ?,
+                ?, ?,
 
-            ?, ?,
+                ?, ?,
 
-            ?, ?,
+                ?, ?,
 
-            ?, ?,
+                ?, ?,
 
-            ?, ?, ?, ?,
+                ?, ?, ?, ?,
 
-            ?, ?, ?,
+                ?, ?, ?,
 
-            ?, ?, ?, ?,
+                ?, ?, ?,
 
-            ?, ?, ?, ?,
+                ?, ?, ?,
 
-            'pending',
-            1,
-            1
-        )
+                'pending',
+                1,
+                1
+            )
         ");
 
         $stmt->execute([
-
             $userId,
             'relawan',
+            $userId,
 
             $nik,
             $namaLengkap,
@@ -519,9 +580,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $fotoKTP,
             $fotoKK,
-            $fotoDiri,
-
+            $fotoDiri
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SIMPAN ADMIN YANG DIPILIH
+        |--------------------------------------------------------------------------
+        */
+        $profileId = (int)$pdo->lastInsertId();
+
+        $stmt = $pdo->prepare("
+            INSERT INTO profile_admin
+            (
+                profile_id,
+                admin_profile_id
+            )
+            VALUES
+            (?, ?)
+        ");
+
+        foreach ($adminId as $admin) {
+
+            $stmt->execute([
+                $profileId,
+                $admin
+            ]);
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -531,8 +617,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
 
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
+
         $_SESSION['success'] =
-            "Pendaftaran berhasil. Akun Anda sedang menunggu verifikasi Admin Dapil sebelum dapat login.";
+            "Pendaftaran berhasil. Akun Anda sedang menunggu verifikasi Admin Dapil.";
 
         redirect('login.php');
 
@@ -543,7 +635,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
         }
 
-        die($e->getMessage());
+        $error = $e->getMessage();
+
+        // sementara untuk debugging
+        // echo "<pre>".$e->getMessage()."</pre>";
+
     }
 }
 
@@ -1908,111 +2004,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ========================== -->
                 <div class="step">
 
-                    <h4 class="step-title">
-                        Upload Dokumen
-                    </h4>
+                    <h4 class="step-title">Upload Dokumen</h4>
 
-                    <p class="step-description">
-                        Pastikan foto jelas, tidak buram, dan seluruh bagian dokumen terlihat.
-                    </p>
+                    <div class="document-note">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <strong>Periksa dokumen sebelum melanjutkan</strong>
+                            <span>Format JPG, PNG, WEBP, atau PDF maksimal 5 MB. Foto diri wajib berupa gambar.</span>
+                        </div>
+                    </div>
 
                     <div class="row">
 
-                        <!-- FOTO KTP -->
-
                         <div class="col-md-6 mb-4">
-
-                            <div class="upload-card">
-
-                                <div class="upload-icon">
-                                    <i class="fas fa-id-card"></i>
-                                </div>
-
+                            <div class="upload-card" data-upload-card>
+                                <div class="upload-icon"><i class="fas fa-id-card"></i></div>
                                 <h6>Foto KTP</h6>
+                                <p>Pastikan seluruh bagian KTP terlihat jelas.</p>
 
-                                <p>Upload foto KTP yang masih berlaku.</p>
-
-                                <label class="upload-btn">
-
-                                    <i class="fas fa-upload"></i>
-                                    Pilih File
-
-                                    <input
-                                        type="file"
-                                        name="foto_ktp"
-                                        accept="image/*"
-                                        hidden>
-
-                                </label>
-
-                            </div>
-
-                        </div>
-
-                        <!-- FOTO DIRI -->
-
-                        <div class="col-md-6 mb-4">
-
-                            <div class="upload-card">
-
-                                <div class="upload-icon">
-                                    <i class="fas fa-user"></i>
+                                <div class="file-preview" id="preview_foto_ktp">
+                                    <div class="file-preview-empty">
+                                        <i class="far fa-image"></i>
+                                        <span>Belum ada file</span>
+                                    </div>
                                 </div>
 
+                                <label class="upload-btn" for="foto_ktp">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Pilih File</span>
+                                </label>
+
+                                <input
+                                    type="file"
+                                    id="foto_ktp"
+                                    name="foto_ktp"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                                    data-label="Foto KTP"
+                                    data-preview="preview_foto_ktp"
+                                    required
+                                    hidden>
+
+                                <div class="file-meta" id="meta_foto_ktp"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="upload-card" data-upload-card>
+                                <div class="upload-icon"><i class="fas fa-user"></i></div>
                                 <h6>Foto Diri</h6>
+                                <p>Gunakan foto terbaru dengan wajah terlihat jelas.</p>
 
-                                <p>Upload foto diri terbaru.</p>
-
-                                <label class="upload-btn">
-
-                                    <i class="fas fa-upload"></i>
-                                    Pilih File
-
-                                    <input
-                                        type="file"
-                                        name="foto_diri"
-                                        accept="image/*"
-                                        hidden>
-
-                                </label>
-
-                            </div>
-
-                        </div>
-
-                        <!-- FOTO KK -->
-
-                        <div class="col-md-6 mb-4">
-
-                            <div class="upload-card">
-
-                                <div class="upload-icon">
-                                    <i class="fas fa-users"></i>
+                                <div class="file-preview file-preview-portrait" id="preview_foto_diri">
+                                    <div class="file-preview-empty">
+                                        <i class="far fa-user-circle"></i>
+                                        <span>Belum ada file</span>
+                                    </div>
                                 </div>
 
-                                <h6>Kartu Keluarga</h6>
-
-                                <p>Upload foto KK dengan jelas.</p>
-
-                                <label class="upload-btn">
-
+                                <label class="upload-btn" for="foto_diri">
                                     <i class="fas fa-upload"></i>
-                                    Pilih File
-
-                                    <input
-                                        type="file"
-                                        name="foto_kk"
-                                        accept="image/*"
-                                        hidden>
-
+                                    <span>Pilih File</span>
                                 </label>
 
-                            </div>
+                                <input
+                                    type="file"
+                                    id="foto_diri"
+                                    name="foto_diri"
+                                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                    data-label="Foto Diri"
+                                    data-preview="preview_foto_diri"
+                                    required
+                                    hidden>
 
+                                <div class="file-meta" id="meta_foto_diri"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="upload-card" data-upload-card>
+                                <div class="upload-icon"><i class="fas fa-users"></i></div>
+                                <h6>Kartu Keluarga</h6>
+                                <p>Pastikan nomor dan anggota keluarga dapat terbaca.</p>
+
+                                <div class="file-preview" id="preview_foto_kk">
+                                    <div class="file-preview-empty">
+                                        <i class="far fa-file-alt"></i>
+                                        <span>Belum ada file</span>
+                                    </div>
+                                </div>
+
+                                <label class="upload-btn" for="foto_kk">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Pilih File</span>
+                                </label>
+
+                                <input
+                                    type="file"
+                                    id="foto_kk"
+                                    name="foto_kk"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                                    data-label="Foto Kartu Keluarga"
+                                    data-preview="preview_foto_kk"
+                                    required
+                                    hidden>
+
+                                <div class="file-meta" id="meta_foto_kk"></div>
+                            </div>
                         </div>
 
                     </div>
-
                 </div>
 
                 <!-- =========================
@@ -2135,6 +2235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
 
                     <button
+                        href="login.php"
                         type="submit"
                         id="submitBtn"
                         class="btn-login">
@@ -3080,6 +3181,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         sinkronkanNomorWhatsApp();
+    });
+    // ------------------------------------------------------------------------------------------------
+
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const maxSize = 5 * 1024 * 1024;
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 KB';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+            return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+        }
+
+        function toast(type, title, message) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-info-circle'
+            };
+            const el = document.createElement('div');
+            el.className = `app-toast ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type] || icons.warning}"></i><div><strong>${title}</strong><span>${message}</span></div>`;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 4200);
+        }
+
+        document.querySelectorAll('input[type="file"][data-preview]').forEach(input => {
+            input.addEventListener('change', function() {
+                const preview = document.getElementById(this.dataset.preview);
+                const meta = document.getElementById(`meta_${this.id}`);
+                const card = this.closest('[data-upload-card]');
+                const label = this.dataset.label || 'File';
+                const file = this.files && this.files[0];
+
+                if (!file) {
+                    preview.innerHTML = '<div class="file-preview-empty"><i class="far fa-image"></i><span>Belum ada file</span></div>';
+                    meta.innerHTML = '';
+                    card.classList.remove('has-file');
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    this.value = '';
+                    preview.innerHTML = '<div class="file-preview-empty"><i class="fas fa-exclamation-circle"></i><span>File terlalu besar</span></div>';
+                    meta.innerHTML = '<span style="color:#d64545">Maksimal 5 MB</span>';
+                    card.classList.remove('has-file');
+                    toast('error', `${label} ditolak`, 'Ukuran file maksimal 5 MB.');
+                    return;
+                }
+
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                const isImage = file.type.startsWith('image/');
+
+                if (!isPdf && !isImage) {
+                    this.value = '';
+                    toast('error', `${label} ditolak`, 'Format file tidak didukung.');
+                    return;
+                }
+                if (this.id === 'foto_diri' && !isImage) {
+                    this.value = '';
+                    toast('error', 'Foto Diri ditolak', 'Foto diri harus berupa JPG, PNG, atau WEBP.');
+                    return;
+                }
+
+                if (isPdf) {
+                    preview.innerHTML = '<div class="pdf-preview"><i class="fas fa-file-pdf"></i><span>Dokumen PDF siap diunggah</span></div>';
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                        preview.innerHTML = `<img src="${event.target.result}" alt="Preview ${label}">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                meta.innerHTML = `
+                    <span class="file-success"><i class="fas fa-check-circle"></i> File telah dipilih</span>
+                    <span>${file.name}</span>
+                    <span class="file-size">${formatBytes(file.size)}</span>
+                `;
+                card.classList.add('has-file');
+                toast('success', `${label} siap`, `${file.name} berhasil dipilih.`);
+            });
+        });
     });
 </script>
 

@@ -2,13 +2,71 @@
 
     <?php
     $profileComplete = true;
+    $profileActive = true;
+    $statusVerifikasi = 'terdaftar';
 
-    if (
-        current_user()['role'] === 'relawan'
-    ) {
+    if (current_user()['role'] === 'relawan') {
 
-        $profileComplete = profile_completed($pdo);
+        $profile = current_profile($pdo);
+
+        if ($profile) {
+
+            $profileComplete = (bool)$profile['profile_complete'];
+            $profileActive = (bool)$profile['profile_active'];
+            $statusVerifikasi = $profile['status_verifikasi'];
+        }
     }
+    ?>
+
+    <?php
+
+    $profileComplete = true;
+    $profileActive = true;
+    $statusVerifikasi = 'terdaftar';
+
+    if (current_user()['role'] === 'relawan') {
+
+        $profile = current_profile($pdo);
+
+        if ($profile) {
+
+            $profileComplete = (bool)$profile['profile_complete'];
+            $profileActive = (bool)$profile['profile_active'];
+            $statusVerifikasi = $profile['status_verifikasi'];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AKSES RELAWAN
+    |--------------------------------------------------------------------------
+    */
+
+    $alasan = [];
+
+    if (!$profileComplete) {
+        $alasan[] = "melengkapi profil";
+    }
+
+    if (!$profileActive) {
+        $alasan[] = "mengaktifkan profil";
+    }
+
+    if ($statusVerifikasi !== 'terdaftar') {
+        $alasan[] = "memverifikasi akun";
+    }
+
+    $bolehAkses = empty($alasan);
+
+    $pesanAkses = '';
+
+    if (!$bolehAkses) {
+
+        $pesanAkses =
+            "Silakan hubungi Admin untuk "
+            . implode(", ", $alasan) . ".";
+    }
+
     ?>
 
     <!-- Brand -->
@@ -69,12 +127,26 @@
             </a>
         </li>
     <?php elseif (current_user()['role'] === 'relawan'): ?>
+
         <li class="nav-item">
-            <a class="nav-link" href="<?= url('dukungan/create.php') ?>">
-                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?> fa-fw"></i>
+
+            <a
+                class="nav-link"
+                href="<?= $bolehAkses ? url('dukungan/create.php') : '#' ?>"
+                <?= !$bolehAkses
+                    ? 'onclick="alert(\'' . htmlspecialchars($pesanAkses, ENT_QUOTES) . '\'); return false;"'
+                    : '' ?>>
+
+                <i class="fas <?= $bolehAkses
+                                    ? 'fa-hand-holding-heart'
+                                    : 'fa-lock' ?> fa-fw"></i>
+
                 <span>Tambah Dukungan</span>
+
             </a>
+
         </li>
+
     <?php endif; ?>
 
     <?php if (current_user()['role'] === 'superadmin'): ?>
@@ -125,13 +197,26 @@
             </a>
         </li>
     <?php elseif (current_user()['role'] === 'relawan'): ?>
+
         <li class="nav-item">
-            <a class="nav-link"
-                href="<?= url('dukungan/list.php') ?>">
-                <i class="fas <?= $profileComplete ? 'fa-hand-holding-heart' : 'fa-lock' ?> fa-fw"></i>
+
+            <a
+                class="nav-link"
+                href="<?= $bolehAkses ? url('dukungan/list.php') : '#' ?>"
+                <?= !$bolehAkses
+                    ? 'onclick="alert(\'' . htmlspecialchars($pesanAkses, ENT_QUOTES) . '\'); return false;"'
+                    : '' ?>>
+
+                <i class="fas <?= $bolehAkses
+                                    ? 'fa-hand-holding-heart'
+                                    : 'fa-lock' ?> fa-fw"></i>
+
                 <span>Data Dukungan</span>
+
             </a>
+
         </li>
+
     <?php endif; ?>
 
     <?php if (current_user()['role'] === 'relawan'): ?>

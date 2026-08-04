@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user) {
             $error = 'Username tidak ditemukan.';
-        } elseif ((int)$user['is_active'] !== 1) {
-            $error = 'Akun tidak aktif.';
+        // } elseif ((int)$user['is_active'] !== 1) {
+        //     $error = 'Akun tidak aktif. Silakan hubungi admin untuk mengaktifkan akun Anda.';
         } elseif (!password_verify($password, $user['password'])) {
             $error = 'Password salah.';
         } else {
