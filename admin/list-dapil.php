@@ -222,7 +222,7 @@ sort($kabupatenList);
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
-                <thead style="background:#f1faff;">
+                <thead style="background:#f1faff;" class="text-center">
                     <tr>
                         <th width="60">No</th>
                         <th>Daerah Pemilihan</th>
@@ -239,7 +239,7 @@ sort($kabupatenList);
                         <?php foreach ($rows as $i => $row): ?>
 
                             <tr>
-                                <td><?= $i + 1 ?></td>
+                                <td class="text-center"><?= $i + 1 ?></td>
 
                                 <td><?= e($row['daerah_pemilihan']) ?></td>
 
@@ -258,13 +258,20 @@ sort($kabupatenList);
                                     }
                                     ?>
                                 </td>
-                                <td>
+                                <td class="text-center" style="min-width:80px;">
                                     <a href="<?= url('admin/edit-dapil.php?id=' . $row['id']) ?>"
                                         class="btn btn-warning btn-sm p-1"
                                         title="Edit Data">
                                         <i class="fas fa-pen"></i>
                                     </a>
 
+                                    <a href="<?= url('admin/delete-dapil.php?id=' . $row['id']) ?>"
+                                        class="btn btn-danger btn-sm p-1"
+                                        title="Hapus Data"
+                                        onclick="return confirm('Yakin ingin menghapus data Dapil ini?')">
+
+                                        <i class="fas fa-trash"></i>
+                                    </a>
                                 </td>
 
                             </tr>

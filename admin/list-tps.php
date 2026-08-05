@@ -388,7 +388,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
-                <thead style="background:#f1faff;">
+                <thead style="background:#f1faff;" class="text-center">
                     <tr>
                         <th width="60">No</th>
                         <th><?= sortLink('provinsi', 'Provinsi') ?></th>
@@ -407,13 +407,13 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php foreach ($rows as $i => $row): ?>
 
                             <tr>
-                                <td><?= $no++ ?></td>
+                                <td class="text-center"><?= $no++ ?></td>
                                 <td><?= e($row['provinsi']) ?></td>
                                 <td><?= e($row['kabupaten']) ?></td>
                                 <td><?= e($row['kecamatan']) ?></td>
                                 <td><?= e($row['kelurahan']) ?></td>
-                                <td><?= e($row['no_tps']) ?></td>
-                                <td>
+                                <td class="text-center"><?= e($row['no_tps']) ?></td>
+                                <td class="text-center">
                                     <a href="<?= url('admin/edit-tps.php?id=' . $row['id']) ?>"
                                         class="btn btn-warning btn-sm p-1"
                                         title="Edit Data">

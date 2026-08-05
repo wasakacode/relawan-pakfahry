@@ -260,7 +260,7 @@ function sortLink($column, $label)
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
-                <thead style="background:#f1faff;">
+                <thead style="background:#f1faff;" class="text-center">
                     <tr>
 
                         <th>
@@ -298,7 +298,7 @@ function sortLink($column, $label)
 
                             <tr>
 
-                                <td><?= $i + 1 ?></td>
+                                <td class="text-center"><?= $i + 1 ?></td>
 
                                 <td><?= e($r['name']) ?></td>
 
@@ -306,9 +306,9 @@ function sortLink($column, $label)
                                 
                                 <td><?= e($r['role']) ?></td>
 
-                                <td><?= e($r['created_at']) ?></td>
+                                <td class="text-center"><?= e($r['created_at']) ?></td>
 
-                                <td><?= e($r['updated_at']) ?></td>
+                                <td class="text-center"><?= e($r['updated_at']) ?></td>
 
                             </tr>
 

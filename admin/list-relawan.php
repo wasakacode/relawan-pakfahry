@@ -93,7 +93,6 @@ if ($currentRole === 'admin') {
 ";
 
     $params['admin_profile_id'] = $adminProfileId;
-
 } else {
 
     // Superadmin dapat melihat seluruh relawan
@@ -362,7 +361,7 @@ function inputByDisplay(array $row): array
                     </select>
                 </div>
 
-                
+
                 <!-- Kelengkapan Data -->
                 <!-- <div class="col-xl-2 col-lg-4 mb-2">
                     <label class="small font-weight-bold text-muted">Kelengkapan Data</label>
@@ -407,9 +406,6 @@ function inputByDisplay(array $row): array
                         </th>
 
                         <th style="min-width:125px;">
-                            <?= sortLink('is_active', 'Status Aktif') ?>
-                        </th>
-                        <th style="min-width:125px;">
                             Admin yang Menaungi
                         </th>
 
@@ -418,6 +414,10 @@ function inputByDisplay(array $row): array
                         </th> -->
 
                         <th style="min-width:170px;">Status Verifikasi</th>
+
+                        <th style="min-width:125px;">
+                            <?= sortLink('is_active', 'Status Aktif') ?>
+                        </th>
 
                         <th style="min-width:185px;">Diinput Oleh</th>
 
@@ -439,15 +439,6 @@ function inputByDisplay(array $row): array
                                 <!-- Nama -->
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
-                                <!-- Status Aktif -->
-                                <td class="text-center">
-                                    <?php if ((int)($r['is_active'] ?? 0) === 1): ?>
-                                        <span class="badge badge-success">Aktif</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-danger">Nonaktif</span>
-                                    <?php endif; ?>
-                                </td>
-
                                 <!-- Kelengkapan Data -->
                                 <!-- <td class="text-center">
                                     <?php if ((int)($r['profile_complete'] ?? 0) === 1): ?>
@@ -457,7 +448,7 @@ function inputByDisplay(array $row): array
                                     <?php endif; ?>
                                 </td> -->
 
-                                <td>
+                                <td class="text-center">
                                     <?php if (!empty($r['nama_admin'])) : ?>
 
                                         <?php
@@ -474,10 +465,10 @@ function inputByDisplay(array $row): array
                                     <?php else : ?>
 
                                         <span class="badge"
-                                                style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;">
-                                                <i class="fas fa-exclamation-circle"></i>
-                                                Relawan tidak dinaungi admin mana pun
-                                            </span>
+                                            style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            Relawan tidak dinaungi admin mana pun
+                                        </span>
 
                                     <?php endif; ?>
                                 </td>
@@ -532,6 +523,16 @@ function inputByDisplay(array $row): array
 
                                 </td>
 
+                                <!-- Status Aktif -->
+                                <td class="text-center">
+                                    <?php if ((int)($r['is_active'] ?? 0) === 1): ?>
+                                        <span class="badge badge-success">Aktif</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Nonaktif</span>
+                                    <?php endif; ?>
+                                </td>
+
+
                                 <!-- Diinput Oleh -->
                                 <td class="text-center input-by-cell">
                                     <div class="input-by-wrap">
@@ -546,7 +547,7 @@ function inputByDisplay(array $row): array
                                     </div>
                                 </td>
 
-                                 <!-- Detail -->
+                                <!-- Detail -->
                                 <td class="text-center">
                                     <a
                                         href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
@@ -652,12 +653,12 @@ function inputByDisplay(array $row): array
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
 
 <script>
-$(function () {
-    $('#modalTolak').on('show.bs.modal', function (e) {
-        const button = $(e.relatedTarget);
-        const id = button.data('id');
+    $(function() {
+        $('#modalTolak').on('show.bs.modal', function(e) {
+            const button = $(e.relatedTarget);
+            const id = button.data('id');
 
-        $('#tolakId').val(id);
+            $('#tolakId').val(id);
+        });
     });
-});
 </script>

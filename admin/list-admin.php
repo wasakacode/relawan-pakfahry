@@ -140,35 +140,6 @@ function sortLink($column, $label)
 }
 ?>
 
-<style>
-    .btn-pink {
-    color: #fff;
-    background-color: #e83e8c;
-    border-color: #e83e8c;
-}
-
-.btn-pink:hover {
-    color: #fff;
-    background-color: #d63384;
-    border-color: #d63384;
-}
-
-.btn-pink:focus,
-.btn-pink.focus {
-    color: #fff;
-    background-color: #d63384;
-    border-color: #d63384;
-    box-shadow: 0 0 0 .2rem rgba(232,62,140,.25);
-}
-
-.btn-pink:active,
-.btn-pink.active {
-    color: #fff;
-    background-color: #c82370;
-    border-color: #bd2168;
-}
-</style>
-
 <h1 class="h3 mb-4 text-gray-800">Data Admin</h1>
 
 <div class="card content-card shadow mb-4">
@@ -320,7 +291,7 @@ function sortLink($column, $label)
 
                                 <td class="text-center">
                                     <a href="<?= url('admin/relawan_list.php?admin=' . $r['id']) ?>"
-                                        class="btn btn-pink btn-sm">
+                                        class="btn btn-outline-info btn-sm">
                                             <i class="fas fa-users"></i>
                                             List Relawan
                                         </a>
