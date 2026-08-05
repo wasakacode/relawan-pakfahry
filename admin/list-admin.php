@@ -140,7 +140,36 @@ function sortLink($column, $label)
 }
 ?>
 
-<h1 class="h3 mb-4 text-gray-800">Data Admin (Koordinator Kecamatan)</h1>
+<style>
+    .btn-pink {
+    color: #fff;
+    background-color: #e83e8c;
+    border-color: #e83e8c;
+}
+
+.btn-pink:hover {
+    color: #fff;
+    background-color: #d63384;
+    border-color: #d63384;
+}
+
+.btn-pink:focus,
+.btn-pink.focus {
+    color: #fff;
+    background-color: #d63384;
+    border-color: #d63384;
+    box-shadow: 0 0 0 .2rem rgba(232,62,140,.25);
+}
+
+.btn-pink:active,
+.btn-pink.active {
+    color: #fff;
+    background-color: #c82370;
+    border-color: #bd2168;
+}
+</style>
+
+<h1 class="h3 mb-4 text-gray-800">Data Admin</h1>
 
 <div class="card content-card shadow mb-4">
 
@@ -173,7 +202,7 @@ function sortLink($column, $label)
                 </div>
 
                 <!-- Kecamatan -->
-                <div class="col-md-3 mb-2">
+                <!-- <div class="col-md-3 mb-2">
                     <select name="kecamatan" class="form-control">
 
                         <option value="">-- Semua Kecamatan --</option>
@@ -191,7 +220,7 @@ function sortLink($column, $label)
                         <?php endforeach; ?>
 
                     </select>
-                </div>
+                </div> -->
 
                 <!-- Status -->
                 <div class="col-md-2 mb-2">
@@ -246,7 +275,7 @@ function sortLink($column, $label)
             <table class="table table-bordered table-hover" width="100%">
 
                 <thead style="background:#f1faff;">
-                    <tr>
+                    <tr class="text-center">
 
                         <th>No</th>
 
@@ -275,11 +304,11 @@ function sortLink($column, $label)
 
                             <tr>
 
-                                <td><?= $i + 1 ?></td>
+                                <td class="text-center"><?= $i + 1 ?></td>
 
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
-                                <td>
+                                <td class="text-center">
                                     <a
                                         href="<?= url('admin/detail-admin.php?id=' . $r['id']) ?>"
                                         class="btn btn-sm btn-info">
@@ -289,15 +318,15 @@ function sortLink($column, $label)
                                     </a>
                                 </td>
 
-                                <td>
+                                <td class="text-center">
                                     <a href="<?= url('admin/relawan_list.php?admin=' . $r['id']) ?>"
-                                        class="btn btn-secondary btn-sm">
+                                        class="btn btn-pink btn-sm">
                                             <i class="fas fa-users"></i>
                                             List Relawan
                                         </a>
                                 </td>
 
-                                <td>
+                                <td class="text-center">
                                     <?php if ($r['is_active'] == '1'): ?>
                                         <span class="badge badge-success">Aktif</span>
                                     <?php else: ?>

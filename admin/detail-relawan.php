@@ -343,7 +343,8 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     <?php if (current_user()['role'] !== 'relawan'): ?>
 
-        <a href="<?= url('admin/list-relawan.php') ?>"
+        <a href="<?= $_SERVER['HTTP_REFERER'] ?? url('dashboard/index.php') ?>"
+        onclick="history.back(); return false;"
             class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i>
             Kembali

@@ -43,18 +43,33 @@ $currentUserId = (int)($currentUser['id'] ?? 0);
 $adminProfileId = 0;
 
 $sql = "
-    SELECT DISTINCT
-        p.*,
-        u.username,
-        u.is_active,
-        creator.name AS input_by_name,
-        creator.username AS input_by_username,
-        creator.role AS input_by_role
-    FROM profiles p
-    LEFT JOIN users u
-        ON u.id = p.user_id
-    LEFT JOIN users creator
-        ON creator.id = p.created_by
+SELECT DISTINCT
+    p.*,
+    u.username,
+    u.is_active,
+    creator.name AS input_by_name,
+    creator.username AS input_by_username,
+    creator.role AS input_by_role,
+    GROUP_CONCAT(
+        DISTINCT a.nama_lengkap
+        ORDER BY a.nama_lengkap
+        SEPARATOR '|'
+    ) AS nama_admin
+
+FROM profiles p
+
+LEFT JOIN users u
+    ON u.id = p.user_id
+
+LEFT JOIN users creator
+    ON creator.id = p.created_by
+
+LEFT JOIN profile_admin pa
+    ON pa.profile_id = p.id
+
+LEFT JOIN profiles a
+    ON a.id = pa.admin_profile_id
+    AND a.type='admin'
 ";
 
 $params = [];
@@ -73,11 +88,9 @@ if ($currentRole === 'admin') {
     $adminProfileId = (int)$stmtAdmin->fetchColumn();
 
     $sql .= "
-        INNER JOIN profile_admin pa
-            ON pa.profile_id = p.id
-        WHERE p.type = 'relawan'
-          AND pa.admin_profile_id = :admin_profile_id
-    ";
+    WHERE p.type = 'relawan'
+      AND pa.admin_profile_id = :admin_profile_id
+";
 
     $params['admin_profile_id'] = $adminProfileId;
 
@@ -117,6 +130,15 @@ if ($kelengkapan !== '') {
     $params['kelengkapan'] = (int)$kelengkapan;
 }
 
+$sql .= "
+GROUP BY
+    p.id,
+    u.username,
+    u.is_active,
+    creator.name,
+    creator.username,
+    creator.role
+";
 $sql .= " ORDER BY {$orderByColumn} {$order} ";
 
 $stmt = $pdo->prepare($sql);
@@ -340,15 +362,16 @@ function inputByDisplay(array $row): array
                     </select>
                 </div>
 
+                
                 <!-- Kelengkapan Data -->
-                <div class="col-xl-2 col-lg-4 mb-2">
+                <!-- <div class="col-xl-2 col-lg-4 mb-2">
                     <label class="small font-weight-bold text-muted">Kelengkapan Data</label>
                     <select name="kelengkapan" class="form-control">
                         <option value="">-- Semua Data --</option>
                         <option value="1" <?= $kelengkapan === '1' ? 'selected' : '' ?>>Lengkap</option>
                         <option value="0" <?= $kelengkapan === '0' ? 'selected' : '' ?>>Belum Lengkap</option>
                     </select>
-                </div>
+                </div> -->
 
                 <!-- Button -->
                 <div class="col-xl-2 col-lg-4 mb-2">
@@ -383,19 +406,22 @@ function inputByDisplay(array $row): array
                             <?= sortLink('nama_lengkap', 'Nama') ?>
                         </th>
 
-                        <th style="min-width:125px;">Detail</th>
-
                         <th style="min-width:125px;">
                             <?= sortLink('is_active', 'Status Aktif') ?>
                         </th>
-
-                        <th style="min-width:165px;">
-                            <?= sortLink('profile_complete', 'Kelengkapan Data') ?>
+                        <th style="min-width:125px;">
+                            Admin yang Menaungi
                         </th>
+
+                        <!-- <th style="min-width:165px;">
+                            <?= sortLink('profile_complete', 'Kelengkapan Data') ?>
+                        </th> -->
 
                         <th style="min-width:170px;">Status Verifikasi</th>
 
                         <th style="min-width:185px;">Diinput Oleh</th>
+
+                        <th style="min-width:125px;">Detail</th>
                     </tr>
                 </thead>
 
@@ -413,15 +439,6 @@ function inputByDisplay(array $row): array
                                 <!-- Nama -->
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
-                                <!-- Detail -->
-                                <td class="text-center">
-                                    <a
-                                        href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
-                                        class="btn btn-sm btn-info">
-                                        <i class="fas fa-eye"></i> Lihat Data
-                                    </a>
-                                </td>
-
                                 <!-- Status Aktif -->
                                 <td class="text-center">
                                     <?php if ((int)($r['is_active'] ?? 0) === 1): ?>
@@ -432,11 +449,36 @@ function inputByDisplay(array $row): array
                                 </td>
 
                                 <!-- Kelengkapan Data -->
-                                <td class="text-center">
+                                <!-- <td class="text-center">
                                     <?php if ((int)($r['profile_complete'] ?? 0) === 1): ?>
                                         <span class="badge badge-success">Lengkap</span>
                                     <?php else: ?>
                                         <span class="badge badge-danger">Belum Lengkap</span>
+                                    <?php endif; ?>
+                                </td> -->
+
+                                <td>
+                                    <?php if (!empty($r['nama_admin'])) : ?>
+
+                                        <?php
+                                        $admins = explode('|', $r['nama_admin']);
+
+                                        foreach ($admins as $admin):
+                                        ?>
+                                            <span class="badge badge-info mr-1 mb-1">
+                                                <i class="fas fa-user"></i>
+                                                <?= e($admin) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+
+                                    <?php else : ?>
+
+                                        <span class="badge"
+                                                style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                Relawan tidak dinaungi admin mana pun
+                                            </span>
+
                                     <?php endif; ?>
                                 </td>
 
@@ -502,6 +544,15 @@ function inputByDisplay(array $row): array
                                             <?= e($inputBy['name']) ?>
                                         </span>
                                     </div>
+                                </td>
+
+                                 <!-- Detail -->
+                                <td class="text-center">
+                                    <a
+                                        href="<?= url('admin/detail-relawan.php?id=' . $r['id']) ?>"
+                                        class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i> Lihat Data
+                                    </a>
                                 </td>
 
                             </tr>

@@ -1505,7 +1505,7 @@ foreach ($chartLabels as $label) {
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <div class="management-stat-label">
-                                <?= $role === 'admin' ? 'Admin di Dapil' : 'Admin Kecamatan' ?>
+                                <?= $role === 'admin' ? 'Admin di Dapil' : 'Admin' ?>
                             </div>
                             <div class="management-stat-number"><?= e($totalAdmin) ?></div>
                             <div class="management-stat-caption">Akun admin terdata</div>
