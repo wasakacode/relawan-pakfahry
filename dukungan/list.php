@@ -57,7 +57,6 @@ if (current_user()['role'] == 'admin') {
     $stmt->execute([current_user()['id']]);
 
     $adminProfileId = $stmt->fetchColumn();
-
 } elseif (current_user()['role'] == 'relawan') {
 
     // cari admin yang menaungi relawan
@@ -107,7 +106,6 @@ if (current_user()['role'] != 'superadmin') {
         $where .= " AND p.kab_kota IN ($placeholders)";
 
         $params = array_merge($params, $allowedKabKota);
-
     } else {
 
         // jika tidak punya dapil
@@ -166,9 +164,14 @@ if (!empty($desa)) {
 */
 
 $sql = "
-    SELECT p.*, u.name AS pembuat
+    SELECT
+        p.*,
+        creator.name AS input_by_name,
+        creator.username AS input_by_username,
+        creator.role AS input_by_role
     FROM profiles p
-    LEFT JOIN users u ON p.created_by = u.id
+    LEFT JOIN users creator
+        ON creator.id = p.created_by
     $where
     ORDER BY $sortBy $order
 ";
@@ -194,7 +197,7 @@ $params = [];
 
 if (!empty($allowedKabKota)) {
 
-    $placeholders = implode(',', array_fill(0,count($allowedKabKota),'?'));
+    $placeholders = implode(',', array_fill(0, count($allowedKabKota), '?'));
 
     $sql .= " AND kab_kota IN ($placeholders)";
 
@@ -224,7 +227,7 @@ $params = [];
 
 if (!empty($allowedKabKota)) {
 
-    $placeholders = implode(',', array_fill(0,count($allowedKabKota),'?'));
+    $placeholders = implode(',', array_fill(0, count($allowedKabKota), '?'));
 
     $sql .= " AND kab_kota IN ($placeholders)";
 
@@ -281,7 +284,104 @@ function sortLink($column, $label)
         </a>
     ';
 }
+
+function inputByDisplay(array $row): array
+{
+    $role = strtolower(trim((string)($row['input_by_role'] ?? '')));
+    $name = trim((string)($row['input_by_name'] ?? ''));
+
+    if ($name === '') {
+        $name = trim((string)($row['input_by_username'] ?? ''));
+    }
+
+    switch ($role) {
+        case 'superadmin':
+            return [
+                'label' => 'Superadmin',
+                'class' => 'primary',
+                'icon'  => 'fa-user-shield',
+                'name'  => $name !== '' ? $name : 'Superadmin'
+            ];
+
+        case 'admin':
+            return [
+                'label' => 'Admin',
+                'class' => 'info',
+                'icon'  => 'fa-user-cog',
+                'name'  => $name !== '' ? $name : 'Admin'
+            ];
+
+        case 'relawan':
+            return [
+                'label' => 'Relawan',
+                'class' => 'success',
+                'icon'  => 'fa-hands-helping',
+                'name'  => $name !== '' ? $name : 'Relawan'
+            ];
+
+        default:
+            return [
+                'label' => 'Tidak tercatat',
+                'class' => 'secondary',
+                'icon'  => 'fa-question-circle',
+                'name'  => '-'
+            ];
+    }
+}
 ?>
+
+<style>
+    .relawan-filter-box {
+        padding: 18px;
+        margin-bottom: 24px;
+        border: 1px solid #dfeef7;
+        border-radius: 16px;
+        background: #f8fcff;
+    }
+
+    .relawan-filter-box .form-control,
+    .relawan-filter-box .btn {
+        min-height: 42px;
+        border-radius: 9px;
+    }
+
+    .input-by-cell {
+        min-width: 175px;
+    }
+
+    .input-by-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .input-by-wrap .badge {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 20px;
+    }
+
+    .input-by-name {
+        color: #526b82;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .relawan-table th,
+    .relawan-table td {
+        vertical-align: middle !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .relawan-filter-box {
+            padding: 14px;
+        }
+    }
+</style>
 
 <h1 class="h3 mb-4 text-gray-800">Data Dukungan</h1>
 
@@ -301,12 +401,13 @@ function sortLink($column, $label)
     <div class="card-body">
 
         <!-- FILTER -->
-        <form method="GET" class="mb-4">
+        <form method="GET" class="relawan-filter-box">
 
-            <div class="row">
+            <div class="row align-items-end">
 
                 <!-- Search -->
-                <div class="col-md-4 mb-2">
+                <div class="col-xl-3 col-lg-6 mb-2">
+                    <label class="small font-weight-bold text-muted">Pencarian</label>
                     <input
                         type="text"
                         name="search"
@@ -316,7 +417,8 @@ function sortLink($column, $label)
                 </div>
 
                 <!-- Kecamatan -->
-                <div class="col-md-3 mb-2">
+                <div class="col-xl-3 col-lg-6 mb-2">
+                    <label class="small font-weight-bold text-muted">Kecamatan</label>
                     <select name="kecamatan" class="form-control">
 
                         <option value="">
@@ -339,7 +441,8 @@ function sortLink($column, $label)
                 </div>
 
                 <!-- Desa -->
-                <div class="col-md-2 mb-2">
+                <div class="col-xl-3 col-lg-6 mb-2">
+                    <label class="small font-weight-bold text-muted">Desa</label>
                     <select name="desa" class="form-control">
 
                         <option value="">
@@ -362,7 +465,8 @@ function sortLink($column, $label)
                 </div>
 
                 <!-- Button -->
-                <div class="col-md-3 mb-2">
+                <div class="col-xl-2 col-lg-4 mb-2">
+                    <label class="small font-weight-bold text-muted d-block">Aksi</label>
                     <div class="d-flex">
 
                         <!-- Filter -->
@@ -392,10 +496,10 @@ function sortLink($column, $label)
         <div class="table-responsive">
             <table class="table table-bordered table-hover" width="100%">
 
-                <thead style="background:#f1faff;">
+                <thead style="background:#f1faff;" class="text-center">
                     <tr>
 
-                        <th>No</th>
+                        <th style="width:55px;">No</th>
 
                         <th>
                             <?= sortLink('nama_lengkap', 'Nama') ?>
@@ -413,9 +517,9 @@ function sortLink($column, $label)
                             <?= sortLink('tps', 'TPS') ?>
                         </th>
 
-                        <th>Detail</th>
+                        <th style="min-width:185px;">Diinput Oleh</th>
 
-                        <th>Diinput Oleh</th>
+                        <th style="min-width:125px;">Detail</th>
 
                     </tr>
                 </thead>
@@ -425,10 +529,11 @@ function sortLink($column, $label)
                     <?php if (count($rows) > 0): ?>
 
                         <?php foreach ($rows as $i => $r): ?>
+                            <?php $inputBy = inputByDisplay($r); ?>
 
                             <tr>
 
-                                <td><?= $i + 1 ?></td>
+                                <td class="text-center"><?= $i + 1 ?></td>
 
                                 <td><?= e($r['nama_lengkap']) ?></td>
 
@@ -436,9 +541,22 @@ function sortLink($column, $label)
 
                                 <td><?= e($r['desa_kelurahan']) ?></td>
 
-                                <td><?= e($r['tps']) ?></td>
+                                <td class="text-center"><?= e($r['tps']) ?></td>
 
-                                <td>
+                                <td class="text-center input-by-cell">
+                                    <div class="input-by-wrap">
+                                        <span class="badge badge-<?= e($inputBy['class']) ?>">
+                                            <i class="fas <?= e($inputBy['icon']) ?> mr-1"></i>
+                                            <?= e($inputBy['label']) ?>
+                                        </span>
+
+                                        <span class="input-by-name">
+                                            <?= e($inputBy['name']) ?>
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="text-center">
                                     <a
                                         href="<?= url('dukungan/detail.php?id=' . $r['id']) ?>"
                                         class="btn btn-sm btn-info">
@@ -447,8 +565,6 @@ function sortLink($column, $label)
 
                                     </a>
                                 </td>
-
-                                <td><?= e($r['pembuat']) ?></td>
 
                             </tr>
 
