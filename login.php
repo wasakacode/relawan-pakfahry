@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => $user['name'],
                 'username' => $user['username'],
                 'role' => $user['role'],
-                'kecamatan' => $user['kecamatan']
+                'kecamatan' => $user['kecamatan'],
+                'is_active' => (bool) $user['is_active']
             ];
 
             header("Location: " . url('dashboard/index.php'));

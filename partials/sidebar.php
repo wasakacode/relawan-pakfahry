@@ -2,7 +2,7 @@
 
     <?php
     $profileComplete = true;
-    $profileActive = true;
+    $isActive = true;
     $statusVerifikasi = 'terdaftar';
 
     if (current_user()['role'] === 'relawan') {
@@ -10,61 +10,50 @@
         $profile = current_profile($pdo);
 
         if ($profile) {
-
-            $profileComplete = (bool)$profile['profile_complete'];
-            $profileActive = (bool)$profile['profile_active'];
+            $profileComplete = (bool) $profile['profile_complete'];
             $statusVerifikasi = $profile['status_verifikasi'];
         }
-    }
-    ?>
 
-    <?php
-
-    $profileComplete = true;
-    $profileActive = true;
-    $statusVerifikasi = 'terdaftar';
-
-    if (current_user()['role'] === 'relawan') {
-
-        $profile = current_profile($pdo);
-
-        if ($profile) {
-
-            $profileComplete = (bool)$profile['profile_complete'];
-            $profileActive = (bool)$profile['profile_active'];
-            $statusVerifikasi = $profile['status_verifikasi'];
-        }
+        $isActive = current_user()['is_active'];
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | AKSES RELAWAN
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| AKSES RELAWAN
+|--------------------------------------------------------------------------
+*/
 
-    $alasan = [];
+    $bolehAkses =
+        $profileComplete &&
+        $isActive &&
+        $statusVerifikasi === 'terdaftar';
+
+    $modalTitle = '';
+    $modalMessage = '';
+    $modalIcon = 'fas fa-exclamation-triangle';
+    $modalColor = '#f39c12';
 
     if (!$profileComplete) {
-        $alasan[] = "melengkapi profil";
-    }
 
-    if (!$profileActive) {
-        $alasan[] = "mengaktifkan profil";
-    }
+        $modalTitle = 'Profil Belum Lengkap';
+        $modalMessage = 'Silakan lengkapi profil terlebih dahulu agar dapat menggunakan menu ini.';
+    } elseif ($statusVerifikasi === 'pending') {
 
-    if ($statusVerifikasi !== 'terdaftar') {
-        $alasan[] = "memverifikasi akun";
-    }
+        $modalTitle = 'Menunggu Verifikasi';
+        $modalMessage = 'Akun Anda sedang menunggu proses verifikasi oleh Admin Dapil.';
+        $modalIcon = 'fas fa-clock';
+        $modalColor = '#3498db';
+    } elseif ($statusVerifikasi === 'ditolak') {
 
-    $bolehAkses = empty($alasan);
+        $modalTitle = 'Verifikasi Ditolak';
+        $modalTitle = 'Verifikasi Ditolak';
+        $modalMessage = 'Verifikasi akun Anda ditolak. Silakan lihat catatan penolakan pada halaman Profil, perbaiki data yang diperlukan, lalu hubungi Admin Dapil.';
+        $modalIcon = 'fas fa-times';
+        $modalColor = '#e74c3c';
+    } elseif (!$isActive) {
 
-    $pesanAkses = '';
-
-    if (!$bolehAkses) {
-
-        $pesanAkses =
-            "Silakan hubungi Admin untuk "
-            . implode(", ", $alasan) . ".";
+        $modalTitle = 'Profil Belum Aktif';
+        $modalMessage = 'Profil Anda belum aktif. Silakan hubungi Admin Dapil.';
     }
 
     ?>
@@ -134,7 +123,7 @@
                 class="nav-link"
                 href="<?= $bolehAkses ? url('dukungan/create.php') : '#' ?>"
                 <?= !$bolehAkses
-                    ? 'onclick="alert(\'' . htmlspecialchars($pesanAkses, ENT_QUOTES) . '\'); return false;"'
+                    ? 'onclick="showBlockedModal(); return false;"'
                     : '' ?>>
 
                 <i class="fas <?= $bolehAkses
@@ -204,7 +193,7 @@
                 class="nav-link"
                 href="<?= $bolehAkses ? url('dukungan/list.php') : '#' ?>"
                 <?= !$bolehAkses
-                    ? 'onclick="alert(\'' . htmlspecialchars($pesanAkses, ENT_QUOTES) . '\'); return false;"'
+                    ? 'onclick="showBlockedModal(); return false;"'
                     : '' ?>>
 
                 <i class="fas <?= $bolehAkses
@@ -301,3 +290,45 @@
     </div>
 
 </ul>
+
+<!-- Modal Notifikasi -->
+<?php if (current_user()['role'] === 'relawan' && !$bolehAkses): ?>
+
+    <div id="blockedAccountModal" class="success-modal-overlay" style="display:none;">
+
+        <div class="success-modal-card">
+
+            <div class="success-modal-icon" style="background: <?= $modalColor ?>;">
+                <i class="<?= $modalIcon ?>"></i>
+            </div>
+
+            <h3><?= htmlspecialchars($modalTitle) ?></h3>
+
+            <p><?= htmlspecialchars($modalMessage) ?></p>
+
+            <button
+                type="button"
+                class="success-modal-button"
+                onclick="closeBlockedModal()">
+                OK
+            </button>
+
+        </div>
+
+    </div>
+
+    <script>
+        function showBlockedModal() {
+
+            document.getElementById('blockedAccountModal').style.display = 'flex';
+
+        }
+
+        function closeBlockedModal() {
+
+            document.getElementById('blockedAccountModal').style.display = 'none';
+
+        }
+    </script>
+
+<?php endif; ?>

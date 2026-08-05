@@ -1,6 +1,6 @@
-<?php 
-require_once __DIR__ . '/../auth/auth.php'; 
-require_login(); 
+<?php
+require_once __DIR__ . '/../auth/auth.php';
+require_login();
 ?>
 
 <!DOCTYPE html>
@@ -85,7 +85,7 @@ require_login();
         }
 
         .sidebar-heading {
-            color: rgba(255,255,255,.72) !important;
+            color: rgba(255, 255, 255, .72) !important;
             font-size: 11px;
             letter-spacing: .8px;
         }
@@ -229,7 +229,7 @@ require_login();
         .content-card {
             border: none;
             border-radius: 24px;
-            background: rgba(255,255,255,0.88);
+            background: rgba(255, 255, 255, 0.88);
             box-shadow: 0 18px 42px rgba(17, 141, 208, 0.10);
             overflow: hidden;
         }
@@ -361,24 +361,124 @@ require_login();
         }
 
         #wrapper {
-    display: flex !important;
-}
+            display: flex !important;
+        }
 
-#content-wrapper {
-    flex: 1 !important;
-}
+        #content-wrapper {
+            flex: 1 !important;
+        }
 
-.topbar {
-    position: relative;
-    z-index: 1050;
-}
+        .topbar {
+            position: relative;
+            z-index: 1050;
+        }
 
-.dropdown-menu {
-    z-index: 99999 !important;
-}
+        .dropdown-menu {
+            z-index: 99999 !important;
+        }
+
+        /* ===========================
+   MODAL AKUN DIBATASI
+=========================== */
+
+        .success-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            background: rgba(18, 45, 68, .58);
+            backdrop-filter: blur(6px);
+            animation: successOverlayIn .22s ease;
+        }
+
+        .success-modal-card {
+            width: min(460px, 100%);
+            padding: 34px 30px 28px;
+            border-radius: 24px;
+            background: #ffffff;
+            text-align: center;
+            box-shadow: 0 28px 80px rgba(17, 65, 99, .30);
+            animation: successCardIn .28s ease;
+        }
+
+        .success-modal-icon {
+            width: 86px;
+            height: 86px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 38px;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, .18);
+        }
+
+        .success-modal-card h3 {
+            margin: 0 0 10px;
+            color: #1f3b57;
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .success-modal-card p {
+            margin: 0 0 24px;
+            color: #6f8497;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .success-modal-button {
+            width: 100%;
+            min-height: 50px;
+            padding: 12px 18px;
+            border: 0;
+            border-radius: 13px;
+            cursor: pointer;
+            color: #ffffff;
+            background: linear-gradient(135deg, #3db7ee, #118dd0);
+            box-shadow: 0 12px 24px rgba(17, 141, 208, .24);
+            font-size: 15px;
+            font-weight: 800;
+            transition: .2s ease;
+        }
+
+        .success-modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 28px rgba(17, 141, 208, .30);
+        }
+
+        .success-modal-button:focus {
+            outline: none;
+        }
+
+        @keyframes successOverlayIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes successCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
     </style>
 </head>
 
 <body id="page-top">
 
-<div id="wrapper">
+    <div id="wrapper">

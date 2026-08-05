@@ -328,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("
             INSERT INTO users (name, username, password, role, is_active)
-            VALUES (?, ?, ?, 'relawan', 1)
+            VALUES (?, ?, ?, 'relawan', 0)
         ");
         $stmt->execute([$namaLengkap, $username, $passwordHash]);
         $userId = (int)$pdo->lastInsertId();
