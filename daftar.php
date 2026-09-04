@@ -2666,7 +2666,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         behavior: 'smooth',
                         block: 'center'
                     });
-                    showToast('error', 'Data belum lengkap', 'Lengkapi kolom yang ditandai sebelum melanjutkan.');
+                    showToast('error', 'Data belum lengkap atau tidak valid', 'Lengkapi atau perbaiki kolom yang ditandai sebelum melanjutkan.');
                     return false;
                 }
                 field.classList.remove('is-invalid');
