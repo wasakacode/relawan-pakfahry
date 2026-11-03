@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
 
-        flash('success', 'Admin Kecamatan berhasil dibuat.');
+        flash('success', 'Admin berhasil dibuat.');
         redirect('admin/create-admin.php');
     } catch (Exception $e) {
         $pdo->rollBack();

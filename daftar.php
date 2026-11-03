@@ -405,43 +405,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     )
 ");
 
-$stmt->execute([
-    $userId,
-    'relawan',
-    $userId,
+        $stmt->execute([
+            $userId,
+            'relawan',
+            $userId,
 
-    $nik,
-    $namaLengkap,
+            $nik,
+            $namaLengkap,
 
-    $tempatLahir,
-    $tanggalLahir,
+            $tempatLahir,
+            $tanggalLahir,
 
-    $jenisKelamin,
-    $golonganDarah,
+            $jenisKelamin,
+            $golonganDarah,
 
-    $agama,
-    $statusPernikahan,
+            $agama,
+            $statusPernikahan,
 
-    $pekerjaan,
-    $alamat,
+            $pekerjaan,
+            $alamat,
 
-    $provinsi,
-    $kabKota,
-    $kecamatan,
-    $desaKelurahan,
+            $provinsi,
+            $kabKota,
+            $kecamatan,
+            $desaKelurahan,
 
-    $rt,
-    $rw,
-    $tps,
+            $rt,
+            $rw,
+            $tps,
 
-    $nomorKK,
-    $nomorHP,
-    $nomorWA,
+            $nomorKK,
+            $nomorHP,
+            $nomorWA,
 
-    $fotoKTP,
-    $fotoKK,
-    $fotoDiri
-]);
+            $fotoKTP,
+            $fotoKK,
+            $fotoDiri
+        ]);
         $profileId = (int)$pdo->lastInsertId();
 
         // Hubungkan relawan dengan Admin Dapil yang dipilih.
@@ -459,8 +459,8 @@ $stmt->execute([
             'nik'          => $_POST['keluarga_nik'] ?? [],
             'nama'         => $_POST['keluarga_nama'] ?? [],
             'tempat_lahir' => $_POST['keluarga_tempat_lahir'] ?? [],
-            'tanggal_lahir'=> $_POST['keluarga_tanggal_lahir'] ?? [],
-            'jenis_kelamin'=> $_POST['keluarga_jenis_kelamin'] ?? [],
+            'tanggal_lahir' => $_POST['keluarga_tanggal_lahir'] ?? [],
+            'jenis_kelamin' => $_POST['keluarga_jenis_kelamin'] ?? [],
             'agama'        => $_POST['keluarga_agama'] ?? [],
             'pekerjaan'    => $_POST['keluarga_pekerjaan'] ?? []
         ];
@@ -531,7 +531,6 @@ $stmt->execute([
         $currentPath = strtok($_SERVER['REQUEST_URI'], '?');
         header('Location: ' . $currentPath . '?registration=success');
         exit;
-
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1463,7 +1462,7 @@ $stmt->execute([
             color: #31536c;
         }
 
-        .document-note > i {
+        .document-note>i {
             margin-top: 2px;
             color: #1595d2;
             font-size: 19px;
@@ -1582,17 +1581,44 @@ $stmt->execute([
             animation: toastIn .25s ease;
         }
 
-        .app-toast.error { border-left-color: #e74c3c; }
-        .app-toast.success { border-left-color: #2ecc71; }
-        .app-toast.warning { border-left-color: #f0ad4e; }
+        .app-toast.error {
+            border-left-color: #e74c3c;
+        }
 
-        .app-toast i { margin-top: 2px; }
-        .app-toast strong { display: block; margin-bottom: 2px; font-size: 13px; }
-        .app-toast span { display: block; font-size: 12px; line-height: 1.45; }
+        .app-toast.success {
+            border-left-color: #2ecc71;
+        }
+
+        .app-toast.warning {
+            border-left-color: #f0ad4e;
+        }
+
+        .app-toast i {
+            margin-top: 2px;
+        }
+
+        .app-toast strong {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+
+        .app-toast span {
+            display: block;
+            font-size: 12px;
+            line-height: 1.45;
+        }
 
         @keyframes toastIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .btn-loading {
@@ -1682,15 +1708,26 @@ $stmt->execute([
         }
 
         @keyframes successOverlayIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes successCardIn {
-            from { opacity: 0; transform: translateY(16px) scale(.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(.96);
+            }
 
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
     </style>
 
 </head>
@@ -1843,8 +1880,9 @@ $stmt->execute([
                                 name="tanggal_lahir"
                                 id="tanggal_lahir"
                                 value="<?= input_value('tanggal_lahir') ?>"
+                                min="1900-01-01"
+                                max="<?= date('Y-m-d') ?>"
                                 required>
-
                         </div>
 
                         <div class="form-group col-md-4">
@@ -2621,9 +2659,14 @@ $stmt->execute([
                 if (!field.checkValidity()) {
                     field.classList.add('is-invalid');
                     field.reportValidity();
-                    field.focus({preventScroll: true});
-                    field.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    showToast('error', 'Data belum lengkap', 'Lengkapi kolom yang ditandai sebelum melanjutkan.');
+                    field.focus({
+                        preventScroll: true
+                    });
+                    field.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    showToast('error', 'Data belum lengkap atau tidak valid', 'Lengkapi atau perbaiki kolom yang ditandai sebelum melanjutkan.');
                     return false;
                 }
                 field.classList.remove('is-invalid');
@@ -2631,7 +2674,10 @@ $stmt->execute([
 
             if (index === 1 && !step.querySelector('input[name="admin_id[]"]:checked')) {
                 showToast('error', 'Admin Dapil belum dipilih', 'Pilih minimal satu Admin Dapil yang tersedia.');
-                document.getElementById('adminContainer')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                document.getElementById('adminContainer')?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
                 return false;
             }
 
@@ -2640,7 +2686,10 @@ $stmt->execute([
                 const missing = files.find(id => !document.getElementById(id)?.files?.length);
                 if (missing) {
                     showToast('error', 'Dokumen belum lengkap', 'Pilih Foto KTP, Foto Diri, dan Kartu Keluarga.');
-                    document.getElementById(missing)?.closest('.upload-card')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    document.getElementById(missing)?.closest('.upload-card')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
                     return false;
                 }
             }
@@ -2654,7 +2703,10 @@ $stmt->execute([
             if (currentStep < steps.length - 1) {
                 currentStep++;
                 showStep(currentStep);
-                window.scrollTo({top: 0, behavior: 'smooth'});
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             }
         });
 
@@ -2662,7 +2714,10 @@ $stmt->execute([
             if (currentStep > 0) {
                 currentStep--;
                 showStep(currentStep);
-                window.scrollTo({top: 0, behavior: 'smooth'});
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             }
         });
 
@@ -3578,7 +3633,11 @@ $stmt->execute([
         function toast(type, title, message) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
-            const icons = {success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-info-circle'};
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-info-circle'
+            };
             const el = document.createElement('div');
             el.className = `app-toast ${type}`;
             el.innerHTML = `<i class="fas ${icons[type] || icons.warning}"></i><div><strong>${title}</strong><span>${message}</span></div>`;
@@ -3662,7 +3721,6 @@ $stmt->execute([
             window.location.replace(<?= json_encode(url('login.php')) ?>);
         });
     });
-
 </script>
 
 </html>
