@@ -22,8 +22,6 @@ $stmtDapil = $pdo->prepare("
     ORDER BY d.daerah_pemilihan
 ");
 
-
-
 $stmt = $pdo->prepare("SELECT p.*, u.username, u.name AS nama_akun, u.is_active
                        FROM profiles p
                        LEFT JOIN users u ON p.user_id = u.id
@@ -89,94 +87,6 @@ require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 require_once __DIR__ . '/../partials/topbar.php';
 ?>
-
-<style>
-    .profile-photo-box {
-        width: 110px;
-        height: 110px;
-        border-radius: 28px;
-        overflow: hidden;
-        margin: 0 auto 18px;
-        background: linear-gradient(135deg, #3db7ee, #118dd0);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 42px;
-        box-shadow: 0 16px 30px rgba(17, 141, 208, .25);
-    }
-
-    .profile-photo-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-    .doc-card {
-        background: #f8fcff;
-        border: 1px solid #dff3fc;
-        border-radius: 18px;
-        padding: 14px;
-        height: 100%;
-        text-align: center;
-    }
-
-    .doc-label {
-        font-weight: 800;
-        color: #1f3b57;
-        margin-bottom: 12px;
-    }
-
-    .doc-image {
-        width: 100%;
-        height: 230px;
-        object-fit: cover;
-        border-radius: 14px;
-        border: 1px solid #dceff8;
-        transition: 0.2s;
-        background: #ffffff;
-    }
-
-    .doc-image:hover {
-        transform: scale(1.02);
-        box-shadow: 0 12px 28px rgba(17, 141, 208, .18);
-    }
-
-    .doc-pdf {
-        height: 230px;
-        border-radius: 14px;
-        border: 1px dashed #b9dff0;
-        background: #ffffff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .doc-pdf i {
-        font-size: 52px;
-        color: #e74a3b;
-        margin-bottom: 10px;
-    }
-
-    .doc-pdf p {
-        margin: 0;
-        color: #7890a6;
-        font-weight: 700;
-    }
-
-    .doc-empty {
-        height: 230px;
-        border-radius: 14px;
-        background: #f3f8fc;
-        color: #7890a6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 text-gray-800 mb-0">Detail Data Admin</h1>
@@ -502,5 +412,94 @@ require_once __DIR__ . '/../partials/topbar.php';
 
     </div>
 </div>
+
+
+<style>
+    .profile-photo-box {
+        width: 110px;
+        height: 110px;
+        border-radius: 28px;
+        overflow: hidden;
+        margin: 0 auto 18px;
+        background: linear-gradient(135deg, #3db7ee, #118dd0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 42px;
+        box-shadow: 0 16px 30px rgba(17, 141, 208, .25);
+    }
+
+    .profile-photo-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .doc-card {
+        background: #f8fcff;
+        border: 1px solid #dff3fc;
+        border-radius: 18px;
+        padding: 14px;
+        height: 100%;
+        text-align: center;
+    }
+
+    .doc-label {
+        font-weight: 800;
+        color: #1f3b57;
+        margin-bottom: 12px;
+    }
+
+    .doc-image {
+        width: 100%;
+        height: 230px;
+        object-fit: cover;
+        border-radius: 14px;
+        border: 1px solid #dceff8;
+        transition: 0.2s;
+        background: #ffffff;
+    }
+
+    .doc-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 28px rgba(17, 141, 208, .18);
+    }
+
+    .doc-pdf {
+        height: 230px;
+        border-radius: 14px;
+        border: 1px dashed #b9dff0;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .doc-pdf i {
+        font-size: 52px;
+        color: #e74a3b;
+        margin-bottom: 10px;
+    }
+
+    .doc-pdf p {
+        margin: 0;
+        color: #7890a6;
+        font-weight: 700;
+    }
+
+    .doc-empty {
+        height: 230px;
+        border-radius: 14px;
+        background: #f3f8fc;
+        color: #7890a6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+</style>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

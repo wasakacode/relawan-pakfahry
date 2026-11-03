@@ -7,15 +7,7 @@ require_role([
     'relawan'
 ]);
 
-/*
-|--------------------------------------------------------------------------
-| Ambil Data Relawan
-|--------------------------------------------------------------------------
-*/
-
 if (current_user()['role'] === 'relawan') {
-
-    // Relawan hanya boleh melihat profil miliknya sendiri
     $stmt = $pdo->prepare("
         SELECT
             p.*,
@@ -35,17 +27,11 @@ if (current_user()['role'] === 'relawan') {
         current_user()['id']
     ]);
 } else {
-
-    // Admin & Superadmin menggunakan parameter id
     $id = (int)($_GET['id'] ?? 0);
     $relawanId = (int)($_GET['relawan'] ?? 0);
-
-    // Jika dari superadmin
     if ($relawanId > 0) {
         $id = $relawanId;
     }
-
-    // Jika tidak ada id sama sekali
     if ($id <= 0) {
 
         flash('error', 'Data relawan tidak ditemukan.');
@@ -58,8 +44,6 @@ if (current_user()['role'] === 'relawan') {
     }
 
     if (current_user()['role'] === 'admin') {
-
-    // ambil profile admin yang sedang login
     $stmtAdmin = $pdo->prepare("
         SELECT id
         FROM profiles
@@ -73,8 +57,6 @@ if (current_user()['role'] === 'relawan') {
     ]);
 
     $adminProfileId = $stmtAdmin->fetchColumn();
-
-    // hanya boleh melihat relawan yang dinaungi
     $stmt = $pdo->prepare("
         SELECT
             p.*,
@@ -141,12 +123,6 @@ if (!$data) {
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| Admin yang menaungi relawan
-|--------------------------------------------------------------------------
-*/
-
 $stmtAdmin = $pdo->prepare("
     SELECT
         p.id,
@@ -180,12 +156,6 @@ $stmtAdmin = $pdo->prepare("
 $stmtAdmin->execute([$data['id']]);
 
 $adminList = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
-
-/*
-|--------------------------------------------------------------------------
-| Data Anggota Keluarga
-|--------------------------------------------------------------------------
-*/
 
 $stmtFamily = $pdo->prepare("
     SELECT *
