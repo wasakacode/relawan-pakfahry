@@ -1,0 +1,65 @@
+
+# =====================================================
+# PHP NATIVE - SECURITY CONFIGURATION
+# Apache 2.4+
+# =====================================================
+
+# 1. Disable directory listing
+Options -Indexes -MultiViews
+
+# 2. Disable server signature
+ServerSignature Off
+
+# 3. Protect hidden and sensitive files
+<FilesMatch "(^\.|\.env|\.ini|\.log|\.sql|\.bak|\.old|\.conf|\.dist|\.lock|\.md)$">
+    Require all denied
+</FilesMatch>
+
+# 4. Protect configuration files
+<FilesMatch "^(config|database|connection|koneksi|db|setting|settings)\.php$">
+    Require all denied
+</FilesMatch>
+
+# 5. Protect backup and development files
+<FilesMatch "\.(bak|backup|old|orig|save|swp|tmp|sql|zip|tar|gz|rar|7z)$">
+    Require all denied
+</FilesMatch>
+
+# 6. Protect source and project files
+<FilesMatch "^(composer\.json|composer\.lock|package\.json|phpunit\.xml|Dockerfile|README\.md)$">
+    Require all denied
+</FilesMatch>
+
+# 7. Block access to Git and SVN directories
+RewriteEngine On
+RewriteRule (^|/)\.(git|svn|hg)(/|$) - [F,L]
+
+# 8. Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+</IfModule>
+
+# 9. Block PHP execution in upload directories
+# Use this rule in each upload directory's .htaccess
+# rather than globally in the application root.
+
+# 10. Disable access to PHP source backup extensions
+<FilesMatch "\.(phps|phtml|phar|php[0-9]?~)$">
+    Require all denied
+</FilesMatch>
+
+# 11. Block TRACE requests
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_METHOD} ^TRACE
+    RewriteRule .* - [F]
+</IfModule>
+
+# 12. HTTPS redirect
+# Uncomment only after SSL is installed and working.
+#
+# RewriteCond %{HTTPS} !=on
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]

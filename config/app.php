@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 define('APP_NAME', 'Sistem Relawan & Dukungan');
-define('BASE_URL', 'http://localhost/relawan-pakfahry');
+define('BASE_URL', 'https://relawankami.com');
 
 function url($path = '') {
     return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
